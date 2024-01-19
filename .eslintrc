@@ -1,0 +1,29 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": [
+    "@typescript-eslint",
+    "prettier"
+  ],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "rules": {
+    "comma-spacing": [ "warn", { "before": false, "after": true }],
+    "semi-spacing": [ "warn", { "before": false, "after":  true }],
+    "spaced-comment": [ "warn", "always", { "block": {"balanced": true }}],
+    "no-trailing-spaces": "warn",
+    "accessor-pairs": "error",
+    "no-useless-escape": "off",
+    // replace unused-vars rule with unused-imports rule for imports
+    "@typescript-eslint/no-unused-vars": "error",
+    "unused-imports/no-unused-imports": "error",
+    "unused-imports/no-unused-vars": [
+      "warn",
+      { "vars": "all", "varsIgnorePattern": "^_", "args": "after-used", "argsIgnorePattern": "^_" }
+    ]
+  }
+}
