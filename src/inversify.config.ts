@@ -9,6 +9,7 @@ import { TYPES } from '@src/types';
 import { Ping } from '@commands/system/Ping';
 import { MessageHandler } from '@src/handlers/MessageHandler';
 import { ICommand } from '@commands/abstractions/ICommand';
+import { Help } from '@commands/system/Help';
 
 const container = new Container();
 
@@ -59,6 +60,7 @@ container.bind<Client>(TYPES.Client).toConstantValue(
 container.bind<MessageHandler>(TYPES.MessageHandler).to(MessageHandler);
 
 // COMMANDS
-container.bind<ICommand>('PingCommand').to(Ping);
+container.bind<ICommand>('Command').to(Ping);
+container.bind<ICommand>('Command').to(Help);
 
 export default container;

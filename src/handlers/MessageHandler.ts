@@ -5,6 +5,7 @@ import { TYPES } from '@src/types';
 import { ICommand } from '@commands/abstractions/ICommand';
 import container from '@src/inversify.config';
 import { CommandResult } from '@models/CommandResult';
+import { TextHelper } from '@src/helpers/TextHelper';
 
 @injectable()
 export class MessageHandler {
@@ -80,15 +81,17 @@ export class MessageHandler {
 
     private getCommandByName(name: string): ICommand | null {
         this.logger.debug(`Matching command for command name '${name}'...`);
-        const commandName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase() + 'Command';
-        let command = null;
+        const commandName = TextHelper.pascalCase(name);
+        let foundCommand = null;
+
         try {
-            command = container.get(commandName) as ICommand;
+            let commands: ICommand[] = container.getAll('Command');
+            foundCommand = commands.find((c) => c.name == name.toLowerCase()) as ICommand | null;
         } catch (e) {
             this.logger.debug(
                 `Could not find command for user input '${name}' and resolved symbol name '${commandName}'`
             );
         }
-        return command;
+        return foundCommand;
     }
 }

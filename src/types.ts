@@ -15,7 +15,4 @@ export const TYPES = {
 
     // HANDLES
     MessageHandler: Symbol('MessageHandler'),
-
-    // COMMANDS
-    Ping: Symbol('PingCommand'),
 };

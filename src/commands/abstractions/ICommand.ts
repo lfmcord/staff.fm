@@ -3,6 +3,7 @@ import { Message, PartialMessage } from 'discord.js';
 
 export interface ICommand {
     name: string;
+    description: string;
     usageHint: string;
     needsPrivilege: boolean;
 
