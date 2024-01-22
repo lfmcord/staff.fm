@@ -6,6 +6,9 @@ import { Client } from 'discord.js';
 import { ILogObj, Logger } from 'tslog';
 import { Bot } from '@src/bot';
 import { TYPES } from '@src/types';
+import { Ping } from '@commands/system/Ping';
+import { MessageHandler } from '@src/handlers/MessageHandler';
+import { ICommand } from '@commands/abstractions/ICommand';
 
 const container = new Container();
 
@@ -17,6 +20,7 @@ container.bind<string>(TYPES.GUILD_ID).toConstantValue(process.env.GUILD_ID ?? '
 container
     .bind<string>(TYPES.DB_CONNECTION_STRING)
     .toConstantValue(process.env.DB_CONNECTION_STRING ?? '');
+container.bind<string>(TYPES.PREFIX).toConstantValue(process.env.PREFIX ?? '');
 
 // CORE
 container.bind<Logger<ILogObj>>(TYPES.BotLogger).toConstantValue(
@@ -34,5 +38,27 @@ container.bind<Logger<ILogObj>>(TYPES.JobLogger).toConstantValue(
     })
 );
 container.bind<Bot>(TYPES.Bot).to(Bot).inSingletonScope();
+container.bind<Client>(TYPES.Client).toConstantValue(
+    new Client({
+        intents: [
+            'GuildMessages',
+            'GuildMessageTyping',
+            'GuildMessageReactions',
+            'GuildMembers',
+            'GuildBans',
+            'GuildModeration',
+            'Guilds',
+            'DirectMessages',
+            'DirectMessageReactions',
+            'MessageContent',
+        ],
+    })
+);
+
+// HANDLERS
+container.bind<MessageHandler>(TYPES.MessageHandler).to(MessageHandler);
+
+// COMMANDS
+container.bind<ICommand>('PingCommand').to(Ping);
 
 export default container;
