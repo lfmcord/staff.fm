@@ -1,4 +1,4 @@
-import { CommandResult } from '@models/CommandResult';
+import { CommandResult } from '@src/feature/commands/models/CommandResult';
 import { Message, PartialMessage } from 'discord.js';
 
 export interface ICommand {

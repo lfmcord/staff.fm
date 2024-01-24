@@ -1,3 +1,5 @@
+import { MessageService } from '@src/infrastructure/services/MessageService';
+
 export const TYPES = {
     // ENVIRONMENT
     TOKEN: Symbol('TOKEN'),
@@ -6,13 +8,27 @@ export const TYPES = {
     GUILD_ID: Symbol('GUILD_ID'),
     DB_CONNECTION_STRING: Symbol('DB_CONNECTION_STRING'),
     PREFIX: Symbol('PREFIX'),
+    STAFFMAIL_CATEGORY_ID: Symbol('STAFFMAIL_CATEGORY_ID'),
+    STAFFMAIL_LOG_CHANNEL_ID: Symbol('STAFFMAIL_LOG_CHANNEL_ID'),
 
     // CORE
     Bot: Symbol('Bot'),
     Client: Symbol('Client'),
+    MongoDbConnector: Symbol('MongoDbConnector'),
     BotLogger: Symbol('BotLogger'),
     JobLogger: Symbol('JobLogger'),
 
-    // HANDLES
-    MessageHandler: Symbol('MessageHandler'),
+    // HANDLERS
+    HandlerFactory: Symbol('HandlerFactory'),
+    GuildMessageHandler: Symbol('GuildMessageHandler'),
+    DirectMessageHandler: Symbol('DirectMessageHandler'),
+
+    // STAFFMAIL
+    StaffMailCreate: Symbol('StaffMailCreate'),
+
+    // REPOSITORIES
+    StaffMailRepository: Symbol('StaffMailRepository'),
+
+    // SERVICES
+    MessageService: Symbol('MessageService'),
 };

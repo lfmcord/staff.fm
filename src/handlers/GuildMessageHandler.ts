@@ -1,26 +1,36 @@
 import { Logger } from 'tslog';
-import { Message } from 'discord.js';
+import { Client, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
-import { ICommand } from '@commands/abstractions/ICommand';
+import { ICommand } from '@src/feature/commands/models/ICommand';
 import container from '@src/inversify.config';
-import { CommandResult } from '@models/CommandResult';
+import { CommandResult } from '@src/feature/commands/models/CommandResult';
 import { TextHelper } from '@src/helpers/TextHelper';
+import { IHandler } from '@src/handlers/models/IHandler';
 
 @injectable()
-export class MessageHandler {
-    private logger: Logger<MessageHandler>;
+export class GuildMessageHandler implements IHandler {
+    private logger: Logger<GuildMessageHandler>;
     private readonly prefix: string;
 
     constructor(
-        @inject(TYPES.BotLogger) logger: Logger<MessageHandler>,
+        @inject(TYPES.BotLogger) logger: Logger<GuildMessageHandler>,
         @inject(TYPES.PREFIX) prefix: string
     ) {
         this.prefix = prefix;
         this.logger = logger;
     }
 
-    public async handleMessageCreate(message: Message): Promise<void> {
+    public async handle(message: Message) {
+        let isCommand = message.content.startsWith(this.prefix);
+        let isBot = message.author.bot;
+
+        if (!isCommand || isBot) return;
+
+        await this.handleCommand(message);
+    }
+
+    private async handleCommand(message: Message) {
         // Resolve command
         const commandName = message.content.slice(
             this.prefix.length,
@@ -55,12 +65,12 @@ export class MessageHandler {
         await this.handleCommandResult(message, result, commandName, end - start);
     }
 
-    public async handleCommandError(message: Message, error: Error) {
+    private async handleCommandError(message: Message, error: Error) {
         await message.reply('❌ ' + error.message);
         await message.react('❌');
     }
 
-    public async handleCommandResult(
+    private async handleCommandResult(
         message: Message,
         result: CommandResult,
         commandName: string,

@@ -1,6 +1,6 @@
-import { ICommand } from '@commands/abstractions/ICommand';
-import { CommandResult } from '@models/CommandResult';
-import { Client, Message } from 'discord.js';
+import { ICommand } from '@src/feature/commands/models/ICommand';
+import { CommandResult } from '@src/feature/commands/models/CommandResult';
+import { Client, inlineCode, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import container from '@src/inversify.config';
 import { TYPES } from '@src/types';
@@ -26,8 +26,7 @@ export class Help implements ICommand {
         let commands: ICommand[] = container.getAll('Command');
         commands.sort((a, b) => a.name.localeCompare(b.name));
         commands.forEach((command) => {
-            description +=
-                TextHelper.code(this.prefix + command.name) + `: ${command.description}\n`;
+            description += inlineCode(this.prefix + command.name) + `: ${command.description}\n`;
         });
 
         let helpEmbed = EmbedHelper.getVerboseCommandEmbed(this.client, message)
