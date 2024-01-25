@@ -1,11 +1,10 @@
-import { ICommand } from '@src/feature/commands/models/ICommand';
-import { CommandResult } from '@src/feature/commands/models/CommandResult';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { Client, inlineCode, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import container from '@src/inversify.config';
 import { TYPES } from '@src/types';
-import { TextHelper } from '@src/helpers/TextHelper';
-import { EmbedHelper } from '@src/helpers/EmbedHelper';
+import { EmbedHelper } from '@src/helpers/embed.helper';
 
 @injectable()
 export class Help implements ICommand {

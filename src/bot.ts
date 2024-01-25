@@ -1,13 +1,9 @@
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
-import { Client, Guild, Interaction, Message, PartialMessage } from 'discord.js';
-import { connect } from 'mongoose';
-import * as process from 'process';
+import { Client, Message, PartialMessage } from 'discord.js';
 import { TYPES } from '@src/types';
-import { GuildMessageHandler } from '@src/handlers/GuildMessageHandler';
-import { DirectMessageHandler } from '@src/handlers/DirectMessageHandler';
-import { IHandlerFactory } from '@src/handlers/models/IHandlerFactory';
-import { MongoDbConnector } from '@src/infrastructure/connectors/MongoDbConnector';
+import { IHandlerFactory } from '@src/handlers/models/handler-factory.interface';
+import { MongoDbConnector } from '@src/infrastructure/connectors/mongo-db.connector';
 
 @injectable()
 export class Bot {

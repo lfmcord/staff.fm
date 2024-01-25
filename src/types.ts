@@ -1,4 +1,4 @@
-import { MessageService } from '@src/infrastructure/services/MessageService';
+import { MessageService } from '@src/infrastructure/services/message.service';
 
 export const TYPES = {
     // ENVIRONMENT

@@ -1,12 +1,12 @@
 import { Logger } from 'tslog';
-import { Client, Message } from 'discord.js';
+import { Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
-import { ICommand } from '@src/feature/commands/models/ICommand';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 import container from '@src/inversify.config';
-import { CommandResult } from '@src/feature/commands/models/CommandResult';
-import { TextHelper } from '@src/helpers/TextHelper';
-import { IHandler } from '@src/handlers/models/IHandler';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { TextHelper } from '@src/helpers/text.helper';
+import { IHandler } from '@src/handlers/models/handler.interface';
 
 @injectable()
 export class GuildMessageHandler implements IHandler {

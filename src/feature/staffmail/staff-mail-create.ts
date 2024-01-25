@@ -1,12 +1,12 @@
 import { Client, italic, Message } from 'discord.js';
-import { StaffMailModeEnum } from '@src/feature/staffmail/models/StaffMailMode.enum';
+import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode.enum';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
-import { EmbedHelper } from '@src/helpers/EmbedHelper';
-import { StaffMailRepository } from '@src/infrastructure/repositories/StaffMailRepository';
-import { MessageService } from '@src/infrastructure/services/MessageService';
-import { StaffMail } from '@src/feature/staffmail/models/StaffMail';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
+import { MessageService } from '@src/infrastructure/services/message.service';
+import { StaffMail } from '@src/feature/staffmail/models/staff-mail.model';
 
 @injectable()
 export class StaffMailCreate {
@@ -78,7 +78,6 @@ export class StaffMailCreate {
         }
 
         let mode = userReply === '1️⃣' ? StaffMailModeEnum.NAMED : StaffMailModeEnum.ANONYMOUS;
-        let isAnonymous = mode === StaffMailModeEnum.ANONYMOUS;
 
         this.logger.debug(
             `User confirmation was positive. Trying to create Staff Mail channel in mode '${mode.toString()}'...`

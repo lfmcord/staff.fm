@@ -1,20 +1,9 @@
 import { inject, injectable } from 'inversify';
-import {
-    Client,
-    EmbedBuilder,
-    italic,
-    Message,
-    MessageReaction,
-    ReactionEmoji,
-    User,
-} from 'discord.js';
-import { StaffMailModeEnum } from '@src/feature/staffmail/models/StaffMailMode.enum';
-import { EmbedHelper } from '@src/helpers/EmbedHelper';
+import { Message } from 'discord.js';
 import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
-import { IHandler } from '@src/handlers/models/IHandler';
-import { TextHelper } from '@src/helpers/TextHelper';
-import { StaffMailCreate } from '@src/feature/staffmail/StaffMailCreate';
+import { IHandler } from '@src/handlers/models/handler.interface';
+import { StaffMailCreate } from '@src/feature/staffmail/staff-mail-create';
 
 @injectable()
 export class DirectMessageHandler implements IHandler {

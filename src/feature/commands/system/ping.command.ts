@@ -1,5 +1,5 @@
-import { ICommand } from '@src/feature/commands/models/ICommand';
-import { CommandResult } from '@src/feature/commands/models/CommandResult';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { Message, PartialMessage } from 'discord.js';
 import { injectable } from 'inversify';
 

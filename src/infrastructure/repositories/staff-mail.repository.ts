@@ -1,16 +1,9 @@
-import {
-    CategoryChannel,
-    Channel,
-    ChannelType,
-    Client,
-    GuildTextBasedChannel,
-    User,
-} from 'discord.js';
+import { CategoryChannel, ChannelType, Client, GuildTextBasedChannel, User } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { model, Schema } from 'mongoose';
-import { StaffMailModeEnum } from '@src/feature/staffmail/models/StaffMailMode.enum';
-import { StaffMail } from '@src/feature/staffmail/models/StaffMail';
+import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode.enum';
+import { StaffMail } from '@src/feature/staffmail/models/staff-mail.model';
 import { faker } from '@faker-js/faker';
 import moment = require('moment');
 

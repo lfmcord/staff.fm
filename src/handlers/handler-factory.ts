@@ -1,9 +1,9 @@
-import { GuildMessageHandler } from '@src/handlers/GuildMessageHandler';
-import { DirectMessageHandler } from '@src/handlers/DirectMessageHandler';
+import { GuildMessageHandler } from '@src/handlers/guild-message.handler';
+import { DirectMessageHandler } from '@src/handlers/direct-message.handler';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
-import { IHandlerFactory } from '@src/handlers/models/IHandlerFactory';
-import { IHandler } from '@src/handlers/models/IHandler';
+import { IHandlerFactory } from '@src/handlers/models/handler-factory.interface';
+import { IHandler } from '@src/handlers/models/handler.interface';
 
 @injectable()
 export class HandlerFactory implements IHandlerFactory {
