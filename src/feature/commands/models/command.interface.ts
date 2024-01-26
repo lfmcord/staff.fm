@@ -5,7 +5,9 @@ export interface ICommand {
     name: string;
     description: string;
     usageHint: string;
+    examples: string[];
     needsPrivilege: boolean;
+    aliases: string[];
 
     /**
      * Runs the command.
@@ -15,4 +17,11 @@ export interface ICommand {
      * @throws Error when command could not be completed.
      */
     run(message: Message | PartialMessage, args: string[]): Promise<CommandResult>;
+
+    /**
+     * Validates the arguments given after a command. Throws an error if validation failed.
+     * @param args the arguments to validate.
+     * @throws Error Validation failed, error message contains message to user.
+     */
+    validateArgs(args: string[]): Promise<void>;
 }

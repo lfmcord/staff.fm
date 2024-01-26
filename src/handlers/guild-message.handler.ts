@@ -1,11 +1,10 @@
 import { Logger } from 'tslog';
-import { Message } from 'discord.js';
+import { inlineCode, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import container from '@src/inversify.config';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { TextHelper } from '@src/helpers/text.helper';
 import { IHandler } from '@src/handlers/models/handler.interface';
 
 @injectable()
@@ -13,17 +12,14 @@ export class GuildMessageHandler implements IHandler {
     private logger: Logger<GuildMessageHandler>;
     private readonly prefix: string;
 
-    constructor(
-        @inject(TYPES.BotLogger) logger: Logger<GuildMessageHandler>,
-        @inject(TYPES.PREFIX) prefix: string
-    ) {
+    constructor(@inject(TYPES.BotLogger) logger: Logger<GuildMessageHandler>, @inject(TYPES.PREFIX) prefix: string) {
         this.prefix = prefix;
         this.logger = logger;
     }
 
     public async handle(message: Message) {
-        let isCommand = message.content.startsWith(this.prefix);
-        let isBot = message.author.bot;
+        const isCommand = message.content.startsWith(this.prefix);
+        const isBot = message.author.bot;
 
         if (!isCommand || isBot) return;
 
@@ -34,14 +30,15 @@ export class GuildMessageHandler implements IHandler {
         // Resolve command
         const commandName = message.content.slice(
             this.prefix.length,
-            message.content.indexOf(' ') == -1 ? undefined : message.content.indexOf(' ') + 1
+            message.content.indexOf(' ') == -1 ? undefined : message.content.indexOf(' ')
         );
-        let command = this.getCommandByName(commandName);
+        const command = this.getCommandByName(commandName);
         if (!command) {
+            this.logger.debug(`Could not find a command for name ${commandName}`);
             await this.handleCommandError(
                 message,
                 new Error(
-                    `I could not find a command called '${commandName.toLowerCase()}'.` +
+                    `I could not find a command called '${commandName.toLowerCase()}'. ` +
                         `Use \`${this.prefix}help\` to see a list of all commands.`
                 )
             );
@@ -49,9 +46,22 @@ export class GuildMessageHandler implements IHandler {
         }
 
         // Run command
-        let args = message.content!.split(' ').splice(0, 1);
+        const args = message.content!.split(' ').splice(1);
         let result: CommandResult;
         const start = new Date().getTime();
+        try {
+            await command.validateArgs(args);
+        } catch (error) {
+            this.logger.info(`Command validation failed: ${(error as Error).message}`);
+            await this.handleCommandError(
+                message,
+                new Error(
+                    (error as Error).message +
+                        ` For more details, use ${inlineCode(this.prefix + commandName.toLowerCase())}.`
+                )
+            );
+            return;
+        }
         try {
             result = await command.run(message, args);
         } catch (error) {
@@ -78,30 +88,20 @@ export class GuildMessageHandler implements IHandler {
     ) {
         let log = result.isSuccessful
             ? `Successfully finished command '${commandName}'.`
-            : `Failed to finish command '${commandName}'${result.reason ? ` (Reason: ${result.reason})` : ''}.`;
-        log += `Execution took ${executionTime}ms.`;
+            : `Failed to finish command '${commandName}'${result.reason ? ` (Reason: '${result.reason}')` : ''}.`;
+        log += ` Execution took ${executionTime}ms.`;
         this.logger.info(log);
+        const emoji = result.isSuccessful ? '✅' : '❌';
+        await message.react(emoji);
 
         if (result.replyToUser) {
-            let emoji = result.isSuccessful ? '✅' : '❌';
             await message.reply(`${emoji} ${result.replyToUser}`);
-            await message.react(emoji);
         }
     }
 
     private getCommandByName(name: string): ICommand | null {
         this.logger.debug(`Matching command for command name '${name}'...`);
-        const commandName = TextHelper.pascalCase(name);
-        let foundCommand = null;
-
-        try {
-            let commands: ICommand[] = container.getAll('Command');
-            foundCommand = commands.find((c) => c.name == name.toLowerCase()) as ICommand | null;
-        } catch (e) {
-            this.logger.debug(
-                `Could not find command for user input '${name}' and resolved symbol name '${commandName}'`
-            );
-        }
-        return foundCommand;
+        const commands: ICommand[] = container.getAll('Command');
+        return commands.find((c) => c.name == name.toLowerCase() || c.aliases.includes(name)) as ICommand | null;
     }
 }

@@ -3,7 +3,8 @@
   "parser": "@typescript-eslint/parser",
   "plugins": [
     "@typescript-eslint",
-    "prettier"
+    "prettier",
+    "unused-imports"
   ],
   "extends": [
     "eslint:recommended",
@@ -19,7 +20,7 @@
     "accessor-pairs": "error",
     "no-useless-escape": "off",
     // replace unused-vars rule with unused-imports rule for imports
-    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-unused-vars": "off",
     "unused-imports/no-unused-imports": "error",
     "unused-imports/no-unused-vars": [
       "warn",

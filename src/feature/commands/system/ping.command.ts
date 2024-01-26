@@ -4,15 +4,17 @@ import { Message, PartialMessage } from 'discord.js';
 import { injectable } from 'inversify';
 
 @injectable()
-export class Ping implements ICommand {
+export class PingCommand implements ICommand {
     name: string = 'ping';
     description: string = 'Checks if the bot is up.';
     usageHint: string = '';
+    examples: string[] = [];
     needsPrivilege: boolean = false; // TODO: Implement privilege system
+    aliases = ['p'];
 
-    async run(message: Message | PartialMessage, args: string[]): Promise<CommandResult> {
+    async run(message: Message | PartialMessage): Promise<CommandResult> {
         const start = new Date().getTime();
-        let reply = await message.reply({
+        const reply = await message.reply({
             content: 'Pinging...',
         });
         const end = new Date().getTime();
@@ -22,5 +24,9 @@ export class Ping implements ICommand {
         return {
             isSuccessful: true,
         };
+    }
+
+    validateArgs(_: string[]): Promise<void> {
+        return Promise.resolve();
     }
 }

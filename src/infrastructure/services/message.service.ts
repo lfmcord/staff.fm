@@ -1,5 +1,4 @@
 import {
-    Channel,
     GuildTextBasedChannel,
     Message,
     MessageCreateOptions,
@@ -26,7 +25,7 @@ export class MessageService {
         emojiOptions: string[],
         doCleanup: boolean
     ): Promise<string | null> {
-        let confirmationMessage = await channel.send(queryMessage);
+        const confirmationMessage = await channel.send(queryMessage);
 
         for (const emoji of emojiOptions) {
             await confirmationMessage.react(emoji);
@@ -45,7 +44,7 @@ export class MessageService {
                 errors: ['time'],
             });
         } catch (_) {
-            let response = await channel.send(`You took too long to respond!`);
+            const response = await channel.send(`You took too long to respond!`);
             if (doCleanup) void this.deleteMessages([confirmationMessage, response]);
             return null;
         }

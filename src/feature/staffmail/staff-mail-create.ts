@@ -27,7 +27,7 @@ export class StaffMailCreate {
     }
     public async createStaffMail(message: Message) {
         this.logger.info(`New staff mail message received.`);
-        let start = new Date().getTime();
+        const start = new Date().getTime();
 
         let staffMail = await this.staffMailRepository.getStaffMailByUserId(message.author.id);
 
@@ -39,32 +39,32 @@ export class StaffMailCreate {
         }
 
         // TODO: Send more info
-        let messageForStaff = EmbedHelper.getStaffMailEmbed(
+        const messageForStaff = EmbedHelper.getStaffMailEmbed(
             staffMail.mode === StaffMailModeEnum.ANONYMOUS ? null : message.author,
             false,
             true
         ).setDescription(message.content);
         await staffMail.channel.send({ embeds: [messageForStaff] });
 
-        let messageForUser = EmbedHelper.getStaffMailEmbed(
+        const messageForUser = EmbedHelper.getStaffMailEmbed(
             message.author,
             false,
             false
         ).setDescription(message.content);
         await message.channel.send({ embeds: [messageForUser] });
 
-        let end = new Date().getTime();
+        const end = new Date().getTime();
 
         this.logger.info(`Staff mail message processed. Processing took ${end - start}ms.`);
     }
 
     private async createNewStaffMail(message: Message): Promise<StaffMail | null> {
-        // TODO: Send into message too
-        let query = EmbedHelper.getUserStaffMailEmbed(this.client).setDescription(
+        // TODO: Send intro message too
+        const query = EmbedHelper.getUserStaffMailEmbed(this.client).setDescription(
             `Hello! Looks like you are trying to send a message to the Lastcord Staff team. How do you want to send it?\n\nPlease react to this message with the according emoji:\n1️⃣ With my name\n2️⃣ Anonymous\n❌ Abort\n\n${italic('Note: Please be aware that sending an anonymous message might make it harder for the staff team to handle your issue.')}`
         );
         // TODO: Use buttons instead?
-        let userReply = await this.messageService.getUserReplyInChannel(
+        const userReply = await this.messageService.getUserReplyInChannel(
             { embeds: [query] },
             message.author,
             message.channel,
@@ -77,12 +77,12 @@ export class StaffMailCreate {
             return null;
         }
 
-        let mode = userReply === '1️⃣' ? StaffMailModeEnum.NAMED : StaffMailModeEnum.ANONYMOUS;
+        const mode = userReply === '1️⃣' ? StaffMailModeEnum.NAMED : StaffMailModeEnum.ANONYMOUS;
 
         this.logger.debug(
             `User confirmation was positive. Trying to create Staff Mail channel in mode '${mode.toString()}'...`
         );
-        let staffMail = await this.staffMailRepository.createStaffMail(message.author, mode);
+        const staffMail = await this.staffMailRepository.createStaffMail(message.author, mode);
 
         // TODO: Send new ticket log
 
@@ -94,7 +94,7 @@ export class StaffMailCreate {
     }
 
     private async sendStaffMailMessage(staffMail: StaffMail, message: Message) {
-        let messageToSend = EmbedHelper.getStaffMailEmbed(
+        const messageToSend = EmbedHelper.getStaffMailEmbed(
             staffMail.mode === StaffMailModeEnum.NAMED ? staffMail.user : null,
             false,
             true

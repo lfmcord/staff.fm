@@ -24,9 +24,9 @@ export class StaffMailRepository {
     }
 
     public async getStaffMailByUserId(userId: string): Promise<StaffMail | null> {
-        let model = await StaffMailInstanceModel.findOne({ userId: userId }).exec();
+        const model = await StaffMailInstanceModel.findOne({ userId: userId }).exec();
         if (!model) return null;
-        let channel = await (
+        const channel = await (
             await this.client.guilds.fetch(this.guildId)
         ).channels.fetch(model.channelId);
         if (!channel)
@@ -44,8 +44,8 @@ export class StaffMailRepository {
     }
 
     public async createStaffMail(user: User, mode: StaffMailModeEnum): Promise<StaffMail> {
-        let channel = await this.createStaffMailChannel(user, mode);
-        let now = moment.utc().toDate();
+        const channel = await this.createStaffMailChannel(user, mode);
+        const now = moment.utc().toDate();
 
         const staffMailInstance = new StaffMailInstanceModel({
             channelId: channel.id,
@@ -69,17 +69,17 @@ export class StaffMailRepository {
         user: User,
         mode: StaffMailModeEnum
     ): Promise<GuildTextBasedChannel> {
-        let guild = await this.client.guilds.fetch(this.guildId);
-        let category = (await guild.channels.fetch(this.staffMailCategoryId)) as CategoryChannel;
+        const guild = await this.client.guilds.fetch(this.guildId);
+        const category = (await guild.channels.fetch(this.staffMailCategoryId)) as CategoryChannel;
         let channelName: string | null = null;
         if (mode === StaffMailModeEnum.ANONYMOUS) {
             // If the user wants to remain anonymous, we generate a random channel name and check for conflicts
             do {
-                let randomName = faker.word.adjective({
+                const randomName = faker.word.adjective({
                     length: { min: 3, max: 15 },
                     strategy: 'closest',
                 });
-                let generatedChannelName = `anonymous-${randomName}`;
+                const generatedChannelName = `anonymous-${randomName}`;
                 const channelsInCategory = category.children.cache.find(
                     (c) => c.name == generatedChannelName
                 );

@@ -6,10 +6,10 @@ import { Client, Partials } from 'discord.js';
 import { ILogObj, Logger } from 'tslog';
 import { Bot } from '@src/bot';
 import { TYPES } from '@src/types';
-import { Ping } from '@src/feature/commands/system/ping.command';
+import { PingCommand } from '@src/feature/commands/system/ping.command';
 import { GuildMessageHandler } from '@src/handlers/guild-message.handler';
 import { ICommand } from '@src/feature/commands/models/command.interface';
-import { Help } from '@src/feature/commands/system/help.command';
+import { HelpCommand } from '@src/feature/commands/system/help.command';
 import { DirectMessageHandler } from '@src/handlers/direct-message.handler';
 import { IHandlerFactory } from '@src/handlers/models/handler-factory.interface';
 import { HandlerFactory } from '@src/handlers/handler-factory';
@@ -18,6 +18,10 @@ import { MongoDbConnector } from '@src/infrastructure/connectors/mongo-db.connec
 import { StaffMailCreate } from '@src/feature/staffmail/staff-mail-create';
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { MessageService } from '@src/infrastructure/services/message.service';
+import { SelfMutesRepository } from '@src/infrastructure/repositories/self-mutes.repository';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { ScheduleService } from '@src/infrastructure/services/schedule.service';
+import { SelfMuteCommand } from '@src/feature/commands/utility/self-mute.command';
 
 const container = new Container();
 
@@ -36,6 +40,7 @@ container
 container
     .bind<string>(TYPES.STAFFMAIL_LOG_CHANNEL_ID)
     .toConstantValue(process.env.STAFFMAIL_LOG_CHANNEL_ID ?? '');
+container.bind<string>(TYPES.MUTED_ROLE_ID).toConstantValue(process.env.MUTED_ROLE_ID ?? '');
 
 // CORE
 container.bind<Logger<ILogObj>>(TYPES.BotLogger).toConstantValue(
@@ -78,16 +83,20 @@ container.bind<IHandler>(TYPES.GuildMessageHandler).to(GuildMessageHandler);
 container.bind<IHandler>(TYPES.DirectMessageHandler).to(DirectMessageHandler);
 
 // COMMANDS
-container.bind<ICommand>('Command').to(Ping);
-container.bind<ICommand>('Command').to(Help);
+container.bind<ICommand>('Command').to(PingCommand);
+container.bind<ICommand>('Command').to(HelpCommand);
+container.bind<ICommand>('Command').to(SelfMuteCommand);
 
 // STAFFMAIL
 container.bind<StaffMailCreate>(TYPES.StaffMailCreate).to(StaffMailCreate);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);
+container.bind<SelfMutesRepository>(TYPES.SelfMutesRepository).to(SelfMutesRepository);
 
 // SERVICES
 container.bind<MessageService>(TYPES.MessageService).to(MessageService);
+container.bind<MemberService>(TYPES.MemberService).to(MemberService);
+container.bind<ScheduleService>(TYPES.ScheduleService).to(ScheduleService);
 
 export default container;

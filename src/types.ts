@@ -1,5 +1,3 @@
-import { MessageService } from '@src/infrastructure/services/message.service';
-
 export const TYPES = {
     // ENVIRONMENT
     TOKEN: Symbol('TOKEN'),
@@ -10,6 +8,7 @@ export const TYPES = {
     PREFIX: Symbol('PREFIX'),
     STAFFMAIL_CATEGORY_ID: Symbol('STAFFMAIL_CATEGORY_ID'),
     STAFFMAIL_LOG_CHANNEL_ID: Symbol('STAFFMAIL_LOG_CHANNEL_ID'),
+    MUTED_ROLE_ID: Symbol('MUTED_ROLE_ID'),
 
     // CORE
     Bot: Symbol('Bot'),
@@ -28,7 +27,10 @@ export const TYPES = {
 
     // REPOSITORIES
     StaffMailRepository: Symbol('StaffMailRepository'),
+    SelfMutesRepository: Symbol('SelfMutesRepository'),
 
     // SERVICES
     MessageService: Symbol('MessageService'),
+    MemberService: Symbol('MemberService'),
+    ScheduleService: Symbol('ScheduleService'),
 };

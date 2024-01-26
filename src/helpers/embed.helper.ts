@@ -1,4 +1,4 @@
-import { Client, EmbedBuilder, ImageURLOptions, Message, User } from 'discord.js';
+import { Client, EmbedBuilder, Message, User } from 'discord.js';
 
 export class EmbedHelper {
     readonly red = 12059152;
