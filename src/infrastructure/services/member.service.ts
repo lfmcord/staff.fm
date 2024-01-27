@@ -31,13 +31,16 @@ export class MemberService {
         return roles;
     }
 
+    async getMemberRoleByRoleId(roleId: string): Promise<Role | null> {
+        const guild = await this.client.guilds.fetch(this.guildId);
+        return await guild.roles.fetch(roleId);
+    }
+
     async muteGuildMember(member: GuildMember): Promise<void> {
         const highestUserRole = await this.getHighestRoleFromGuildMember(member);
         const botMember = await this.getGuildMemberFromUserId(this.client.user!.id);
         const highestBotRole = await this.getHighestRoleFromGuildMember(botMember);
-        const mutedRole = await (
-            await this.client.guilds.fetch(this.guildId)
-        ).roles.fetch(this.mutedRoleId);
+        const mutedRole = await (await this.client.guilds.fetch(this.guildId)).roles.fetch(this.mutedRoleId);
         if (highestUserRole.comparePositionTo(highestBotRole) > 0) {
             throw Error(`Cannot mute a member with a role higher than the bot role.`);
         }

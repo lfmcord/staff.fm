@@ -164,4 +164,30 @@ export class SelfMuteCommand implements ICommand {
             `Selfmute for user ${selfMute.member.user.username} (ID: ${selfMute.member.user.id}) has expired and user was unmuted.`
         );
     }
+
+    public async restoreSelfMutes(): Promise<number> {
+        const savedSelfMutes = await this.selfMutesRepository.getAllSelfMutes();
+        let restored = 0;
+        for (const sm of savedSelfMutes) {
+            if (sm.endsAt <= moment.utc().toDate()) {
+                this.logger.warn(
+                    `Selfmute for user ${sm.member.user.username} (ID ${sm.member.user.id}) expired at ${sm.endsAt}. Trying to unmute.`
+                );
+                try {
+                    await this.unmuteMember(sm);
+                } catch (e) {
+                    this.logger.error(`Unable to unmute orphaned selfmute`, e);
+                }
+                await this.selfMutesRepository.deleteSelfMute(sm);
+            } else {
+                this.scheduleService.scheduleJob(
+                    `SELFMUTE_${sm.member.id}`,
+                    sm.endsAt,
+                    async () => await this.unmuteMember(sm)
+                );
+                restored++;
+            }
+        }
+        return restored;
+    }
 }

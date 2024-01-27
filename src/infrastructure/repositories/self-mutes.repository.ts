@@ -1,10 +1,16 @@
 import { model, Schema } from 'mongoose';
 import { Role, User } from 'discord.js';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { SelfMute } from '@src/feature/commands/utility/models/self-mute.model';
+import { TYPES } from '@src/types';
+import { MemberService } from '@src/infrastructure/services/member.service';
 
 @injectable()
 export class SelfMutesRepository {
+    private memberService: MemberService;
+    constructor(@inject(TYPES.MemberService) memberService: MemberService) {
+        this.memberService = memberService;
+    }
     public async createSelfMute(user: User, createdAt: Date, endsAt: Date, roles: Role[]) {
         const selfMuteInstance = new SelfMutesModelInstance({
             userId: user.id,
@@ -17,6 +23,25 @@ export class SelfMutesRepository {
 
     public async deleteSelfMute(selfMute: SelfMute) {
         await SelfMutesModelInstance.findOneAndDelete({ userId: selfMute.member.user.id });
+    }
+
+    public async getAllSelfMutes(): Promise<SelfMute[]> {
+        const savedSelfMutes = await SelfMutesModelInstance.find().exec();
+        const selfMutes: SelfMute[] = [];
+        for (const sm of savedSelfMutes) {
+            const roles: Role[] = [];
+            for (const id of sm.roleIds) {
+                const role = await this.memberService.getMemberRoleByRoleId(id);
+                if (role) roles.push(role);
+            }
+            selfMutes.push({
+                member: await this.memberService.getGuildMemberFromUserId(sm.userId),
+                endsAt: sm.endsAt,
+                createdAt: sm.createdAt,
+                roles: roles,
+            });
+        }
+        return selfMutes;
     }
 }
 

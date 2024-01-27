@@ -22,6 +22,7 @@ export const TYPES = {
     HandlerFactory: Symbol('HandlerFactory'),
     GuildMessageHandler: Symbol('GuildMessageHandler'),
     DirectMessageHandler: Symbol('DirectMessageHandler'),
+    ReadyHandler: Symbol('ReadyHandler'),
 
     // STAFFMAIL
     StaffMailCreate: Symbol('StaffMailCreate'),

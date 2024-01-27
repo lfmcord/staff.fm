@@ -64,11 +64,7 @@ export class Bot {
         });
 
         this.client.on('ready', async () => {
-            this.onReady();
+            await this.handlerFactory.createHandler('ready').handle(null);
         });
-    }
-
-    private onReady() {
-        // restore past content
     }
 }

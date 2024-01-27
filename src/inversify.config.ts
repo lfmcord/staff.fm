@@ -23,6 +23,7 @@ import { MemberService } from '@src/infrastructure/services/member.service';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { SelfMuteCommand } from '@src/feature/commands/utility/self-mute.command';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
+import { ReadyHandler } from '@src/handlers/ready.handler';
 
 const container = new Container();
 
@@ -77,6 +78,7 @@ container.bind<MongoDbConnector>(TYPES.MongoDbConnector).to(MongoDbConnector);
 container.bind<IHandlerFactory>(TYPES.HandlerFactory).to(HandlerFactory);
 container.bind<IHandler>(TYPES.GuildMessageHandler).to(GuildMessageHandler);
 container.bind<IHandler>(TYPES.DirectMessageHandler).to(DirectMessageHandler);
+container.bind<IHandler>(TYPES.ReadyHandler).to(ReadyHandler);
 
 // COMMANDS
 container.bind<ICommand>('Command').to(PingCommand);
