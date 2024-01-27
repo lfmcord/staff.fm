@@ -38,6 +38,9 @@ container.bind<string>(TYPES.STAFFMAIL_CATEGORY_ID).toConstantValue(process.env.
 container.bind<string>(TYPES.STAFFMAIL_LOG_CHANNEL_ID).toConstantValue(process.env.STAFFMAIL_LOG_CHANNEL_ID ?? '');
 container.bind<string>(TYPES.MUTED_ROLE_ID).toConstantValue(process.env.MUTED_ROLE_ID ?? '');
 container.bind<string>(TYPES.SELFMUTE_LOG_CHANNEL_ID).toConstantValue(process.env.SELFMUTE_LOG_CHANNEL_ID ?? '');
+container.bind<string[]>(TYPES.BACKSTAGER_ROLE_IDS).toConstantValue(process.env.BACKSTAGER_ROLE_IDS?.split(',') ?? []);
+container.bind<string[]>(TYPES.HELPER_ROLE_IDS).toConstantValue(process.env.HELPER_ROLE_IDS?.split(',') ?? []);
+container.bind<string[]>(TYPES.STAFF_ROLE_IDS).toConstantValue(process.env.STAFF_ROLE_IDS?.split(',') ?? []);
 
 // CORE
 container.bind<Logger<ILogObj>>(TYPES.BotLogger).toConstantValue(

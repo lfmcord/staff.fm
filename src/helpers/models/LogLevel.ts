@@ -1,4 +1,4 @@
-export enum LogLevelEnum {
+export enum LogLevel {
     Success,
     Failure,
     Info,

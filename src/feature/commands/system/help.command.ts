@@ -6,6 +6,7 @@ import container from '@src/inversify.config';
 import { TYPES } from '@src/types';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { TextHelper } from '@src/helpers/text.helper';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 
 @injectable()
 export class HelpCommand implements ICommand {
@@ -15,7 +16,7 @@ export class HelpCommand implements ICommand {
     examples: string[] = ['', 'selfmute'];
     private client: Client;
     private readonly prefix: string;
-    needsPrivilege: boolean = false;
+    permissionLevel = CommandPermissionLevel.User;
     aliases = ['h'];
 
     constructor(@inject(TYPES.PREFIX) prefix: string, @inject(TYPES.Client) client: Client) {

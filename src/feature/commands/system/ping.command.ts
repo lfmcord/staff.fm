@@ -3,6 +3,7 @@ import { CommandResult } from '@src/feature/commands/models/command-result.model
 import { Message, PartialMessage } from 'discord.js';
 import { injectable } from 'inversify';
 import { TextHelper } from '@src/helpers/text.helper';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 
 @injectable()
 export class PingCommand implements ICommand {
@@ -10,7 +11,7 @@ export class PingCommand implements ICommand {
     description: string = 'Checks if the bot is up.';
     usageHint: string = '';
     examples: string[] = [];
-    needsPrivilege: boolean = false; // TODO: Implement privilege system
+    permissionLevel = CommandPermissionLevel.User;
     aliases = ['p'];
 
     async run(message: Message | PartialMessage): Promise<CommandResult> {

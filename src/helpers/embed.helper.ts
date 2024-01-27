@@ -1,5 +1,5 @@
 import { Client, EmbedBuilder, Message, User } from 'discord.js';
-import { LogLevelEnum } from '@src/helpers/models/LogLevel.enum';
+import { LogLevel } from '@src/helpers/models/LogLevel';
 
 export class EmbedHelper {
     static readonly red = 12059152;
@@ -47,7 +47,7 @@ export class EmbedHelper {
             .setTimestamp();
     }
 
-    static getLogEmbed(actor: User, subject: User | null, level: LogLevelEnum): EmbedBuilder {
+    static getLogEmbed(actor: User, subject: User | null, level: LogLevel): EmbedBuilder {
         return new EmbedBuilder()
             .setAuthor({
                 name: actor?.username,
@@ -58,15 +58,15 @@ export class EmbedHelper {
             .setTimestamp();
     }
 
-    static getLogLevelColor(level: LogLevelEnum): number {
+    static getLogLevelColor(level: LogLevel): number {
         switch (level) {
-            case LogLevelEnum.Failure:
+            case LogLevel.Failure:
                 return EmbedHelper.red;
-            case LogLevelEnum.Success:
+            case LogLevel.Success:
                 return EmbedHelper.green;
-            case LogLevelEnum.Info:
+            case LogLevel.Info:
                 return EmbedHelper.blue;
-            case LogLevelEnum.Trace:
+            case LogLevel.Trace:
                 return EmbedHelper.grey;
         }
     }

@@ -30,7 +30,7 @@ export class DirectMessageHandler implements IHandler {
     public async handle(message: Message) {
         if (message.author.bot) return;
 
-        this.logger.trace(`Received a direct message by user ${message.author.username} (ID ${message.author.id})`);
+        this.logger.trace(`Received a direct message by user ${TextHelper.userLog(message.author)}.`);
 
         if (message.content.startsWith(this.prefix)) await this.handleDirectMessageCommand(message);
         else await this.staffMailCreate.createStaffMail(message);
@@ -40,9 +40,7 @@ export class DirectMessageHandler implements IHandler {
         let reply = `${TextHelper.failure} This command is not usable in DMs!`;
         let emoji = TextHelper.failure;
         if (message.content == this.prefix + 'unmute') {
-            this.logger.info(
-                `User ${message.author.username} (ID ${message.author.id}) is manually removing a selfmute via DMs.`
-            );
+            this.logger.info(`User ${TextHelper.userLog(message.author)} is manually removing a selfmute via DMs.`);
             if (!this.scheduleService.jobExists(`SELFMUTE_${message.author.id}`))
                 reply = `${TextHelper.failure} You do not currently have an active selfmute!`;
             else {

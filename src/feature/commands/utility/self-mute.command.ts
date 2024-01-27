@@ -11,8 +11,10 @@ import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { Logger } from 'tslog';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { EmbedHelper } from '@src/helpers/embed.helper';
-import { LogLevelEnum } from '@src/helpers/models/LogLevel.enum';
+import { LogLevel } from '@src/helpers/models/LogLevel';
 import moment = require('moment');
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { TextHelper } from '@src/helpers/text.helper';
 
 @injectable()
 export class SelfMuteCommand implements ICommand {
@@ -20,7 +22,7 @@ export class SelfMuteCommand implements ICommand {
     description: string = 'Mutes yourself for a set duration.';
     usageHint: string = '<duration><unit(m/d/h/w)>';
     examples: string[] = ['10m', '12h', '1d', '2w'];
-    needsPrivilege: boolean = false; // TODO: Implement privilege system
+    permissionLevel = CommandPermissionLevel.User;
     aliases = ['sm'];
 
     private selfMutesRepository: SelfMutesRepository;
@@ -58,7 +60,7 @@ export class SelfMuteCommand implements ICommand {
         if (!amount || !unit) {
             throw Error(`Unable to parse duration '${args[0]}'`);
         }
-        this.logger.info(`Creating new selfmute for user ${message.author?.username} (ID ${message.author?.id})...`);
+        this.logger.info(`Creating new selfmute for user ${TextHelper.userLog(message.author!)}...`);
         const now = moment.utc();
         const endDateUtc = now.add(amount, unit as unitOfTime.DurationConstructor);
         const member = await this.memberService.getGuildMemberFromUserId(message.author!.id);
@@ -146,7 +148,7 @@ export class SelfMuteCommand implements ICommand {
         for (const sm of savedSelfMutes) {
             if (sm.endsAt <= moment.utc().toDate()) {
                 this.logger.warn(
-                    `Selfmute for user ${sm.member.user.username} (ID ${sm.member.user.id}) expired at ${sm.endsAt}. Trying to unmute.`
+                    `Selfmute for user ${TextHelper.userLog(sm.member.user)} expired at ${sm.endsAt}. Trying to unmute.`
                 );
                 try {
                     await this.unmuteMember(sm);
@@ -179,7 +181,7 @@ export class SelfMuteCommand implements ICommand {
             const embed = EmbedHelper.getLogEmbed(
                 this.client.user!,
                 selfMute.member.user,
-                LogLevelEnum.Trace
+                LogLevel.Trace
             ).setDescription(description);
             if (muteDuration) embed.setFooter({ text: `Duration: ${muteDuration}` });
             await logChannel.send({ embeds: [embed] });

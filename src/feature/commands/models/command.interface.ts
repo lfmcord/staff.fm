@@ -1,12 +1,13 @@
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { Message, PartialMessage } from 'discord.js';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 
 export interface ICommand {
     name: string;
     description: string;
     usageHint: string;
     examples: string[];
-    needsPrivilege: boolean;
+    permissionLevel: CommandPermissionLevel;
     aliases: string[];
 
     /**
