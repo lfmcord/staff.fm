@@ -2,6 +2,7 @@ import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { Message, PartialMessage } from 'discord.js';
 import { injectable } from 'inversify';
+import { TextHelper } from '@src/helpers/text.helper';
 
 @injectable()
 export class PingCommand implements ICommand {
@@ -19,7 +20,7 @@ export class PingCommand implements ICommand {
         });
         const end = new Date().getTime();
         await reply.edit(`I\'m alive! 😌 Latency is ${end - start} ms.`);
-        await message.react('✅');
+        await message.react(TextHelper.success);
 
         return {
             isSuccessful: true,

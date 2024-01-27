@@ -5,6 +5,7 @@ import { Logger } from 'tslog';
 import { IHandler } from '@src/handlers/models/handler.interface';
 import { StaffMailCreate } from '@src/feature/staffmail/staff-mail-create';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
+import { TextHelper } from '@src/helpers/text.helper';
 
 @injectable()
 export class DirectMessageHandler implements IHandler {
@@ -36,18 +37,18 @@ export class DirectMessageHandler implements IHandler {
     }
 
     private async handleDirectMessageCommand(message: Message) {
-        let reply = '❌ This command is not usable in DMs!';
-        let emoji = '❌';
+        let reply = `${TextHelper.failure} This command is not usable in DMs!`;
+        let emoji = TextHelper.failure;
         if (message.content == this.prefix + 'unmute') {
             this.logger.info(
                 `User ${message.author.username} (ID ${message.author.id}) is manually removing a selfmute via DMs.`
             );
             if (!this.scheduleService.jobExists(`SELFMUTE_${message.author.id}`))
-                reply = '❌ You do not currently have an active selfmute!';
+                reply = `${TextHelper.failure} You do not currently have an active selfmute!`;
             else {
                 this.scheduleService.runJob(`SELFMUTE_${message.author.id}`);
-                reply = `✅ I've unmuted you. Welcome back!`;
-                emoji = `✅`;
+                reply = `${TextHelper.success} I've unmuted you. Welcome back!`;
+                emoji = TextHelper.success;
             }
         }
         await message.channel.send(reply);

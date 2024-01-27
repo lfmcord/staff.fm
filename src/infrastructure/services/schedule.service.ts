@@ -18,9 +18,7 @@ export class ScheduleService {
     public scheduleRecurringJob(name: string, cron: RecurrenceRule, callback: () => void): void {
         cron.tz = 'Etc/UTC';
         const scheduledJob = scheduleJob(name, cron, callback);
-        this.logger.debug(
-            `Scheduled recurring job (${name}), next invocation at ${scheduledJob.nextInvocation()}`
-        );
+        this.logger.debug(`Scheduled recurring job (${name}), next invocation at ${scheduledJob.nextInvocation()}`);
     }
 
     public rescheduleJob(name: string, date: Date): void {

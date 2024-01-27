@@ -58,6 +58,7 @@ export class SelfMuteCommand implements ICommand {
         if (!amount || !unit) {
             throw Error(`Unable to parse duration '${args[0]}'`);
         }
+        this.logger.info(`Creating new selfmute for user ${message.author?.username} (ID ${message.author?.id})...`);
         const now = moment.utc();
         const endDateUtc = now.add(amount, unit as unitOfTime.DurationConstructor);
         const member = await this.memberService.getGuildMemberFromUserId(message.author!.id);
@@ -92,19 +93,7 @@ export class SelfMuteCommand implements ICommand {
             `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>). You can prematurely end it by sending me ${inlineCode(this.prefix + 'unmute')} here.`
         );
 
-        const logChannel = await this.channelService.getGuildChannelById(this.logChannelId);
-        if (!logChannel)
-            this.logger.error(
-                `Unable to log selfmute end because channel with ID ${this.logChannelId} cannot be found.`
-            );
-        else {
-            const embed = EmbedHelper.getLogEmbed(this.client.user!, selfMute.member.user, LogLevelEnum.Trace)
-                .setDescription(
-                    `🔇 ${bold('Selfmute created')} ${inlineCode(selfMute.member.user.username)} ${italic('(ID ' + selfMute.member.user.id + ')')}\n`
-                )
-                .setFooter({ text: `Duration: ${amount}${unit}` });
-            await logChannel.send({ embeds: [embed] });
-        }
+        await this.logSelfmute(selfMute, amount + unit);
 
         return {
             isSuccessful: true,
@@ -126,7 +115,7 @@ export class SelfMuteCommand implements ICommand {
 
     async unmuteMember(selfMute: SelfMute) {
         this.logger.debug(
-            `Selfmute duration expired. Trying to unmute user ${selfMute.member.user.username} (ID: ${selfMute.member.user.id}). Roles to restore: selfMute.roles.map((r) => r.name)`
+            `Selfmute duration expired. Trying to unmute user ${selfMute.member.user.username} (ID: ${selfMute.member.user.id}). Roles to restore: ${selfMute.roles.map((r) => r.name)}`
         );
         try {
             await this.memberService.unmuteGuildMember(selfMute.member, selfMute.roles);
@@ -140,21 +129,7 @@ export class SelfMuteCommand implements ICommand {
         }
         const isPremature = selfMute.endsAt > moment().utc().toDate();
 
-        const logChannel = await this.channelService.getGuildChannelById(this.logChannelId);
-        if (!logChannel)
-            this.logger.error(
-                `Unable to log selfmute end because channel with ID ${this.logChannelId} cannot be found.`
-            );
-        else {
-            const embed = EmbedHelper.getLogEmbed(
-                this.client.user!,
-                selfMute.member.user,
-                LogLevelEnum.Success
-            ).setDescription(
-                `🔊 ${bold('Selfmute ended')} ${inlineCode(selfMute.member.user.username)} ${italic('(ID ' + selfMute.member.user.id + ')')}\n📝 ${bold('Reason:')} ${isPremature ? 'User used unmute command' : 'Duration expired'}`
-            );
-            await logChannel.send({ embeds: [embed] });
-        }
+        await this.logSelfmute(selfMute);
 
         if (!isPremature) {
             await selfMute.member.send(`🔊 Your selfmute has expired and I've unmuted you. Welcome back!`);
@@ -189,5 +164,25 @@ export class SelfMuteCommand implements ICommand {
             }
         }
         return restored;
+    }
+
+    private async logSelfmute(selfMute: SelfMute, muteDuration?: string) {
+        const logChannel = await this.channelService.getGuildChannelById(this.logChannelId);
+        if (!logChannel)
+            this.logger.error(
+                `Unable to log selfmute end because channel with ID ${this.logChannelId} cannot be found.`
+            );
+        else {
+            const description = muteDuration
+                ? `🔇 ${bold('Selfmute created')} ${inlineCode(selfMute.member.user.username)} ${italic('(ID ' + selfMute.member.user.id + ')')}\n`
+                : `🔊 ${bold('Selfmute ended')} ${inlineCode(selfMute.member.user.username)} ${italic('(ID ' + selfMute.member.user.id + ')')}\n📝 ${bold('Reason:')} ${selfMute.endsAt > moment().utc().toDate() ? 'User used unmute command' : 'Duration expired'}`;
+            const embed = EmbedHelper.getLogEmbed(
+                this.client.user!,
+                selfMute.member.user,
+                LogLevelEnum.Trace
+            ).setDescription(description);
+            if (muteDuration) embed.setFooter({ text: `Duration: ${muteDuration}` });
+            await logChannel.send({ embeds: [embed] });
+        }
     }
 }

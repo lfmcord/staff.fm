@@ -2,9 +2,10 @@ import { Client, EmbedBuilder, Message, User } from 'discord.js';
 import { LogLevelEnum } from '@src/helpers/models/LogLevel.enum';
 
 export class EmbedHelper {
-    readonly red = 12059152;
-    readonly blue = 255;
-    readonly green = 32768;
+    static readonly red = 12059152;
+    static readonly blue = 2002943;
+    static readonly green = 6538847;
+    static readonly grey = 5730958;
 
     static getVerboseCommandEmbed(client: Client, message: Message): EmbedBuilder {
         return new EmbedBuilder()
@@ -60,13 +61,13 @@ export class EmbedHelper {
     static getLogLevelColor(level: LogLevelEnum): number {
         switch (level) {
             case LogLevelEnum.Failure:
-                return 12059152; // red
+                return EmbedHelper.red;
             case LogLevelEnum.Success:
-                return 6538847; // green
+                return EmbedHelper.green;
             case LogLevelEnum.Info:
-                return 2002943; // blue
+                return EmbedHelper.blue;
             case LogLevelEnum.Trace:
-                return 5730958; // grey
+                return EmbedHelper.grey;
         }
     }
 }

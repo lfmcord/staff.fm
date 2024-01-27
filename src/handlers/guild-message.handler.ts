@@ -6,6 +6,7 @@ import { ICommand } from '@src/feature/commands/models/command.interface';
 import container from '@src/inversify.config';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { IHandler } from '@src/handlers/models/handler.interface';
+import { TextHelper } from '@src/helpers/text.helper';
 
 @injectable()
 export class GuildMessageHandler implements IHandler {
@@ -76,8 +77,8 @@ export class GuildMessageHandler implements IHandler {
     }
 
     private async handleCommandError(message: Message, error: Error) {
-        await message.reply('❌ ' + error.message);
-        await message.react('❌');
+        await message.reply(TextHelper.failure + ' ' + error.message);
+        await message.react(TextHelper.failure);
     }
 
     private async handleCommandResult(
@@ -91,7 +92,7 @@ export class GuildMessageHandler implements IHandler {
             : `Failed to finish command '${commandName}'${result.reason ? ` (Reason: '${result.reason}')` : ''}.`;
         log += ` Execution took ${executionTime}ms.`;
         this.logger.info(log);
-        const emoji = result.isSuccessful ? '✅' : '❌';
+        const emoji = result.isSuccessful ? TextHelper.success : TextHelper.failure;
         await message.react(emoji);
 
         if (result.replyToUser) {

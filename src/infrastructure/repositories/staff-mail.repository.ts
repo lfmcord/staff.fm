@@ -1,4 +1,4 @@
-import { CategoryChannel, ChannelType, Client, GuildTextBasedChannel, User } from 'discord.js';
+import { GuildTextBasedChannel, User } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { model, Schema } from 'mongoose';
@@ -6,36 +6,37 @@ import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode
 import { StaffMail } from '@src/feature/staffmail/models/staff-mail.model';
 import { faker } from '@faker-js/faker';
 import moment = require('moment');
+import { ChannelService } from '@src/infrastructure/services/channel.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
 
 @injectable()
 export class StaffMailRepository {
-    private readonly client: Client;
     private staffMailCategoryId: string;
-    private readonly guildId: string;
+    private channelService: ChannelService;
+    private memberService: MemberService;
 
     constructor(
-        @inject(TYPES.Client) client: Client,
-        @inject(TYPES.GUILD_ID) guildId: string,
-        @inject(TYPES.STAFFMAIL_CATEGORY_ID) staffMailCategoryId: string
+        @inject(TYPES.STAFFMAIL_CATEGORY_ID) staffMailCategoryId: string,
+        @inject(TYPES.ChannelService) channelService: ChannelService,
+        @inject(TYPES.MemberService) memberService: MemberService
     ) {
+        this.memberService = memberService;
+        this.channelService = channelService;
         this.staffMailCategoryId = staffMailCategoryId;
-        this.guildId = guildId;
-        this.client = client;
     }
 
     public async getStaffMailByUserId(userId: string): Promise<StaffMail | null> {
         const model = await StaffMailInstanceModel.findOne({ userId: userId }).exec();
         if (!model) return null;
-        const channel = await (
-            await this.client.guilds.fetch(this.guildId)
-        ).channels.fetch(model.channelId);
+
+        const channel = await this.channelService.getGuildChannelById(model.channelId);
         if (!channel)
             throw new Error(
-                `Guild channel for channel ID '${model.channelId}' could not be found in guild with Guild ID '${this.guildId}'. Are you sure the channel wasn't deleted and I have access to it?`
+                `Guild channel for channel ID '${model.channelId}' could not be found in guild. Are you sure the channel wasn't deleted and I have access to it?`
             );
 
         return {
-            user: await this.client.users.fetch(model.userId),
+            user: (await this.memberService.getGuildMemberFromUserId(model.userId)).user,
             channel: channel as GuildTextBasedChannel,
             mode: model.mode.valueOf(),
             createdAt: model.createdAt,
@@ -65,12 +66,9 @@ export class StaffMailRepository {
         };
     }
 
-    private async createStaffMailChannel(
-        user: User,
-        mode: StaffMailModeEnum
-    ): Promise<GuildTextBasedChannel> {
-        const guild = await this.client.guilds.fetch(this.guildId);
-        const category = (await guild.channels.fetch(this.staffMailCategoryId)) as CategoryChannel;
+    private async createStaffMailChannel(user: User, mode: StaffMailModeEnum): Promise<GuildTextBasedChannel> {
+        const category = await this.channelService.getGuildCategoryById(this.staffMailCategoryId);
+        if (!category) throw Error(`Cannot find staff mail category with ID ${this.staffMailCategoryId}`);
         let channelName: string | null = null;
         if (mode === StaffMailModeEnum.ANONYMOUS) {
             // If the user wants to remain anonymous, we generate a random channel name and check for conflicts
@@ -80,19 +78,16 @@ export class StaffMailRepository {
                     strategy: 'closest',
                 });
                 const generatedChannelName = `anonymous-${randomName}`;
-                const channelsInCategory = category.children.cache.find(
-                    (c) => c.name == generatedChannelName
+                const channelsInCategory = await this.channelService.findGuildChannelInCategory(
+                    category,
+                    generatedChannelName
                 );
                 if (!channelsInCategory) channelName = generatedChannelName;
             } while (channelName === null);
         } else {
             channelName = user.username;
         }
-        return await guild.channels.create({
-            name: channelName,
-            type: ChannelType.GuildText,
-            parent: category,
-        });
+        return await this.channelService.createGuildTextChannelInCategory(channelName, category);
     }
 }
 
