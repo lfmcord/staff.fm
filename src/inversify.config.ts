@@ -22,6 +22,7 @@ import { SelfMutesRepository } from '@src/infrastructure/repositories/self-mutes
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { SelfMuteCommand } from '@src/feature/commands/utility/self-mute.command';
+import { ChannelService } from '@src/infrastructure/services/channel.service';
 
 const container = new Container();
 
@@ -30,17 +31,12 @@ container.bind<string>(TYPES.TOKEN).toConstantValue(process.env.TOKEN ?? '');
 container.bind<string>(TYPES.LOG_LEVEL).toConstantValue(process.env.LOG_LEVEL ?? '');
 container.bind<string>(TYPES.BOT_OWNER_ID).toConstantValue(process.env.BOT_OWNER_ID ?? '');
 container.bind<string>(TYPES.GUILD_ID).toConstantValue(process.env.GUILD_ID ?? '');
-container
-    .bind<string>(TYPES.DB_CONNECTION_STRING)
-    .toConstantValue(process.env.DB_CONNECTION_STRING ?? '');
+container.bind<string>(TYPES.DB_CONNECTION_STRING).toConstantValue(process.env.DB_CONNECTION_STRING ?? '');
 container.bind<string>(TYPES.PREFIX).toConstantValue(process.env.PREFIX ?? '');
-container
-    .bind<string>(TYPES.STAFFMAIL_CATEGORY_ID)
-    .toConstantValue(process.env.STAFFMAIL_CATEGORY_ID ?? '');
-container
-    .bind<string>(TYPES.STAFFMAIL_LOG_CHANNEL_ID)
-    .toConstantValue(process.env.STAFFMAIL_LOG_CHANNEL_ID ?? '');
+container.bind<string>(TYPES.STAFFMAIL_CATEGORY_ID).toConstantValue(process.env.STAFFMAIL_CATEGORY_ID ?? '');
+container.bind<string>(TYPES.STAFFMAIL_LOG_CHANNEL_ID).toConstantValue(process.env.STAFFMAIL_LOG_CHANNEL_ID ?? '');
 container.bind<string>(TYPES.MUTED_ROLE_ID).toConstantValue(process.env.MUTED_ROLE_ID ?? '');
+container.bind<string>(TYPES.SELFMUTE_LOG_CHANNEL_ID).toConstantValue(process.env.SELFMUTE_LOG_CHANNEL_ID ?? '');
 
 // CORE
 container.bind<Logger<ILogObj>>(TYPES.BotLogger).toConstantValue(
@@ -98,5 +94,6 @@ container.bind<SelfMutesRepository>(TYPES.SelfMutesRepository).to(SelfMutesRepos
 container.bind<MessageService>(TYPES.MessageService).to(MessageService);
 container.bind<MemberService>(TYPES.MemberService).to(MemberService);
 container.bind<ScheduleService>(TYPES.ScheduleService).to(ScheduleService);
+container.bind<ChannelService>(TYPES.ChannelService).to(ChannelService);
 
 export default container;

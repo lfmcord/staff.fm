@@ -1,4 +1,5 @@
 import { Client, EmbedBuilder, Message, User } from 'discord.js';
+import { LogLevelEnum } from '@src/helpers/models/LogLevel.enum';
 
 export class EmbedHelper {
     readonly red = 12059152;
@@ -34,20 +35,38 @@ export class EmbedHelper {
             .setTimestamp();
     }
 
-    static getStaffMailEmbed(
-        author: User | null,
-        isFromStaff: boolean,
-        isIncoming: boolean
-    ): EmbedBuilder {
+    static getStaffMailEmbed(author: User | null, isFromStaff: boolean, isIncoming: boolean): EmbedBuilder {
         return new EmbedBuilder()
             .setAuthor({
                 name: author?.username ?? isFromStaff ? 'Lastcord Staff' : 'Anonymous',
-                iconURL:
-                    author?.avatarURL() ??
-                    'https://cdn-icons-png.flaticon.com/512/1534/1534082.png',
+                iconURL: author?.avatarURL() ?? 'https://cdn-icons-png.flaticon.com/512/1534/1534082.png',
             })
             .setTitle(isIncoming ? '📥 Message received' : '📤 Message sent')
             .setColor(isIncoming ? 32768 : 12059152)
             .setTimestamp();
+    }
+
+    static getLogEmbed(actor: User, subject: User | null, level: LogLevelEnum): EmbedBuilder {
+        return new EmbedBuilder()
+            .setAuthor({
+                name: actor?.username,
+                iconURL: actor?.avatarURL() ?? undefined,
+            })
+            .setColor(this.getLogLevelColor(level))
+            .setThumbnail(subject?.avatarURL() ?? null)
+            .setTimestamp();
+    }
+
+    static getLogLevelColor(level: LogLevelEnum): number {
+        switch (level) {
+            case LogLevelEnum.Failure:
+                return 12059152; // red
+            case LogLevelEnum.Success:
+                return 6538847; // green
+            case LogLevelEnum.Info:
+                return 2002943; // blue
+            case LogLevelEnum.Trace:
+                return 5730958; // grey
+        }
     }
 }

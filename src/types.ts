@@ -9,6 +9,7 @@ export const TYPES = {
     STAFFMAIL_CATEGORY_ID: Symbol('STAFFMAIL_CATEGORY_ID'),
     STAFFMAIL_LOG_CHANNEL_ID: Symbol('STAFFMAIL_LOG_CHANNEL_ID'),
     MUTED_ROLE_ID: Symbol('MUTED_ROLE_ID'),
+    SELFMUTE_LOG_CHANNEL_ID: Symbol('SELFMUTE_LOG_CHANNEL_ID'),
 
     // CORE
     Bot: Symbol('Bot'),
@@ -33,4 +34,5 @@ export const TYPES = {
     MessageService: Symbol('MessageService'),
     MemberService: Symbol('MemberService'),
     ScheduleService: Symbol('ScheduleService'),
+    ChannelService: Symbol('ChannelService'),
 };
