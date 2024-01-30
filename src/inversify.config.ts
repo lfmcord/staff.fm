@@ -24,6 +24,7 @@ import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { SelfMuteCommand } from '@src/feature/commands/utility/self-mute.command';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { ReadyHandler } from '@src/handlers/ready.handler';
+import { OkBuddyCommand } from '@src/feature/commands/utility/ok-buddy.command';
 
 const container = new Container();
 
@@ -87,6 +88,7 @@ container.bind<IHandler>(TYPES.ReadyHandler).to(ReadyHandler);
 container.bind<ICommand>('Command').to(PingCommand);
 container.bind<ICommand>('Command').to(HelpCommand);
 container.bind<ICommand>('Command').to(SelfMuteCommand);
+container.bind<ICommand>('Command').to(OkBuddyCommand);
 
 // STAFFMAIL
 container.bind<StaffMailCreate>(TYPES.StaffMailCreate).to(StaffMailCreate);

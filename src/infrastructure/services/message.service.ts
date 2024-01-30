@@ -54,6 +54,13 @@ export class MessageService {
         return collected!.first()?.emoji.name ?? null;
     }
 
+    public async getChannelMessageByMessageId(
+        messageId: string,
+        channel: GuildTextBasedChannel
+    ): Promise<Message | null> {
+        return await channel.messages.fetch(messageId);
+    }
+
     private async deleteMessages(messagesToDelete: Message[]) {
         setTimeout(() => {
             messagesToDelete.forEach((message) => {

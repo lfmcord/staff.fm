@@ -10,4 +10,8 @@ export class TextHelper {
     static userLog(user: User): string {
         return `${user.username} (ID ${user.id})`;
     }
+
+    static wordWrap(text: string): string {
+        return text.replace(/(?![^\n]{1,32}$)([^\n]{1,25})\s/g, '$1\n');
+    }
 }
