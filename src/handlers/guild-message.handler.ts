@@ -112,8 +112,16 @@ export class GuildMessageHandler implements IHandler {
         const emoji = result.isSuccessful ? TextHelper.success : TextHelper.failure;
         await message.react(emoji);
 
+        let reply: Message;
         if (result.replyToUser) {
-            await message.reply(`${emoji} ${result.replyToUser}`);
+            reply = await message.reply(`${emoji} ${result.replyToUser}`);
+        }
+
+        if (result.shouldDelete) {
+            setTimeout(async () => {
+                await message.delete();
+                if (reply) await reply.delete();
+            }, 10000);
         }
     }
 

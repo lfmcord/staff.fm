@@ -13,10 +13,15 @@ export const TYPES = {
     BACKSTAGER_ROLE_IDS: Symbol('BACKSTAGER_ROLE_IDS'),
     HELPER_ROLE_IDS: Symbol('HELPER_ROLE_IDS'),
     STAFF_ROLE_IDS: Symbol('STAFF_ROLE_IDS'),
+    UNVERIFIED_ROLE_ID: Symbol('UNVERIFIED_ROLE_ID'),
+    USER_LOG_CHANNEL_ID: Symbol('USER_LOG_CHANNEL_ID'),
+    LASTFM_API_KEY: Symbol('LASTFM_API_KEY'),
+    LASTFM_SHARED_SECRET: Symbol('LASTFM_SHARED_SECRET'),
 
     // CORE
     Bot: Symbol('Bot'),
     Client: Symbol('Client'),
+    LastFmClient: Symbol('LastFmClient'),
     MongoDbConnector: Symbol('MongoDbConnector'),
     BotLogger: Symbol('BotLogger'),
     JobLogger: Symbol('JobLogger'),

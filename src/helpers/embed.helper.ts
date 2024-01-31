@@ -50,7 +50,7 @@ export class EmbedHelper {
     static getLogEmbed(actor: User, subject: User | null, level: LogLevel): EmbedBuilder {
         return new EmbedBuilder()
             .setAuthor({
-                name: actor?.username,
+                name: `${actor?.username} (ID ${actor.id})`,
                 iconURL: actor?.avatarURL() ?? undefined,
             })
             .setColor(this.getLogLevelColor(level))

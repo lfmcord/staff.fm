@@ -14,4 +14,10 @@ export class TextHelper {
     static wordWrap(text: string): string {
         return text.replace(/(?![^\n]{1,32}$)([^\n]{1,25})\s/g, '$1\n');
     }
+
+    static getLastfmUsername(link: string): string | null {
+        const matches = link.match(/(?<=(http:\/\/|https:\/\/)?(?:www.)?last\.fm\/user\/)([A-z0-9])+/g);
+        if (matches != null && matches?.length > 0) return matches[0];
+        else return null;
+    }
 }

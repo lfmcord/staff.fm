@@ -25,6 +25,8 @@ import { SelfMuteCommand } from '@src/feature/commands/utility/self-mute.command
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { ReadyHandler } from '@src/handlers/ready.handler';
 import { OkBuddyCommand } from '@src/feature/commands/utility/ok-buddy.command';
+import { VerifyCommand } from '@src/feature/commands/utility/verify.command';
+import LastFM from 'lastfm-typed';
 
 const container = new Container();
 
@@ -42,6 +44,10 @@ container.bind<string>(TYPES.SELFMUTE_LOG_CHANNEL_ID).toConstantValue(process.en
 container.bind<string[]>(TYPES.BACKSTAGER_ROLE_IDS).toConstantValue(process.env.BACKSTAGER_ROLE_IDS?.split(',') ?? []);
 container.bind<string[]>(TYPES.HELPER_ROLE_IDS).toConstantValue(process.env.HELPER_ROLE_IDS?.split(',') ?? []);
 container.bind<string[]>(TYPES.STAFF_ROLE_IDS).toConstantValue(process.env.STAFF_ROLE_IDS?.split(',') ?? []);
+container.bind<string>(TYPES.UNVERIFIED_ROLE_ID).toConstantValue(process.env.UNVERIFIED_ROLE_ID ?? '');
+container.bind<string>(TYPES.USER_LOG_CHANNEL_ID).toConstantValue(process.env.USER_LOG_CHANNEL_ID ?? '');
+container.bind<string>(TYPES.LASTFM_API_KEY).toConstantValue(process.env.LASTFM_API_KEY ?? '');
+container.bind<string>(TYPES.LASTFM_SHARED_SECRET).toConstantValue(process.env.LASTFM_SHARED_SECRET ?? '');
 
 // CORE
 container.bind<Logger<ILogObj>>(TYPES.BotLogger).toConstantValue(
@@ -76,6 +82,11 @@ container.bind<Client>(TYPES.Client).toConstantValue(
         partials: [Partials.Message, Partials.Channel],
     })
 );
+container.bind<LastFM>(TYPES.LastFmClient).toConstantValue(
+    new LastFM(container.get<string>(TYPES.LASTFM_API_KEY), {
+        apiSecret: container.get<string>(TYPES.LASTFM_SHARED_SECRET),
+    })
+);
 container.bind<MongoDbConnector>(TYPES.MongoDbConnector).to(MongoDbConnector);
 
 // HANDLERS
@@ -89,6 +100,7 @@ container.bind<ICommand>('Command').to(PingCommand);
 container.bind<ICommand>('Command').to(HelpCommand);
 container.bind<ICommand>('Command').to(SelfMuteCommand);
 container.bind<ICommand>('Command').to(OkBuddyCommand);
+container.bind<ICommand>('Command').to(VerifyCommand);
 
 // STAFFMAIL
 container.bind<StaffMailCreate>(TYPES.StaffMailCreate).to(StaffMailCreate);
