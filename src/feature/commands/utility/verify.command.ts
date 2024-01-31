@@ -1,19 +1,16 @@
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { bold, EmbedBuilder, GuildTextBasedChannel, inlineCode, italic, Message, PartialMessage } from 'discord.js';
+import { GuildTextBasedChannel, Message, PartialMessage } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { MessageService } from '@src/infrastructure/services/message.service';
 import { TYPES } from '@src/types';
 import { MemberService } from '@src/infrastructure/services/member.service';
-import { EmbedHelper } from '@src/helpers/embed.helper';
-import { LogLevel } from '@src/helpers/models/LogLevel';
-import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { Logger } from 'tslog';
 import { Verification } from '@src/feature/commands/utility/models/verification.model';
 import { TextHelper } from '@src/helpers/text.helper';
 import LastFM from 'lastfm-typed';
-import { CountryCodeHelper } from '@src/helpers/country-code.helper';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
 
 @injectable()
 export class VerifyCommand implements ICommand {
@@ -24,10 +21,9 @@ export class VerifyCommand implements ICommand {
     permissionLevel = CommandPermissionLevel.Backstager;
     aliases = ['v'];
 
-    private channelService: ChannelService;
+    private loggingService: LoggingService;
     private lastFmClient: LastFM;
     private logger: Logger<VerifyCommand>;
-    private userLogChannelId: string;
     private unverifiedRoleId: string;
     private memberService: MemberService;
     private messageService: MessageService;
@@ -36,15 +32,13 @@ export class VerifyCommand implements ICommand {
         @inject(TYPES.BotLogger) logger: Logger<VerifyCommand>,
         @inject(TYPES.MessageService) messageService: MessageService,
         @inject(TYPES.MemberService) memberService: MemberService,
-        @inject(TYPES.ChannelService) channelService: ChannelService,
         @inject(TYPES.LastFmClient) lastFmClient: LastFM,
         @inject(TYPES.UNVERIFIED_ROLE_ID) unverifiedRoleId: string,
-        @inject(TYPES.USER_LOG_CHANNEL_ID) userLogChannelId: string
+        @inject(TYPES.LoggingService) loggingService: LoggingService
     ) {
+        this.loggingService = loggingService;
         this.lastFmClient = lastFmClient;
         this.logger = logger;
-        this.channelService = channelService;
-        this.userLogChannelId = userLogChannelId;
         this.unverifiedRoleId = unverifiedRoleId;
         this.memberService = memberService;
         this.messageService = messageService;
@@ -118,76 +112,11 @@ export class VerifyCommand implements ICommand {
 
         // await memberToVerify.roles.remove(this.unverifiedRoleId);
 
-        await this.logVerification(verification);
+        await this.loggingService.logVerification(verification);
 
         return {
             isSuccessful: true,
             shouldDelete: true,
         };
-    }
-
-    private async logVerification(verification: Verification) {
-        const logChannel = await this.channelService.getGuildChannelById(this.userLogChannelId);
-        if (!logChannel)
-            this.logger.error(
-                `Unable to verification because channel with ID ${this.userLogChannelId} cannot be found.`
-            );
-        else {
-            const embeds: EmbedBuilder[] = [];
-            const description =
-                `${bold('Verified user')} ${inlineCode(verification.verifiedMember.user.username)} ${italic('(ID ' + verification.verifiedMember.user.id + ')')}\n\n` +
-                `📝 ${bold('Note:')} ${verification.verificationMessage.content}`;
-            embeds.push(
-                EmbedHelper.getLogEmbed(
-                    verification.verifyingUser,
-                    verification.verifiedMember.user,
-                    LogLevel.Info
-                ).setDescription(description)
-            );
-
-            if (verification.lastfmUser) {
-                embeds.push(
-                    new EmbedBuilder()
-                        .setTitle('Last.fm Account')
-                        .setURL(verification.lastfmUser.url)
-                        .setFields([
-                            {
-                                name: 'Username',
-                                value: verification.lastfmUser.name,
-                                inline: true,
-                            },
-                            {
-                                name: 'Real name',
-                                value: verification.lastfmUser.realname,
-                                inline: true,
-                            },
-                            {
-                                name: 'Scrobble Count',
-                                value: verification.lastfmUser.playcount.toString(),
-                                inline: false,
-                            },
-                            {
-                                name: 'Country',
-                                value:
-                                    `:flag_${CountryCodeHelper.getTwoLetterIsoCountryCode(verification.lastfmUser.country)?.toLowerCase()}: ` +
-                                    verification.lastfmUser.country,
-                                inline: true,
-                            },
-                            {
-                                name: 'Created',
-                                value: `<t:${verification.lastfmUser.registered}:D> (<t:${verification.lastfmUser.registered}:R>)`,
-                                inline: true,
-                            },
-                        ])
-                        .setThumbnail(verification.lastfmUser.image.find((i) => i.size === 'extralarge')?.url ?? null)
-                        .setColor(EmbedHelper.blue)
-                        .setTimestamp()
-                );
-            } else {
-                embeds.push(new EmbedBuilder().setTitle('No Last.fm Account'));
-            }
-
-            await logChannel.send({ embeds: embeds });
-        }
     }
 }

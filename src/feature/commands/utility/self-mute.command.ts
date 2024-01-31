@@ -1,6 +1,6 @@
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { bold, Client, inlineCode, italic, Message, PartialMessage } from 'discord.js';
+import { inlineCode, Message, PartialMessage } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { unitOfTime } from 'moment';
 import { SelfMutesRepository } from '@src/infrastructure/repositories/self-mutes.repository';
@@ -9,12 +9,10 @@ import { MemberService } from '@src/infrastructure/services/member.service';
 import { SelfMute } from '@src/feature/commands/utility/models/self-mute.model';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { Logger } from 'tslog';
-import { ChannelService } from '@src/infrastructure/services/channel.service';
-import { EmbedHelper } from '@src/helpers/embed.helper';
-import { LogLevel } from '@src/helpers/models/LogLevel';
 import moment = require('moment');
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { TextHelper } from '@src/helpers/text.helper';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
 
 @injectable()
 export class SelfMuteCommand implements ICommand {
@@ -27,26 +25,20 @@ export class SelfMuteCommand implements ICommand {
 
     private selfMutesRepository: SelfMutesRepository;
     private scheduleService: ScheduleService;
-    private client: Client;
-    private channelService: ChannelService;
-    private logChannelId: string;
+    @inject(TYPES.LoggingService) private loggingService: LoggingService;
     private prefix: string;
     private logger: Logger<SelfMuteCommand>;
     private memberService: MemberService;
 
     constructor(
         @inject(TYPES.PREFIX) prefix: string,
-        @inject(TYPES.SELFMUTE_LOG_CHANNEL_ID) logChannelId: string,
-        @inject(TYPES.Client) client: Client,
         @inject(TYPES.BotLogger) logger: Logger<SelfMuteCommand>,
         @inject(TYPES.SelfMutesRepository) selfMutesRepository: SelfMutesRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.ScheduleService) scheduleService: ScheduleService,
-        @inject(TYPES.ChannelService) channelService: ChannelService
+        @inject(TYPES.LoggingService) loggingService: LoggingService
     ) {
-        this.client = client;
-        this.channelService = channelService;
-        this.logChannelId = logChannelId;
+        this.loggingService = loggingService;
         this.prefix = prefix;
         this.logger = logger;
         this.scheduleService = scheduleService;
@@ -96,7 +88,7 @@ export class SelfMuteCommand implements ICommand {
             `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>). You can prematurely end it by sending me ${inlineCode(this.prefix + 'unmute')} here.`
         );
 
-        await this.logSelfmute(selfMute, amount + unit);
+        await this.loggingService.logSelfmute(selfMute, amount + unit);
 
         return {
             isSuccessful: true,
@@ -132,7 +124,7 @@ export class SelfMuteCommand implements ICommand {
         }
         const isPremature = selfMute.endsAt > moment().utc().toDate();
 
-        await this.logSelfmute(selfMute);
+        await this.loggingService.logSelfmute(selfMute);
 
         if (!isPremature) {
             await selfMute.member.send(`🔊 Your selfmute has expired and I've unmuted you. Welcome back!`);
@@ -167,25 +159,5 @@ export class SelfMuteCommand implements ICommand {
             }
         }
         return restored;
-    }
-
-    private async logSelfmute(selfMute: SelfMute, muteDuration?: string) {
-        const logChannel = await this.channelService.getGuildChannelById(this.logChannelId);
-        if (!logChannel)
-            this.logger.error(
-                `Unable to log selfmute end because channel with ID ${this.logChannelId} cannot be found.`
-            );
-        else {
-            const description = muteDuration
-                ? `🔇 ${bold('Selfmute created')} ${inlineCode(selfMute.member.user.username)} ${italic('(ID ' + selfMute.member.user.id + ')')}\n`
-                : `🔊 ${bold('Selfmute ended')} ${inlineCode(selfMute.member.user.username)} ${italic('(ID ' + selfMute.member.user.id + ')')}\n📝 ${bold('Reason:')} ${selfMute.endsAt > moment().utc().toDate() ? 'User used unmute command' : 'Duration expired'}`;
-            const embed = EmbedHelper.getLogEmbed(
-                this.client.user!,
-                selfMute.member.user,
-                LogLevel.Trace
-            ).setDescription(description);
-            if (muteDuration) embed.setFooter({ text: `Duration: ${muteDuration}` });
-            await logChannel.send({ embeds: [embed] });
-        }
     }
 }
