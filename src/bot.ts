@@ -1,9 +1,10 @@
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
-import { Client, Message, PartialMessage } from 'discord.js';
+import { Client, GuildMember, Message, PartialMessage } from 'discord.js';
 import { TYPES } from '@src/types';
 import { IHandlerFactory } from '@src/handlers/models/handler-factory.interface';
 import { MongoDbConnector } from '@src/infrastructure/connectors/mongo-db.connector';
+import { TextHelper } from '@src/helpers/text.helper';
 
 @injectable()
 export class Bot {
@@ -61,6 +62,11 @@ export class Bot {
                 )}`
             );
             // handle message deletion
+        });
+
+        this.client.on('guildMemberAdd', async (member: GuildMember) => {
+            this.logger.info(`Guild Member ${TextHelper.userLog(member.user)} joined.`);
+            await this.handlerFactory.createHandler('guildMemberAdd').handle(member);
         });
 
         this.client.on('ready', async () => {

@@ -5,17 +5,22 @@ import { TYPES } from '@src/types';
 import { IHandlerFactory } from '@src/handlers/models/handler-factory.interface';
 import { IHandler } from '@src/handlers/models/handler.interface';
 import { ReadyHandler } from '@src/handlers/ready.handler';
+import { GuildMemberAddHandler } from '@src/handlers/guild-member-add.handler';
 
 @injectable()
 export class HandlerFactory implements IHandlerFactory {
     private readonly guildMessageHandler: GuildMessageHandler;
-    private readyHandler: ReadyHandler;
+    guildMemberAddHandler: GuildMemberAddHandler;
+    private readonly readyHandler: ReadyHandler;
     private readonly directMessageHandler: DirectMessageHandler;
+
     constructor(
         @inject(TYPES.GuildMessageHandler) guildMessageHandler: GuildMessageHandler,
         @inject(TYPES.DirectMessageHandler) directMessageHandler: DirectMessageHandler,
+        @inject(TYPES.GuildMemberAddHandler) guildMemberAddHandler: GuildMemberAddHandler,
         @inject(TYPES.ReadyHandler) readyHandler: ReadyHandler
     ) {
+        this.guildMemberAddHandler = guildMemberAddHandler;
         this.readyHandler = readyHandler;
         this.guildMessageHandler = guildMessageHandler;
         this.directMessageHandler = directMessageHandler;
@@ -29,6 +34,9 @@ export class HandlerFactory implements IHandlerFactory {
                 break;
             case 'guildMessageCreate':
                 handler = this.guildMessageHandler;
+                break;
+            case 'guildMemberAdd':
+                handler = this.guildMemberAddHandler;
                 break;
             case 'ready':
                 handler = this.readyHandler;

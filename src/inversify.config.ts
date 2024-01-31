@@ -27,6 +27,7 @@ import { ReadyHandler } from '@src/handlers/ready.handler';
 import { OkBuddyCommand } from '@src/feature/commands/utility/ok-buddy.command';
 import { VerifyCommand } from '@src/feature/commands/utility/verify.command';
 import LastFM from 'lastfm-typed';
+import { GuildMemberAddHandler } from '@src/handlers/guild-member-add.handler';
 
 const container = new Container();
 
@@ -93,6 +94,7 @@ container.bind<MongoDbConnector>(TYPES.MongoDbConnector).to(MongoDbConnector);
 container.bind<IHandlerFactory>(TYPES.HandlerFactory).to(HandlerFactory);
 container.bind<IHandler>(TYPES.GuildMessageHandler).to(GuildMessageHandler);
 container.bind<IHandler>(TYPES.DirectMessageHandler).to(DirectMessageHandler);
+container.bind<IHandler>(TYPES.GuildMemberAddHandler).to(GuildMemberAddHandler);
 container.bind<IHandler>(TYPES.ReadyHandler).to(ReadyHandler);
 
 // COMMANDS

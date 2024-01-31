@@ -30,6 +30,7 @@ export const TYPES = {
     HandlerFactory: Symbol('HandlerFactory'),
     GuildMessageHandler: Symbol('GuildMessageHandler'),
     DirectMessageHandler: Symbol('DirectMessageHandler'),
+    GuildMemberAddHandler: Symbol('GuildMemberAddHandler'),
     ReadyHandler: Symbol('ReadyHandler'),
 
     // STAFFMAIL
