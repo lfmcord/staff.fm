@@ -5,10 +5,12 @@ import { TYPES } from '@src/types';
 import { IHandlerFactory } from '@src/handlers/models/handler-factory.interface';
 import { MongoDbConnector } from '@src/infrastructure/connectors/mongo-db.connector';
 import { TextHelper } from '@src/helpers/text.helper';
+import { RedisConnector } from '@src/infrastructure/connectors/redis.connector';
 
 @injectable()
 export class Bot {
     private logger: Logger<Bot>;
+    redisConnector: RedisConnector;
     private mongoDbConnector: MongoDbConnector;
     private handlerFactory: IHandlerFactory;
     private readonly token: string;
@@ -19,8 +21,10 @@ export class Bot {
         @inject(TYPES.TOKEN) token: string,
         @inject(TYPES.Client) client: Client,
         @inject(TYPES.HandlerFactory) handlerFactory: IHandlerFactory,
-        @inject(TYPES.MongoDbConnector) mongoDbConnector: MongoDbConnector
+        @inject(TYPES.MongoDbConnector) mongoDbConnector: MongoDbConnector,
+        @inject(TYPES.RedisConnector) redisConnector: RedisConnector
     ) {
+        this.redisConnector = redisConnector;
         this.mongoDbConnector = mongoDbConnector;
         this.handlerFactory = handlerFactory;
         this.token = token;
@@ -35,6 +39,7 @@ export class Bot {
 
     private async init() {
         await this.mongoDbConnector.connect();
+        await this.redisConnector.connect();
         this.listen();
         await this.client.login(this.token);
     }
@@ -55,13 +60,14 @@ export class Bot {
         });
 
         this.client.on('messageDelete', async (message: Message | PartialMessage) => {
+            this.logger.trace(JSON.stringify(message));
             this.logger.trace(
                 `Message ID ${message.id} deleted\nAuthor ID: ${message.author?.id}\nContent length: ${message.content?.length}\nContent: ${message.content?.slice(
                     0,
                     100
                 )}`
             );
-            // handle message deletion
+            await this.handlerFactory.createHandler('messageDelete').handle(message);
         });
 
         this.client.on('guildMemberAdd', async (member: GuildMember) => {

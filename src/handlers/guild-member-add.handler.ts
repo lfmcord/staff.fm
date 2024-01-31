@@ -6,6 +6,7 @@ import { GuildMember } from 'discord.js';
 
 @injectable()
 export class GuildMemberAddHandler implements IHandler {
+    eventType = 'guildMemberAdd';
     private readonly logger: Logger<GuildMemberAddHandler>;
     unverifiedRoleId: string;
 

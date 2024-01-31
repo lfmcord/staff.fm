@@ -9,10 +9,14 @@ import { IHandler } from '@src/handlers/models/handler.interface';
 import { TextHelper } from '@src/helpers/text.helper';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
 
 @injectable()
 export class GuildMessageHandler implements IHandler {
+    eventType: string = 'guildMessageCreate';
+
     private logger: Logger<GuildMessageHandler>;
+    private readonly cachingRepository: CachingRepository;
     private readonly backstagerRoleIds: string[];
     private readonly helperRoleIds: string[];
     private readonly staffRoleIds: string[];
@@ -25,8 +29,10 @@ export class GuildMessageHandler implements IHandler {
         @inject(TYPES.BACKSTAGER_ROLE_IDS) backstagerRoleIds: string[],
         @inject(TYPES.HELPER_ROLE_IDS) helperRoleIds: string[],
         @inject(TYPES.STAFF_ROLE_IDS) staffRoleIds: string[],
-        @inject(TYPES.MemberService) memberService: MemberService
+        @inject(TYPES.MemberService) memberService: MemberService,
+        @inject(TYPES.CachingRepository) cachingRepository: CachingRepository
     ) {
+        this.cachingRepository = cachingRepository;
         this.backstagerRoleIds = backstagerRoleIds;
         this.helperRoleIds = helperRoleIds;
         this.staffRoleIds = staffRoleIds;
@@ -39,9 +45,9 @@ export class GuildMessageHandler implements IHandler {
         const isCommand = message.content.startsWith(this.prefix);
         const isBot = message.author.bot;
 
-        if (!isCommand || isBot) return;
-
-        await this.handleCommand(message);
+        if (isBot) return;
+        void this.cachingRepository.cacheMessage(message);
+        if (isCommand) await this.handleCommand(message);
     }
 
     private async handleCommand(message: Message) {
@@ -155,7 +161,7 @@ export class GuildMessageHandler implements IHandler {
         if (command.permissionLevel === CommandPermissionLevel.User) return true;
 
         const member = await this.memberService.getGuildMemberFromUserId(user.id);
-        const memberHighestRole = await this.memberService.getHighestRoleFromGuildMember(member);
+        const memberHighestRole = await this.memberService.getHighestRoleFromGuildMember(member!);
         let roleIdsToCheck: string[] = [];
         switch (command.permissionLevel) {
             case CommandPermissionLevel.Backstager:

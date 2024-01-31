@@ -34,8 +34,10 @@ export class SelfMutesRepository {
                 const role = await this.memberService.getMemberRoleByRoleId(id);
                 if (role) roles.push(role);
             }
+            const member = await this.memberService.getGuildMemberFromUserId(sm.userId);
+            if (!member) continue;
             selfMutes.push({
-                member: await this.memberService.getGuildMemberFromUserId(sm.userId),
+                member: member,
                 endsAt: sm.endsAt,
                 createdAt: sm.createdAt,
                 roles: roles,

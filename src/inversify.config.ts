@@ -28,6 +28,11 @@ import { OkBuddyCommand } from '@src/feature/commands/utility/ok-buddy.command';
 import { VerifyCommand } from '@src/feature/commands/utility/verify.command';
 import LastFM from 'lastfm-typed';
 import { GuildMemberAddHandler } from '@src/handlers/guild-member-add.handler';
+import { RedisConnector } from '@src/infrastructure/connectors/redis.connector';
+import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import Redis from 'ioredis';
+import { MessageDeleteHandler } from '@src/handlers/message-delete.handler';
 
 const container = new Container();
 
@@ -49,6 +54,12 @@ container.bind<string>(TYPES.UNVERIFIED_ROLE_ID).toConstantValue(process.env.UNV
 container.bind<string>(TYPES.USER_LOG_CHANNEL_ID).toConstantValue(process.env.USER_LOG_CHANNEL_ID ?? '');
 container.bind<string>(TYPES.LASTFM_API_KEY).toConstantValue(process.env.LASTFM_API_KEY ?? '');
 container.bind<string>(TYPES.LASTFM_SHARED_SECRET).toConstantValue(process.env.LASTFM_SHARED_SECRET ?? '');
+container
+    .bind<number>(TYPES.MESSAGE_CACHING_DURATION_IN_SECONDS)
+    .toConstantValue(Number.parseInt(process.env.MESSAGE_CACHING_DURATION_IN_SECONDS ?? '86400') ?? 86400);
+container
+    .bind<string>(TYPES.DELETED_MESSAGE_LOG_CHANNEL_ID)
+    .toConstantValue(process.env.DELETED_MESSAGE_LOG_CHANNEL_ID ?? '');
 
 // CORE
 container.bind<Logger<ILogObj>>(TYPES.BotLogger).toConstantValue(
@@ -88,14 +99,17 @@ container.bind<LastFM>(TYPES.LastFmClient).toConstantValue(
         apiSecret: container.get<string>(TYPES.LASTFM_SHARED_SECRET),
     })
 );
+container.bind<Redis>(TYPES.Redis).toConstantValue(new Redis());
 container.bind<MongoDbConnector>(TYPES.MongoDbConnector).to(MongoDbConnector);
+container.bind<RedisConnector>(TYPES.RedisConnector).to(RedisConnector);
 
 // HANDLERS
 container.bind<IHandlerFactory>(TYPES.HandlerFactory).to(HandlerFactory);
-container.bind<IHandler>(TYPES.GuildMessageHandler).to(GuildMessageHandler);
-container.bind<IHandler>(TYPES.DirectMessageHandler).to(DirectMessageHandler);
-container.bind<IHandler>(TYPES.GuildMemberAddHandler).to(GuildMemberAddHandler);
-container.bind<IHandler>(TYPES.ReadyHandler).to(ReadyHandler);
+container.bind<IHandler>('Handler').to(GuildMessageHandler);
+container.bind<IHandler>('Handler').to(DirectMessageHandler);
+container.bind<IHandler>('Handler').to(GuildMemberAddHandler);
+container.bind<IHandler>('Handler').to(ReadyHandler);
+container.bind<IHandler>('Handler').to(MessageDeleteHandler);
 
 // COMMANDS
 container.bind<ICommand>('Command').to(PingCommand);
@@ -110,11 +124,13 @@ container.bind<StaffMailCreate>(TYPES.StaffMailCreate).to(StaffMailCreate);
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);
 container.bind<SelfMutesRepository>(TYPES.SelfMutesRepository).to(SelfMutesRepository);
+container.bind<CachingRepository>(TYPES.CachingRepository).to(CachingRepository);
 
 // SERVICES
 container.bind<MessageService>(TYPES.MessageService).to(MessageService);
 container.bind<MemberService>(TYPES.MemberService).to(MemberService);
 container.bind<ScheduleService>(TYPES.ScheduleService).to(ScheduleService);
 container.bind<ChannelService>(TYPES.ChannelService).to(ChannelService);
+container.bind<LoggingService>(TYPES.LoggingService).to(LoggingService);
 
 export default container;

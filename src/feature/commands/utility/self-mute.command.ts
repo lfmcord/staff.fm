@@ -64,6 +64,7 @@ export class SelfMuteCommand implements ICommand {
         const now = moment.utc();
         const endDateUtc = now.add(amount, unit as unitOfTime.DurationConstructor);
         const member = await this.memberService.getGuildMemberFromUserId(message.author!.id);
+        if (!member) throw Error(`Cannot find user with user ID ${message.author!.id}. Has the user left the guild?`);
         const roles = await this.memberService.getRolesFromGuildMember(member);
 
         const selfMute = {

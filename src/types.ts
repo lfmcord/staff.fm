@@ -17,21 +17,25 @@ export const TYPES = {
     USER_LOG_CHANNEL_ID: Symbol('USER_LOG_CHANNEL_ID'),
     LASTFM_API_KEY: Symbol('LASTFM_API_KEY'),
     LASTFM_SHARED_SECRET: Symbol('LASTFM_SHARED_SECRET'),
+    MESSAGE_CACHING_DURATION_IN_SECONDS: Symbol('MESSAGE_CACHING_DURATION_IN_SECONDS'),
+    DELETED_MESSAGE_LOG_CHANNEL_ID: Symbol('DELETED_MESSAGE_LOG_CHANNEL_ID'),
 
     // CORE
     Bot: Symbol('Bot'),
     Client: Symbol('Client'),
     LastFmClient: Symbol('LastFmClient'),
+    Redis: Symbol('Redis'),
     MongoDbConnector: Symbol('MongoDbConnector'),
+    RedisConnector: Symbol('RedisConnector'),
     BotLogger: Symbol('BotLogger'),
     JobLogger: Symbol('JobLogger'),
 
     // HANDLERS
     HandlerFactory: Symbol('HandlerFactory'),
-    GuildMessageHandler: Symbol('GuildMessageHandler'),
-    DirectMessageHandler: Symbol('DirectMessageHandler'),
-    GuildMemberAddHandler: Symbol('GuildMemberAddHandler'),
-    ReadyHandler: Symbol('ReadyHandler'),
+    Handler: Symbol('Handler'),
+
+    // COMMANDS
+    Command: Symbol('Command'),
 
     // STAFFMAIL
     StaffMailCreate: Symbol('StaffMailCreate'),
@@ -39,10 +43,12 @@ export const TYPES = {
     // REPOSITORIES
     StaffMailRepository: Symbol('StaffMailRepository'),
     SelfMutesRepository: Symbol('SelfMutesRepository'),
+    CachingRepository: Symbol('CachingRepository'),
 
     // SERVICES
     MessageService: Symbol('MessageService'),
     MemberService: Symbol('MemberService'),
     ScheduleService: Symbol('ScheduleService'),
     ChannelService: Symbol('ChannelService'),
+    LoggingService: Symbol('LoggingService'),
 };

@@ -8,6 +8,8 @@ import { SelfMuteCommand } from '@src/feature/commands/utility/self-mute.command
 
 @injectable()
 export class ReadyHandler implements IHandler {
+    eventType = 'ready';
+
     private logger: Logger<ReadyHandler>;
     constructor(@inject(TYPES.BotLogger) logger: Logger<ReadyHandler>) {
         this.logger = logger;

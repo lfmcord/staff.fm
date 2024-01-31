@@ -16,7 +16,7 @@ export class MemberService {
         this.guildId = guildId;
         this.client = client;
     }
-    async getGuildMemberFromUserId(userId: string): Promise<GuildMember> {
+    async getGuildMemberFromUserId(userId: string): Promise<GuildMember | null> {
         const guild = await this.client.guilds.fetch(this.guildId);
         return await guild.members.fetch(userId);
     }
@@ -39,7 +39,7 @@ export class MemberService {
     async muteGuildMember(member: GuildMember): Promise<void> {
         const highestUserRole = await this.getHighestRoleFromGuildMember(member);
         const botMember = await this.getGuildMemberFromUserId(this.client.user!.id);
-        const highestBotRole = await this.getHighestRoleFromGuildMember(botMember);
+        const highestBotRole = await this.getHighestRoleFromGuildMember(botMember!);
         const mutedRole = await (await this.client.guilds.fetch(this.guildId)).roles.fetch(this.mutedRoleId);
         if (highestUserRole.comparePositionTo(highestBotRole) > 0) {
             throw Error(`Cannot mute a member with a role higher than the bot role.`);
@@ -52,7 +52,7 @@ export class MemberService {
         }
 
         const roles = await this.getRolesFromGuildMember(member);
-        roles.forEach((r) => r.comparePositionTo(botMember.roles.highest));
+        roles.forEach((r) => r.comparePositionTo(botMember!.roles.highest));
         await member.roles.add(this.mutedRoleId);
         await member.roles.remove(roles);
     }

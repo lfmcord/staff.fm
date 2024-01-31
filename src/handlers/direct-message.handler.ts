@@ -9,6 +9,7 @@ import { TextHelper } from '@src/helpers/text.helper';
 
 @injectable()
 export class DirectMessageHandler implements IHandler {
+    eventType = 'directMessageCreate';
     private readonly logger: Logger<DirectMessageHandler>;
     private scheduleService: ScheduleService;
     private readonly prefix: string;

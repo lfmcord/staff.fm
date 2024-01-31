@@ -47,15 +47,20 @@ export class EmbedHelper {
             .setTimestamp();
     }
 
-    static getLogEmbed(actor: User, subject: User | null, level: LogLevel): EmbedBuilder {
-        return new EmbedBuilder()
-            .setAuthor({
-                name: `${actor?.username} (ID ${actor.id})`,
-                iconURL: actor?.avatarURL() ?? undefined,
-            })
+    static getLogEmbed(actor: User | string, subject: User | null, level: LogLevel): EmbedBuilder {
+        const logEmbed = new EmbedBuilder()
             .setColor(this.getLogLevelColor(level))
             .setThumbnail(subject?.avatarURL() ?? null)
             .setTimestamp();
+        if (actor instanceof User) {
+            logEmbed.setAuthor({
+                name: `${actor.username} (ID ${actor.id})`,
+                iconURL: actor.avatarURL() ?? undefined,
+            });
+        } else {
+            logEmbed.setAuthor({ name: `User Not Found (ID ${actor})` });
+        }
+        return logEmbed;
     }
 
     static getLogLevelColor(level: LogLevel): number {

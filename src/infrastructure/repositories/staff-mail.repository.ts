@@ -35,8 +35,11 @@ export class StaffMailRepository {
                 `Guild channel for channel ID '${model.channelId}' could not be found in guild. Are you sure the channel wasn't deleted and I have access to it?`
             );
 
+        const user = (await this.memberService.getGuildMemberFromUserId(model.userId))?.user;
+        if (!user) throw Error(`Cannot find user with ID ${userId}`);
+
         return {
-            user: (await this.memberService.getGuildMemberFromUserId(model.userId)).user,
+            user: user,
             channel: channel as GuildTextBasedChannel,
             mode: model.mode.valueOf(),
             createdAt: model.createdAt,
