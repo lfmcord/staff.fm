@@ -44,6 +44,7 @@ export const TYPES = {
     StaffMailRepository: Symbol('StaffMailRepository'),
     SelfMutesRepository: Symbol('SelfMutesRepository'),
     CachingRepository: Symbol('CachingRepository'),
+    MuteRndRepository: Symbol('MuteRndRepository'),
 
     // SERVICES
     MessageService: Symbol('MessageService'),

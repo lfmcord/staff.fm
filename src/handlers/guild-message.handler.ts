@@ -1,5 +1,5 @@
 import { Logger } from 'tslog';
-import { inlineCode, Message, User } from 'discord.js';
+import { inlineCode, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { ICommand } from '@src/feature/commands/models/command.interface';
@@ -8,7 +8,6 @@ import { CommandResult } from '@src/feature/commands/models/command-result.model
 import { IHandler } from '@src/handlers/models/handler.interface';
 import { TextHelper } from '@src/helpers/text.helper';
 import { MemberService } from '@src/infrastructure/services/member.service';
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
 
 @injectable()
@@ -17,25 +16,16 @@ export class GuildMessageHandler implements IHandler {
 
     private logger: Logger<GuildMessageHandler>;
     private readonly cachingRepository: CachingRepository;
-    private readonly backstagerRoleIds: string[];
-    private readonly helperRoleIds: string[];
-    private readonly staffRoleIds: string[];
     private memberService: MemberService;
     private readonly prefix: string;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<GuildMessageHandler>,
         @inject(TYPES.PREFIX) prefix: string,
-        @inject(TYPES.BACKSTAGER_ROLE_IDS) backstagerRoleIds: string[],
-        @inject(TYPES.HELPER_ROLE_IDS) helperRoleIds: string[],
-        @inject(TYPES.STAFF_ROLE_IDS) staffRoleIds: string[],
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.CachingRepository) cachingRepository: CachingRepository
     ) {
         this.cachingRepository = cachingRepository;
-        this.backstagerRoleIds = backstagerRoleIds;
-        this.helperRoleIds = helperRoleIds;
-        this.staffRoleIds = staffRoleIds;
         this.memberService = memberService;
         this.prefix = prefix;
         this.logger = logger;
@@ -56,7 +46,8 @@ export class GuildMessageHandler implements IHandler {
         if (!command) return;
 
         // Check permissions
-        if (!(await this.checkIfUserIsPrivileged(command, message.author))) {
+        const member = await this.memberService.getGuildMemberFromUserId(message.author.id);
+        if ((await this.memberService.getMemberPermissionLevel(member!)) < command.permissionLevel) {
             this.logger.info(
                 `User ${TextHelper.userLog(message.author)} is trying to run a command that requires '${command.permissionLevel}' permissions, but has no privilege.`
             );
@@ -155,29 +146,5 @@ export class GuildMessageHandler implements IHandler {
         }
 
         return command;
-    }
-
-    private async checkIfUserIsPrivileged(command: ICommand, user: User): Promise<boolean> {
-        if (command.permissionLevel === CommandPermissionLevel.User) return true;
-
-        const member = await this.memberService.getGuildMemberFromUserId(user.id);
-        const memberHighestRole = await this.memberService.getHighestRoleFromGuildMember(member!);
-        let roleIdsToCheck: string[] = [];
-        switch (command.permissionLevel) {
-            case CommandPermissionLevel.Backstager:
-                roleIdsToCheck = this.backstagerRoleIds;
-                break;
-            case CommandPermissionLevel.Helper:
-                roleIdsToCheck = this.helperRoleIds;
-                break;
-            case CommandPermissionLevel.Staff:
-                roleIdsToCheck = this.staffRoleIds;
-                break;
-        }
-        let isPrivileged = false;
-        roleIdsToCheck.forEach((roleId) => {
-            if (memberHighestRole.id === roleId || memberHighestRole.comparePositionTo(roleId) > 1) isPrivileged = true;
-        });
-        return isPrivileged;
     }
 }

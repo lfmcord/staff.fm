@@ -25,8 +25,8 @@ export class SelfMuteCommand implements ICommand {
 
     private selfMutesRepository: SelfMutesRepository;
     private scheduleService: ScheduleService;
-    @inject(TYPES.LoggingService) private loggingService: LoggingService;
-    private prefix: string;
+    private loggingService: LoggingService;
+    private readonly prefix: string;
     private logger: Logger<SelfMuteCommand>;
     private memberService: MemberService;
 
@@ -69,6 +69,7 @@ export class SelfMuteCommand implements ICommand {
         await this.selfMutesRepository.createSelfMute(member.user, selfMute.createdAt, selfMute.endsAt, roles);
 
         try {
+            // TODO: Improve mute by centralizing timed mutes in the service?
             await this.memberService.muteGuildMember(member);
         } catch (e) {
             return {

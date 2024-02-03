@@ -24,7 +24,7 @@ import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { SelfMuteCommand } from '@src/feature/commands/utility/self-mute.command';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { ReadyHandler } from '@src/handlers/ready.handler';
-import { OkBuddyCommand } from '@src/feature/commands/utility/ok-buddy.command';
+import { OkBuddyCommand } from '@src/feature/commands/fun/ok-buddy.command';
 import { VerifyCommand } from '@src/feature/commands/utility/verify.command';
 import LastFM from 'lastfm-typed';
 import { GuildMemberAddHandler } from '@src/handlers/guild-member-add.handler';
@@ -33,6 +33,8 @@ import { CachingRepository } from '@src/infrastructure/repositories/caching.repo
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import Redis from 'ioredis';
 import { MessageDeleteHandler } from '@src/handlers/message-delete.handler';
+import { MuteRndRepository } from '@src/infrastructure/repositories/mute-rnd.repository';
+import { MuteRndCommand } from '@src/feature/commands/fun/mute-rnd.command';
 
 const container = new Container();
 
@@ -117,6 +119,7 @@ container.bind<ICommand>('Command').to(HelpCommand);
 container.bind<ICommand>('Command').to(SelfMuteCommand);
 container.bind<ICommand>('Command').to(OkBuddyCommand);
 container.bind<ICommand>('Command').to(VerifyCommand);
+container.bind<ICommand>('Command').to(MuteRndCommand);
 
 // STAFFMAIL
 container.bind<StaffMailCreate>(TYPES.StaffMailCreate).to(StaffMailCreate);
@@ -125,6 +128,7 @@ container.bind<StaffMailCreate>(TYPES.StaffMailCreate).to(StaffMailCreate);
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);
 container.bind<SelfMutesRepository>(TYPES.SelfMutesRepository).to(SelfMutesRepository);
 container.bind<CachingRepository>(TYPES.CachingRepository).to(CachingRepository);
+container.bind<MuteRndRepository>(TYPES.MuteRndRepository).to(MuteRndRepository);
 
 // SERVICES
 container.bind<MessageService>(TYPES.MessageService).to(MessageService);

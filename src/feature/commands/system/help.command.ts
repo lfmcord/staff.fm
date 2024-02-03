@@ -1,74 +1,93 @@
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { bold, Client, EmbedBuilder, inlineCode, Message } from 'discord.js';
+import { bold, Client, inlineCode, Message, MessageCreateOptions } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import container from '@src/inversify.config';
 import { TYPES } from '@src/types';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { TextHelper } from '@src/helpers/text.helper';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { MemberService } from '@src/infrastructure/services/member.service';
 
 @injectable()
 export class HelpCommand implements ICommand {
     name: string = 'help';
     description: string = 'Displays all commands of the bot.';
     usageHint: string = '[name of command]';
+    private memberService: MemberService;
     examples: string[] = ['', 'selfmute'];
     private client: Client;
     private readonly prefix: string;
     permissionLevel = CommandPermissionLevel.User;
     aliases = ['h'];
 
-    constructor(@inject(TYPES.PREFIX) prefix: string, @inject(TYPES.Client) client: Client) {
+    constructor(
+        @inject(TYPES.PREFIX) prefix: string,
+        @inject(TYPES.Client) client: Client,
+        @inject(TYPES.MemberService) memberService: MemberService
+    ) {
+        this.memberService = memberService;
         this.client = client;
         this.prefix = prefix;
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
-        let embed;
-        let messageOptions;
+        let reply;
+        const member = await this.memberService.getGuildMemberFromUserId(message.author.id);
+        const memberPermissionLevel = await this.memberService.getMemberPermissionLevel(member!);
 
         if (args.length == 0) {
-            embed = this.getCommandReference(message);
+            reply = await this.getCommandReference(message, memberPermissionLevel);
         } else {
-            embed = this.getCommandHelp(message, args[0]);
+            reply = this.getCommandHelp(message, args[0], memberPermissionLevel);
         }
 
-        if (!embed) {
-            messageOptions = {
-                content: `I cannot find a command with the name ${args[0]}. Use ${inlineCode(this.prefix + this.name)} to get an overview of all commands.`,
-            };
-        } else {
-            messageOptions = { embeds: [embed] };
-        }
-
-        await message.channel.send(messageOptions);
+        await message.channel.send(reply);
 
         return {
-            isSuccessful: true,
+            isSuccessful: reply.embeds != null,
         };
     }
 
-    private getCommandReference(message: Message): EmbedBuilder {
+    private async getCommandReference(
+        message: Message,
+        memberPermissionLevel: CommandPermissionLevel
+    ): Promise<MessageCreateOptions> {
         let description = '';
         const commands: ICommand[] = container.getAll('Command');
         commands.sort((a, b) => a.name.localeCompare(b.name));
+
         commands.forEach((command) => {
-            description += inlineCode(this.prefix + command.name) + `: ${command.description}\n`;
+            if (memberPermissionLevel >= command.permissionLevel)
+                description += inlineCode(this.prefix + command.name) + `: ${command.description}\n`;
         });
 
-        return EmbedHelper.getVerboseCommandEmbed(this.client, message)
-            .setDescription(description)
-            .setTitle('Command Reference');
+        return {
+            embeds: [
+                EmbedHelper.getVerboseCommandEmbed(this.client, message)
+                    .setDescription(description)
+                    .setTitle('Command Reference'),
+            ],
+        };
     }
 
-    private getCommandHelp(message: Message, commandName: string): EmbedBuilder | null {
+    private getCommandHelp(
+        message: Message,
+        commandName: string,
+        memberPermissionLevel: CommandPermissionLevel
+    ): MessageCreateOptions {
         let description = '';
         const command: ICommand | null = (container.getAll('Command') as ICommand[]).find(
             (c: ICommand) => c.name == commandName.toLowerCase() || c.aliases.includes(commandName)
         ) as ICommand | null;
 
-        if (!command) return null;
+        if (!command)
+            return {
+                content: `I cannot find a command with the name ${commandName}. Use ${inlineCode(this.prefix + this.name)} to get an overview of all commands.`,
+            };
+
+        if (command.permissionLevel > memberPermissionLevel)
+            return { content: "You cannot look up help for this command since you're not allowed to run it." };
 
         description =
             `${bold('Description:')} ${command.description}\n\n` +
@@ -84,9 +103,13 @@ export class HelpCommand implements ICommand {
 
         description += `${bold('Aliases:')} ${command.aliases.join(', ')}`;
 
-        return EmbedHelper.getVerboseCommandEmbed(this.client, message)
-            .setDescription(description)
-            .setTitle(TextHelper.pascalCase(commandName));
+        return {
+            embeds: [
+                EmbedHelper.getVerboseCommandEmbed(this.client, message)
+                    .setDescription(description)
+                    .setTitle(TextHelper.pascalCase(commandName)),
+            ],
+        };
     }
 
     validateArgs(_: string[]): Promise<void> {
