@@ -35,9 +35,26 @@ services:
   staff-fm-bot:
     container_name: staff-fm-bot
     image: .
+    build:
+      context: bot
+      dockerfile: Dockerfile
     env_file:
-      - .env
+      - bot/.env
     restart: on-failure:8
+    networks:
+      staff-fm-network:
+
+  staff-fm-dashboard:
+    container_name: staff-fm-dashboard
+    build:
+      context: web
+      dockerfile: Dockerfile
+    volumes:
+      - '.:/app'
+      - '/app/node_modules'
+    ports:
+      - '80:80'
+    restart: always
     networks:
       staff-fm-network:
 

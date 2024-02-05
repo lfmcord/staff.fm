@@ -1,0 +1,38 @@
+@startuml
+(Discord Events) -> [bot.ts]
+package "Bot" {
+    package "Infrastructure" {
+        [connectors]
+        [repositories] -> [services]
+        [services]
+    }
+    package "Implementation" {
+        [commands]
+        [staffmail]
+        [interactions]
+    }
+    package "Implementation" -> [repositories]: call
+    package "Implementation" -> [services]: call
+    [bot.ts] -> [handlers]: call
+    [handlers] -> [commands]: run
+    [handlers] -> [staffmail]: use
+    [handlers] -> [interactions]: use
+}
+
+database "MongoDb" {
+}
+
+database "Redis Cache" {
+}
+
+cloud "Discord" {
+}
+
+[services] -> "Discord" : send and retrieve data
+[connectors] -> "MongoDb" : connect
+[connectors] -> "Redis Cache" : connect
+[repositories] -> "MongoDb" : access
+[repositories] -> "Redis Cache" : access
+[bot.ts] -> [connectors]
+
+@enduml
