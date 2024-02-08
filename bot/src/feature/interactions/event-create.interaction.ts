@@ -4,7 +4,7 @@ import { ActionRowBuilder, ButtonInteraction, ModalBuilder, TextInputBuilder, Te
 
 @injectable()
 export class EventCreateInteraction implements IInteraction {
-    customId = 'event-create';
+    customId = 'defer-event-create';
 
     async manage(interaction: ButtonInteraction) {
         const modal = new ModalBuilder().setCustomId('event-create-modal').setTitle('Create Event');

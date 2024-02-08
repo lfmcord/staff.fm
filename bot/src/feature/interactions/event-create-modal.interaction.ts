@@ -4,7 +4,7 @@ import { ModalSubmitInteraction } from 'discord.js';
 
 @injectable()
 export class EventCreateModalInteraction implements IInteraction {
-    customId = 'event-create';
+    customId = 'defer-event-create';
 
     async manage(interaction: ModalSubmitInteraction) {
         interaction.reply({ ephemeral: true, content: `I've successfully submitted` });

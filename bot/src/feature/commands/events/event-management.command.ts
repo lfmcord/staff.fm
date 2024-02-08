@@ -21,7 +21,7 @@ export class EventManagementCommand implements ICommand {
     usageHint: string = '';
     client: Client;
     examples: string[] = [];
-    permissionLevel = CommandPermissionLevel.User;
+    permissionLevel = CommandPermissionLevel.Staff;
     aliases = ['eventmanage'];
 
     constructor(@inject(TYPES.Client) client: Client) {
@@ -30,7 +30,7 @@ export class EventManagementCommand implements ICommand {
 
     async run(message: Message | PartialMessage): Promise<CommandResult> {
         const createButton = new ButtonBuilder()
-            .setCustomId('event-create')
+            .setCustomId('defer-event-create')
             .setLabel('Create Event')
             .setStyle(ButtonStyle.Primary);
         const createMenu = new ChannelSelectMenuBuilder().setMinValues(1).setMaxValues(1).setCustomId('event-create');

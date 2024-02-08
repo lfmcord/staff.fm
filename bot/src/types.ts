@@ -29,6 +29,7 @@ export const TYPES = {
     RedisConnector: Symbol('RedisConnector'),
     BotLogger: Symbol('BotLogger'),
     JobLogger: Symbol('JobLogger'),
+    InfrastructureLogger: Symbol('InfrastructureLogger'),
 
     // HANDLERS
     HandlerFactory: Symbol('HandlerFactory'),

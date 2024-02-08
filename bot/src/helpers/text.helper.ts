@@ -11,6 +11,10 @@ export class TextHelper {
         return `${user.username} (ID ${user.id})`;
     }
 
+    static userDisplay(user: User): string {
+        return `<@!${user.id}> (ID ${user.id}>`;
+    }
+
     static wordWrap(text: string): string {
         return text.replace(/(?![^\n]{1,32}$)([^\n]{1,25})\s/g, '$1\n');
     }
@@ -23,5 +27,12 @@ export class TextHelper {
 
     static pluralize(word: string, num: number, append = 's'): string {
         return num == 0 || num > 1 ? word + append : word;
+    }
+
+    static isDiscordUser(stringToCheck: string): boolean {
+        return stringToCheck.match(/<@!*[0-9]{17,18}>|[0-9]{17,18}/g)?.length == 1;
+    }
+    static getDiscordUserId(stringToCheck: string): string | null {
+        return stringToCheck.match(/[0-9]{17,18}/g)?.pop() ?? null;
     }
 }

@@ -1,5 +1,6 @@
 import { Client, EmbedBuilder, Message, User } from 'discord.js';
 import { LogLevel } from '@src/helpers/models/LogLevel';
+import { TextHelper } from '@src/helpers/text.helper';
 
 export class EmbedHelper {
     static readonly red = 12059152;
@@ -25,6 +26,7 @@ export class EmbedHelper {
             .setFooter({ text: `Command executed by @${message.author.username}` });
     }
 
+    // TODO: Fix this mess of staff mail embeds
     static getUserStaffMailEmbed(client: Client): EmbedBuilder {
         return new EmbedBuilder()
             .setAuthor({
@@ -36,14 +38,40 @@ export class EmbedHelper {
             .setTimestamp();
     }
 
-    static getStaffMailEmbed(author: User | null, isFromStaff: boolean, isIncoming: boolean): EmbedBuilder {
+    static getStaffMailNewChannelEmbed(user: User | null, createdBy: User | null): EmbedBuilder {
+        // TODO: Add whois output, more info about user!
+        return new EmbedBuilder()
+            .setTitle('New StaffMail')
+            .setColor(EmbedHelper.blue)
+            .setFields([
+                { name: 'User', value: user ? TextHelper.userDisplay(user) : 'Anonymous', inline: true },
+                {
+                    name: 'Created by',
+                    value: createdBy ? TextHelper.userDisplay(createdBy) : 'Anonymous',
+                    inline: true,
+                },
+            ])
+            .setFooter({
+                text: user ? `${user.username} | ${user.id}` : 'Anonymous',
+                iconURL: user?.avatarURL() ?? 'https://cdn-icons-png.flaticon.com/512/1534/1534082.png',
+            })
+            .setTimestamp();
+    }
+
+    static getStaffMailEmbed(
+        author: User | null,
+        isFromStaff: boolean,
+        isIncoming: boolean,
+        content: string
+    ): EmbedBuilder {
         return new EmbedBuilder()
             .setAuthor({
-                name: author?.username ?? isFromStaff ? 'Lastcord Staff' : 'Anonymous',
+                name: author?.username ? `${author?.username + isFromStaff ? ' (Lastcord Staff)' : ''}` : 'Anonymous',
                 iconURL: author?.avatarURL() ?? 'https://cdn-icons-png.flaticon.com/512/1534/1534082.png',
             })
             .setTitle(isIncoming ? '📥 Message received' : '📤 Message sent')
             .setColor(isIncoming ? 32768 : 12059152)
+            .setDescription(content)
             .setTimestamp();
     }
 

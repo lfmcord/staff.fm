@@ -31,6 +31,8 @@ export class MemberService {
         this.guildId = guildId;
         this.client = client;
     }
+
+    // TODO: try catch for operations
     async getGuildMemberFromUserId(userId: string): Promise<GuildMember | null> {
         const guild = await this.client.guilds.fetch(this.guildId);
         return await guild.members.fetch(userId);

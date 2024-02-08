@@ -13,7 +13,13 @@ export class InteractionCreateHandler implements IHandler {
     constructor(@inject(TYPES.BotLogger) logger: Logger<InteractionCreateHandler>) {
         this.logger = logger;
     }
-    async handle(interaction: Interaction) {
+    async handle(interaction: IInteraction) {
+        if (!interaction.customId || !interaction.customId.startsWith('defer')) {
+            this.logger.debug(
+                `Interaction with customId '${interaction.customId}' is not a deferred interaction and will be handled elsewhere.`
+            );
+            return;
+        }
         const interactions = container.getAll<IInteraction>('Interaction');
         /* eslint-disable */
         const foundInteraction = interactions.find((i: IInteraction) => i.customId === (interaction as any).customId);
@@ -23,7 +29,7 @@ export class InteractionCreateHandler implements IHandler {
                 `Could not find interaction for ID ${(interaction as any).customId} among ${interactions?.length} interactions.`
             );
         this.logger.debug(`${foundInteraction.constructor.name} is handling the interaction...`);
-        await foundInteraction.manage(interaction);
+        await foundInteraction.manage(interaction as unknown as Interaction);
     }
 
     private async handleButtonInteraction(interaction: ButtonInteraction) {}

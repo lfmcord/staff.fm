@@ -39,6 +39,9 @@ import { EventManagementCommand } from '@src/feature/commands/events/event-manag
 import { IInteraction } from '@src/feature/interactions/abstractions/IInteraction.interface';
 import { EventCreateInteraction } from '@src/feature/interactions/event-create.interaction';
 import { InteractionCreateHandler } from '@src/handlers/interaction-create.handler';
+import { ContactStaffManagementCommand } from '@src/feature/commands/staffmail/contact-staff-management.command';
+import { ContactMemberCommand } from '@src/feature/commands/staffmail/contact-member.command';
+import { StaffMailCloseCommand } from '@src/feature/commands/staffmail/staff-mail-close.command';
 
 const container = new Container();
 
@@ -78,6 +81,13 @@ container.bind<Logger<ILogObj>>(TYPES.BotLogger).toConstantValue(
 container.bind<Logger<ILogObj>>(TYPES.JobLogger).toConstantValue(
     new Logger({
         name: 'Job Runtime',
+        minLevel: container.get<number>(TYPES.LOG_LEVEL),
+        type: 'pretty',
+    })
+);
+container.bind<Logger<ILogObj>>(TYPES.InfrastructureLogger).toConstantValue(
+    new Logger({
+        name: 'Infrastructure Runtime',
         minLevel: container.get<number>(TYPES.LOG_LEVEL),
         type: 'pretty',
     })
@@ -127,6 +137,9 @@ container.bind<ICommand>('Command').to(OkBuddyCommand);
 container.bind<ICommand>('Command').to(VerifyCommand);
 container.bind<ICommand>('Command').to(MuteRndCommand);
 container.bind<ICommand>('Command').to(EventManagementCommand);
+container.bind<ICommand>('Command').to(ContactStaffManagementCommand);
+container.bind<ICommand>('Command').to(ContactMemberCommand);
+container.bind<ICommand>('Command').to(StaffMailCloseCommand);
 
 // STAFFMAIL
 container.bind<StaffMailCreate>(TYPES.StaffMailCreate).to(StaffMailCreate);

@@ -28,23 +28,13 @@ export class StaffMailRepository {
     public async getStaffMailByUserId(userId: string): Promise<StaffMail | null> {
         const model = await StaffMailInstanceModel.findOne({ userId: userId }).exec();
         if (!model) return null;
+        return await this.mapModelToStaffMail(model);
+    }
 
-        const channel = await this.channelService.getGuildChannelById(model.channelId);
-        if (!channel)
-            throw new Error(
-                `Guild channel for channel ID '${model.channelId}' could not be found in guild. Are you sure the channel wasn't deleted and I have access to it?`
-            );
-
-        const user = (await this.memberService.getGuildMemberFromUserId(model.userId))?.user;
-        if (!user) throw Error(`Cannot find user with ID ${userId}`);
-
-        return {
-            user: user,
-            channel: channel as GuildTextBasedChannel,
-            mode: model.mode.valueOf(),
-            createdAt: model.createdAt,
-            lastMessageAt: model.lastMessageAt,
-        };
+    public async getStaffMailByChannelId(channelId: string): Promise<StaffMail | null> {
+        const model = await StaffMailInstanceModel.findOne({ channelId: channelId }).exec();
+        if (!model) return null;
+        return await this.mapModelToStaffMail(model);
     }
 
     public async createStaffMail(user: User, mode: StaffMailModeEnum): Promise<StaffMail> {
@@ -62,11 +52,22 @@ export class StaffMailRepository {
 
         return {
             user: user,
+            userId: user.id,
             channel: channel,
             mode: mode,
             createdAt: now,
             lastMessageAt: now,
         };
+    }
+
+    public async deleteStaffMail(channelId: string): Promise<StaffMail | null> {
+        const deletedStaffMail = await StaffMailInstanceModel.findOneAndDelete({ channelId: channelId }).exec();
+        console.log(deletedStaffMail);
+        if (!deletedStaffMail) {
+            return null;
+        }
+        await this.deleteStaffMailChannel(channelId);
+        return await this.mapModelToStaffMail(deletedStaffMail);
     }
 
     private async createStaffMailChannel(user: User, mode: StaffMailModeEnum): Promise<GuildTextBasedChannel> {
@@ -91,6 +92,25 @@ export class StaffMailRepository {
             channelName = user.username;
         }
         return await this.channelService.createGuildTextChannelInCategory(channelName, category);
+    }
+
+    private async deleteStaffMailChannel(channelId: string) {
+        const channelToDelete = await this.channelService.getGuildChannelById(channelId);
+        if (!channelToDelete) throw Error(`Cannot delete channel with ID ID ${channelId}`);
+        await channelToDelete.delete(`StaffMail closed.`);
+    }
+    private async mapModelToStaffMail(model: IStaffMailModel): Promise<StaffMail> {
+        const channel = await this.channelService.getGuildChannelById(model.channelId);
+        const user = (await this.memberService.getGuildMemberFromUserId(model.userId))?.user;
+
+        return {
+            user: user ?? null,
+            userId: model.userId,
+            channel: channel as GuildTextBasedChannel | null,
+            mode: model.mode.valueOf(),
+            createdAt: model.createdAt,
+            lastMessageAt: model.lastMessageAt,
+        };
     }
 }
 

@@ -96,6 +96,10 @@ export class GuildMessageHandler implements IHandler {
         commandName: string,
         executionTime: number
     ) {
+        if (result.isSuccessful == null) {
+            this.logger.info(`Command '${commandName}' finished silently.`);
+            return;
+        }
         let log = result.isSuccessful
             ? `Successfully finished command '${commandName}'.`
             : `Failed to finish command '${commandName}'${result.reason ? ` (Reason: '${result.reason}')` : ''}.`;

@@ -25,7 +25,7 @@ export class LoggingService {
         @inject(TYPES.SELFMUTE_LOG_CHANNEL_ID) selfmuteLogChannelId: string,
         @inject(TYPES.USER_LOG_CHANNEL_ID) userLogChannelId: string,
         @inject(TYPES.ChannelService) channelService: ChannelService,
-        @inject(TYPES.BotLogger) logger: Logger<LoggingService>,
+        @inject(TYPES.InfrastructureLogger) logger: Logger<LoggingService>,
         @inject(TYPES.Client) client: Client
     ) {
         this.userLogChannelId = userLogChannelId;

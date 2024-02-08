@@ -34,23 +34,17 @@ export class StaffMailCreate {
         if (!staffMail) {
             staffMail = await this.createNewStaffMail(message);
             if (!staffMail) return;
-        } else {
+        } else if (staffMail.channel == null) {
             await this.sendStaffMailMessage(staffMail, message);
         }
 
-        // TODO: Send more info
-        const messageForStaff = EmbedHelper.getStaffMailEmbed(
+        const messageForStaff = EmbedHelper.getStaffMailNewChannelEmbed(
             staffMail.mode === StaffMailModeEnum.ANONYMOUS ? null : message.author,
-            false,
-            true
+            staffMail.mode === StaffMailModeEnum.ANONYMOUS ? null : message.author
         ).setDescription(message.content);
-        await staffMail.channel.send({ embeds: [messageForStaff] });
+        await staffMail.channel!.send({ embeds: [messageForStaff] });
 
-        const messageForUser = EmbedHelper.getStaffMailEmbed(
-            message.author,
-            false,
-            false
-        ).setDescription(message.content);
+        const messageForUser = EmbedHelper.getStaffMailEmbed(message.author, false, false, message.content);
         await message.channel.send({ embeds: [messageForUser] });
 
         const end = new Date().getTime();
@@ -97,8 +91,9 @@ export class StaffMailCreate {
         const messageToSend = EmbedHelper.getStaffMailEmbed(
             staffMail.mode === StaffMailModeEnum.NAMED ? staffMail.user : null,
             false,
-            true
-        ).setDescription(message.content);
-        await staffMail.channel.send({ embeds: [messageToSend] });
+            true,
+            message.content
+        );
+        await staffMail.channel!.send({ embeds: [messageToSend] });
     }
 }
