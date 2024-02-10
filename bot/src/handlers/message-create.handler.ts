@@ -35,10 +35,20 @@ export class MessageCreateHandler implements IHandler {
     public async handle(message: Message) {
         const isCommand = message.content.startsWith(this.prefix);
         const isBot = message.author.bot;
+        const isDms = message.channel.isDMBased();
 
         if (isBot) return;
         void this.cachingRepository.cacheMessage(message);
         if (isCommand) await this.handleCommand(message);
+        if (!isCommand && isDms) {
+            if (!message.reference)
+                await message.reply(
+                    `It looks like you are trying to chat with me. If you want to reply to a StaffMail, please either reply to an existing StaffMail message or create a new StaffMail with ${inlineCode(this.prefix + 'staffmail')}!`
+                );
+            else {
+                // TODO: Reply to staffmail
+            }
+        }
     }
 
     private async handleCommand(message: Message) {

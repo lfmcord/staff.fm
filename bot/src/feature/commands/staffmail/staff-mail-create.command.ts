@@ -159,12 +159,18 @@ export class StaffMailCreateCommand implements ICommand {
             .setCustomId('defer-staff-mail-create-report-send-modal')
             .setTitle('Sending a report');
 
-        const report = new TextInputBuilder()
+        const reportSummaryInput = new TextInputBuilder()
+            .setCustomId('staff-mail-create-report-send-modal-summary')
+            .setLabel('A short summary about your report')
+            .setStyle(TextInputStyle.Short)
+            .setMaxLength(64);
+        const reportTextInput = new TextInputBuilder()
             .setCustomId('staff-mail-create-report-send-modal-text')
-            .setLabel('Your report:')
+            .setLabel("What you'd like to report")
             .setStyle(TextInputStyle.Paragraph)
             .setMaxLength(2048);
-        modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(report));
+        modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(reportSummaryInput));
+        modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(reportTextInput));
         await sendInteraction.showModal(modal);
     }
 
