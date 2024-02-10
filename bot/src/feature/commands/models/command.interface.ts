@@ -9,6 +9,8 @@ export interface ICommand {
     examples: string[];
     permissionLevel: CommandPermissionLevel;
     aliases: string[];
+    isUsableInDms: boolean;
+    isUsableInServer: boolean;
 
     /**
      * Runs the command.

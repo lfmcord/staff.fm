@@ -20,6 +20,8 @@ export class HelpCommand implements ICommand {
     private readonly prefix: string;
     permissionLevel = CommandPermissionLevel.User;
     aliases = ['h'];
+    isUsableInDms = true;
+    isUsableInServer = true;
 
     constructor(
         @inject(TYPES.PREFIX) prefix: string,

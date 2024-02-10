@@ -52,11 +52,7 @@ export class Bot {
                 }\nContent length: ${message.content.length}\nContent: ${message.content.slice(0, 100)}`
             );
 
-            if (message.guild) {
-                await this.handlerFactory.createHandler('guildMessageCreate').handle(message);
-            } else {
-                await this.handlerFactory.createHandler('directMessageCreate').handle(message);
-            }
+            await this.handlerFactory.createHandler('messageCreate').handle(message);
         });
 
         this.client.on('messageDelete', async (message: Message | PartialMessage) => {

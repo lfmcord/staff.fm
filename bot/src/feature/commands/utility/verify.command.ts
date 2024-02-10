@@ -20,6 +20,8 @@ export class VerifyCommand implements ICommand {
     examples: string[] = ['', 'haiyn'];
     permissionLevel = CommandPermissionLevel.Backstager;
     aliases = ['v'];
+    isUsableInDms = false;
+    isUsableInServer = true;
 
     private loggingService: LoggingService;
     private lastFmClient: LastFM;

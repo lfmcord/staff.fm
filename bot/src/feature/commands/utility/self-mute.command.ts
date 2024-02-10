@@ -22,6 +22,8 @@ export class SelfMuteCommand implements ICommand {
     examples: string[] = ['10m', '12h', '1d', '2w'];
     permissionLevel = CommandPermissionLevel.User;
     aliases = ['sm'];
+    isUsableInDms = true;
+    isUsableInServer = true;
 
     private selfMutesRepository: SelfMutesRepository;
     private scheduleService: ScheduleService;

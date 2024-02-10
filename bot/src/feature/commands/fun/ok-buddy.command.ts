@@ -16,6 +16,8 @@ export class OkBuddyCommand implements ICommand {
     examples: string[] = [''];
     permissionLevel = CommandPermissionLevel.Backstager;
     aliases = ['ok'];
+    isUsableInDms = false;
+    isUsableInServer = true;
 
     private messageService: MessageService;
 

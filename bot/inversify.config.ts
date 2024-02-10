@@ -7,15 +7,14 @@ import { ILogObj, Logger } from 'tslog';
 import { Bot } from 'bot';
 import { TYPES } from '@src/types';
 import { PingCommand } from '@src/feature/commands/system/ping.command';
-import { GuildMessageHandler } from '@src/handlers/guild-message.handler';
+import { MessageCreateHandler } from '@src/handlers/message-create.handler';
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { HelpCommand } from '@src/feature/commands/system/help.command';
-import { DirectMessageHandler } from '@src/handlers/direct-message.handler';
 import { IHandlerFactory } from '@src/handlers/models/handler-factory.interface';
 import { HandlerFactory } from '@src/handlers/handler-factory';
 import { IHandler } from '@src/handlers/models/handler.interface';
 import { MongoDbConnector } from '@src/infrastructure/connectors/mongo-db.connector';
-import { StaffMailCreate } from '@src/feature/staffmail/staff-mail-create';
+import { StaffMailCreateCommand } from '@src/feature/commands/staffmail/staff-mail-create.command';
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { MessageService } from '@src/infrastructure/services/message.service';
 import { SelfMutesRepository } from '@src/infrastructure/repositories/self-mutes.repository';
@@ -39,9 +38,11 @@ import { EventManagementCommand } from '@src/feature/commands/events/event-manag
 import { IInteraction } from '@src/feature/interactions/abstractions/IInteraction.interface';
 import { EventCreateInteraction } from '@src/feature/interactions/event-create.interaction';
 import { InteractionCreateHandler } from '@src/handlers/interaction-create.handler';
-import { ContactStaffManagementCommand } from '@src/feature/commands/staffmail/contact-staff-management.command';
-import { ContactMemberCommand } from '@src/feature/commands/staffmail/contact-member.command';
+import { StaffMailManagementCommand } from '@src/feature/commands/staffmail/staff-mail-management.command';
+import { StaffMailContactCommand } from '@src/feature/commands/staffmail/staff-mail-contact.command';
 import { StaffMailCloseCommand } from '@src/feature/commands/staffmail/staff-mail-close.command';
+import { StaffmailCreateReportInteraction } from '@src/feature/interactions/staffmail-create-report.interaction';
+import { SelfMuteUnmuteCommand } from '@src/feature/commands/utility/self-mute-unmute.command';
 
 const container = new Container();
 
@@ -122,8 +123,7 @@ container.bind<RedisConnector>(TYPES.RedisConnector).to(RedisConnector);
 
 // HANDLERS
 container.bind<IHandlerFactory>(TYPES.HandlerFactory).to(HandlerFactory);
-container.bind<IHandler>('Handler').to(GuildMessageHandler);
-container.bind<IHandler>('Handler').to(DirectMessageHandler);
+container.bind<IHandler>('Handler').to(MessageCreateHandler);
 container.bind<IHandler>('Handler').to(GuildMemberAddHandler);
 container.bind<IHandler>('Handler').to(ReadyHandler);
 container.bind<IHandler>('Handler').to(MessageDeleteHandler);
@@ -133,19 +133,21 @@ container.bind<IHandler>('Handler').to(InteractionCreateHandler);
 container.bind<ICommand>('Command').to(PingCommand);
 container.bind<ICommand>('Command').to(HelpCommand);
 container.bind<ICommand>('Command').to(SelfMuteCommand);
+container.bind<ICommand>('Command').to(SelfMuteUnmuteCommand);
 container.bind<ICommand>('Command').to(OkBuddyCommand);
 container.bind<ICommand>('Command').to(VerifyCommand);
 container.bind<ICommand>('Command').to(MuteRndCommand);
 container.bind<ICommand>('Command').to(EventManagementCommand);
-container.bind<ICommand>('Command').to(ContactStaffManagementCommand);
-container.bind<ICommand>('Command').to(ContactMemberCommand);
+container.bind<ICommand>('Command').to(StaffMailManagementCommand);
+container.bind<ICommand>('Command').to(StaffMailContactCommand);
 container.bind<ICommand>('Command').to(StaffMailCloseCommand);
+container.bind<ICommand>('Command').to(StaffMailCreateCommand);
 
 // STAFFMAIL
-container.bind<StaffMailCreate>(TYPES.StaffMailCreate).to(StaffMailCreate);
 
 // INTERACTIONS
 container.bind<IInteraction>('Interaction').to(EventCreateInteraction);
+container.bind<IInteraction>('Interaction').to(StaffmailCreateReportInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);

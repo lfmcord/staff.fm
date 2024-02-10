@@ -16,6 +16,8 @@ export class StaffMailCloseCommand implements ICommand {
     examples: string[] = ['Closing because of inactivity.', 'Crowns unban request, granted.'];
     permissionLevel = CommandPermissionLevel.Staff;
     aliases = [];
+    isUsableInDms = false;
+    isUsableInServer = true;
 
     private logger: Logger<StaffMailCloseCommand>;
     private staffmailRepository: StaffMailRepository;

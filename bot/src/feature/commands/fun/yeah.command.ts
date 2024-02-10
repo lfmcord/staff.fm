@@ -16,6 +16,8 @@ export class YeahCommand implements ICommand {
     examples: string[] = [''];
     permissionLevel = CommandPermissionLevel.Backstager;
     aliases = ['yeah', 'yeash', 'yeahmate', 'yeamate'];
+    isUsableInDms = false;
+    isUsableInServer = true;
 
     private messageService: MessageService;
 

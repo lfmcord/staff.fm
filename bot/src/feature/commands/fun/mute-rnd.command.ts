@@ -26,6 +26,8 @@ export class MuteRndCommand implements ICommand {
     validArguments: (string | undefined)[] = [undefined, 'optin', 'optout', 'leaderboard'];
     permissionLevel = CommandPermissionLevel.User;
     aliases = ['mutegame'];
+    isUsableInDms = false;
+    isUsableInServer = true;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<MuteRndCommand>,

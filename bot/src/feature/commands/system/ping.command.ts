@@ -13,6 +13,8 @@ export class PingCommand implements ICommand {
     examples: string[] = [];
     permissionLevel = CommandPermissionLevel.User;
     aliases = ['p'];
+    isUsableInDms = false;
+    isUsableInServer = true;
 
     async run(message: Message | PartialMessage): Promise<CommandResult> {
         const start = new Date().getTime();

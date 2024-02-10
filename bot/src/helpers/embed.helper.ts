@@ -27,15 +27,17 @@ export class EmbedHelper {
     }
 
     // TODO: Fix this mess of staff mail embeds
-    static getUserStaffMailEmbed(client: Client): EmbedBuilder {
-        return new EmbedBuilder()
-            .setAuthor({
-                name: 'Staff.fm',
-                iconURL: client.user!.avatarURL() ?? undefined,
-            })
-            .setTitle('✉️ StaffMail')
-            .setColor(12059152)
-            .setTimestamp();
+    static getStaffMailCreateEmbed(client: Client): EmbedBuilder {
+        return (
+            new EmbedBuilder()
+                // .setAuthor({
+                //     name: 'Staff.fm',
+                //     iconURL: client.user!.avatarURL() ?? undefined,
+                // })
+                .setTitle('✉️ StaffMail')
+                .setColor(12059152)
+                .setTimestamp()
+        );
     }
 
     static getStaffMailNewChannelEmbed(user: User | null, createdBy: User | null): EmbedBuilder {
@@ -66,12 +68,17 @@ export class EmbedHelper {
     ): EmbedBuilder {
         return new EmbedBuilder()
             .setAuthor({
-                name: author?.username ? `${author?.username + isFromStaff ? ' (Lastcord Staff)' : ''}` : 'Anonymous',
-                iconURL: author?.avatarURL() ?? 'https://cdn-icons-png.flaticon.com/512/1534/1534082.png',
+                name: author?.username != null ? author.username : 'Anonymous',
+                iconURL: author?.avatarURL() ?? 'https://discord.com/assets/c0e3fec8f08643b9c1fa.svg',
             })
             .setTitle(isIncoming ? '📥 Message received' : '📤 Message sent')
             .setColor(isIncoming ? 32768 : 12059152)
             .setDescription(content)
+            .setFooter({
+                text: isIncoming
+                    ? 'Please reply to this message to send a reply to staff.'
+                    : 'To send a follow up message, reply to this message.',
+            })
             .setTimestamp();
     }
 

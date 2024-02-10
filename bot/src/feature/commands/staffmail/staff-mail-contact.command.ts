@@ -4,7 +4,6 @@ import {
     ActionRowBuilder,
     bold,
     ButtonBuilder,
-    ButtonStyle,
     EmbedBuilder,
     GuildMember,
     Interaction,
@@ -21,22 +20,26 @@ import { MemberService } from '@src/infrastructure/services/member.service';
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode.enum';
 import { EmbedHelper } from '@src/helpers/embed.helper';
+import { ComponentHelper } from '@src/helpers/component.helper';
+import { InteractionIds } from '@src/feature/interactions/models/interaction-ids';
 
 @injectable()
-export class ContactMemberCommand implements ICommand {
-    name: string = 'contactmember';
+export class StaffMailContactCommand implements ICommand {
+    name: string = 'contact';
     description: string = 'Messages a user and opens a new staffmail channel with them.';
     usageHint: string = '<user/id> <message to user>';
     examples: string[] = ['356178941913858049 Hello, we would like to speak to you!'];
     permissionLevel = CommandPermissionLevel.Staff;
-    aliases = ['contact'];
+    aliases = [];
+    isUsableInDms = false;
+    isUsableInServer = true;
 
-    private logger: Logger<ContactMemberCommand>;
+    private logger: Logger<StaffMailContactCommand>;
     staffMailRepository: StaffMailRepository;
     memberService: MemberService;
 
     constructor(
-        @inject(TYPES.BotLogger) logger: Logger<ContactMemberCommand>,
+        @inject(TYPES.BotLogger) logger: Logger<StaffMailContactCommand>,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository
     ) {
@@ -71,20 +74,9 @@ export class ContactMemberCommand implements ICommand {
         }
 
         const content = args.slice(1).join(' ');
-        const sendButton = new ButtonBuilder()
-            .setCustomId('contact-member-send')
-            .setLabel('Send')
-            .setStyle(ButtonStyle.Success)
-            .setEmoji({ name: '✉️' });
-        const sendAnonButton = new ButtonBuilder()
-            .setCustomId('contact-member-send-anon')
-            .setLabel('Send anonymously')
-            .setStyle(ButtonStyle.Secondary)
-            .setEmoji({ name: '🕵️' });
-        const cancelButton = new ButtonBuilder()
-            .setCustomId('contact-member-cancel')
-            .setLabel('Cancel')
-            .setStyle(ButtonStyle.Danger);
+        const sendButton = ComponentHelper.sendButton(InteractionIds.ContactMemberSend);
+        const sendAnonButton = ComponentHelper.sendButton(InteractionIds.ContactMemberSendAnon);
+        const cancelButton = ComponentHelper.sendButton(InteractionIds.ContactMemberCancel);
         const response = await message.reply({
             embeds: [
                 new EmbedBuilder()

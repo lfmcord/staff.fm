@@ -15,21 +15,24 @@ import { CommandPermissionLevel } from '@src/feature/commands/models/command-per
 import { TYPES } from '@src/types';
 
 @injectable()
-export class ContactStaffManagementCommand implements ICommand {
-    name: string = 'contactstaffmanagement';
+export class StaffMailManagementCommand implements ICommand {
+    name: string = 'staffmailmanagement';
     description: string =
-        'Creates a staff mail/ticket management post where you can anonymously send a message to staff or open a ticket with them.';
+        'Creates a staff mail management post where you can anonymously send a message to staff or open a ticket with them.';
     usageHint: string = '';
     client: Client;
     examples: string[] = [];
     permissionLevel = CommandPermissionLevel.Staff;
-    aliases = ['contactstaffmanage'];
+    aliases = ['staffmailmanage', 'staffmailmenu'];
+    isUsableInDms = false;
+    isUsableInServer = true;
 
     constructor(@inject(TYPES.Client) client: Client) {
         this.client = client;
     }
 
     async run(message: Message | PartialMessage): Promise<CommandResult> {
+        // TODO: Finalize this. Just one button that starts the process in the channel ephemereal?
         const ticketButton = new ButtonBuilder()
             .setCustomId('staff-contact-ticket-create')
             .setLabel('Create Ticket')

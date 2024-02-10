@@ -12,16 +12,16 @@ import { CachingRepository } from '@src/infrastructure/repositories/caching.repo
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 
 @injectable()
-export class GuildMessageHandler implements IHandler {
-    eventType: string = 'guildMessageCreate';
+export class MessageCreateHandler implements IHandler {
+    eventType: string = 'messageCreate';
 
-    private logger: Logger<GuildMessageHandler>;
+    private logger: Logger<MessageCreateHandler>;
     private readonly cachingRepository: CachingRepository;
     private memberService: MemberService;
     private readonly prefix: string;
 
     constructor(
-        @inject(TYPES.BotLogger) logger: Logger<GuildMessageHandler>,
+        @inject(TYPES.BotLogger) logger: Logger<MessageCreateHandler>,
         @inject(TYPES.PREFIX) prefix: string,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.CachingRepository) cachingRepository: CachingRepository
@@ -45,6 +45,22 @@ export class GuildMessageHandler implements IHandler {
         // Resolve command
         const command = await this.resolveCommand(message);
         if (!command) return;
+
+        // Check if running in correct place
+        const isDms = message.channel.isDMBased();
+        if (isDms && !command.isUsableInDms) {
+            await this.handleCommandError(
+                message,
+                `This command is not usable in direct messages! You can only run it in the server.`
+            );
+            return;
+        } else if (!isDms && !command.isUsableInServer) {
+            await this.handleCommandError(
+                message,
+                `This command is not usable in the server! You can only run it by DMing me.`
+            );
+            return;
+        }
 
         // Check permissions
         const member = await this.memberService.getGuildMemberFromUserId(message.author.id);
