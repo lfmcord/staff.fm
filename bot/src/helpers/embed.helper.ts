@@ -63,6 +63,32 @@ export class EmbedHelper {
         };
     }
 
+    static getStaffMailOpenEmbed = new EmbedBuilder()
+        .setTitle(`🟢 StaffMail Opened`)
+        .setColor(EmbedHelper.red)
+        .setDescription(
+            `Thank you for using Lastcord's StaffMail! To make sure staff can see your request timely, please open a new StaffMail for matters that aren't directly related to this StaffMail.\n\n` +
+                `${bold('How to reply:')} In order to reply or send follow up messages, always reply to the last message you sent or received!\n\n` +
+                `In order to keep track of your open StaffMails, ${bold('check the pins in this channel')}. It always has the latest message from each of your open StaffMails.`
+        )
+        .setTimestamp();
+
+    static getStaffMailCloseEmbed(summary: string | null, type: string, reason: string | null): EmbedBuilder {
+        // TODO: Implement reopen button
+        const humanReadableType = EmbedHelper.getHumanReadableStaffMailType(type);
+        let title = `${humanReadableType}`;
+        if (summary) title += ` (${summary})`;
+        const embed = new EmbedBuilder()
+            .setTitle(`🔴 StaffMail Closed`)
+            .setColor(EmbedHelper.red)
+            .setDescription(
+                `Thank you for using the Lastcord StaffMail! This StaffMail has been closed:\n\n## ${title}\n\nPlease use the button below to reopen the StaffMail if you feel that this was wrong.`
+            )
+            .setTimestamp();
+        if (reason) embed.setFields({ name: 'Closure Reason', value: reason, inline: false });
+        return embed;
+    }
+
     static getStaffMailStaffViewNewEmbed(
         user: User | null,
         createdBy: User | null,

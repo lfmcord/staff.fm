@@ -73,6 +73,7 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
         await interaction.message?.edit({
             components: [],
             embeds: [
+                EmbedHelper.getStaffMailOpenEmbed,
                 EmbedHelper.getStaffMailUserViewOutgoingEmbed(
                     interaction.user,
                     mode === StaffMailModeEnum.ANONYMOUS,
