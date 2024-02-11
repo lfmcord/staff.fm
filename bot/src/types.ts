@@ -39,7 +39,7 @@ export const TYPES = {
     Command: Symbol('Command'),
 
     // STAFFMAIL
-    StaffMailCreate: Symbol('StaffMailCreate'),
+    StaffMailDmReply: Symbol('StaffMailDmReply'),
 
     // REPOSITORIES
     StaffMailRepository: Symbol('StaffMailRepository'),

@@ -4,7 +4,6 @@
     "moduleResolution": "node",
     "target": "es5",
     "lib": ["es6", "dom"],
-    "sourceMap": true,
     "inlineSourceMap": true,  // for accurate line number logs
     "types": ["node",
       "reflect-metadata"],

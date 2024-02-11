@@ -19,13 +19,12 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
 import { EmbedHelper } from '@src/helpers/embed.helper';
-import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
-import { MessageService } from '@src/infrastructure/services/message.service';
 import { ComponentHelper } from '@src/helpers/component.helper';
 import { InteractionIds } from '@src/feature/interactions/models/interaction-ids';
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { StaffMailType } from '@src/feature/staffmail/models/staff-mail-type.enum';
 
 @injectable()
 export class StaffMailCreateCommand implements ICommand {
@@ -39,18 +38,9 @@ export class StaffMailCreateCommand implements ICommand {
     isUsableInServer = false;
 
     private logger: Logger<StaffMailCreateCommand>;
-    private messageService: MessageService;
-    private staffMailRepository: StaffMailRepository;
     private client: Client;
 
-    constructor(
-        @inject(TYPES.BotLogger) logger: Logger<StaffMailCreateCommand>,
-        @inject(TYPES.Client) client: Client,
-        @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository,
-        @inject(TYPES.MessageService) messageService: MessageService
-    ) {
-        this.messageService = messageService;
-        this.staffMailRepository = staffMailRepository;
+    constructor(@inject(TYPES.BotLogger) logger: Logger<StaffMailCreateCommand>, @inject(TYPES.Client) client: Client) {
         this.client = client;
         this.logger = logger;
     }
@@ -65,6 +55,7 @@ export class StaffMailCreateCommand implements ICommand {
         return Promise.resolve();
     }
 
+    // TODO: This method sucks, improve it!
     private async createNewStaffMail(message: Message): Promise<void> {
         const selectMenu = new StringSelectMenuBuilder()
             .setCustomId(InteractionIds.StaffMailCreateType)
@@ -74,29 +65,29 @@ export class StaffMailCreateCommand implements ICommand {
                     .setLabel('Reporting a user or message')
                     .setDescription('Report a user or a message breaking a rule.')
                     .setEmoji('⚠️')
-                    .setValue('report'),
+                    .setValue(StaffMailType[StaffMailType.report]),
                 new StringSelectMenuOptionBuilder()
                     .setLabel('Crowns Game')
                     .setDescription(
                         'Support surrounding the crowns game (crowns bans, opting back in, false crowns,...)'
                     )
                     .setEmoji('👑')
-                    .setValue('crowns'),
+                    .setValue(StaffMailType[StaffMailType.crowns]),
                 new StringSelectMenuOptionBuilder()
                     .setLabel('Question/Suggestion about the server')
                     .setDescription('Questions or suggestions regarding the Last.fm Discord.')
                     .setEmoji('❔')
-                    .setValue('server'),
+                    .setValue(StaffMailType[StaffMailType.server]),
                 new StringSelectMenuOptionBuilder()
                     .setLabel('Question about Last.fm')
                     .setDescription('Questions about the last.fm website and scrobbling.')
                     .setEmoji('<:lastfmred:900551196023083048>')
-                    .setValue('lastfm'),
+                    .setValue(StaffMailType[StaffMailType.lastfm]),
                 new StringSelectMenuOptionBuilder()
                     .setLabel('Other')
                     .setDescription("Other matters that don't fall under any of the other categories.")
                     .setEmoji('🃏')
-                    .setValue('other')
+                    .setValue(StaffMailType[StaffMailType.other])
             );
 
         const createMessageEmbed = EmbedHelper.getStaffMailCreateEmbed(this.client).setDescription(
@@ -198,9 +189,9 @@ export class StaffMailCreateCommand implements ICommand {
                 };
                 break;
             // TODO: Implement cases
-            case 'crowns':
+            case 'crowns': // TODO: Add another submenu for crowns?
             case 'server':
-            case 'lastfm':
+            case 'lastfm': // TODO: Add hint that we are not official last.fm support + link to support forums
             case 'other':
         }
         return messageCreateOptions;

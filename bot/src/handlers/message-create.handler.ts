@@ -10,12 +10,14 @@ import { TextHelper } from '@src/helpers/text.helper';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { StaffMailDmReply } from '@src/feature/staffmail/staff-mail-dm-reply';
 
 @injectable()
 export class MessageCreateHandler implements IHandler {
     eventType: string = 'messageCreate';
 
     private logger: Logger<MessageCreateHandler>;
+    private readonly staffMailDmReply: StaffMailDmReply;
     private readonly cachingRepository: CachingRepository;
     private memberService: MemberService;
     private readonly prefix: string;
@@ -24,8 +26,10 @@ export class MessageCreateHandler implements IHandler {
         @inject(TYPES.BotLogger) logger: Logger<MessageCreateHandler>,
         @inject(TYPES.PREFIX) prefix: string,
         @inject(TYPES.MemberService) memberService: MemberService,
-        @inject(TYPES.CachingRepository) cachingRepository: CachingRepository
+        @inject(TYPES.CachingRepository) cachingRepository: CachingRepository,
+        @inject(TYPES.StaffMailDmReply) staffMailDmReply: StaffMailDmReply
     ) {
+        this.staffMailDmReply = staffMailDmReply;
         this.cachingRepository = cachingRepository;
         this.memberService = memberService;
         this.prefix = prefix;
@@ -46,7 +50,7 @@ export class MessageCreateHandler implements IHandler {
                     `It looks like you are trying to chat with me. If you want to reply to a StaffMail, please either reply to an existing StaffMail message or create a new StaffMail with ${inlineCode(this.prefix + 'staffmail')}!`
                 );
             else {
-                // TODO: Reply to staffmail
+                await this.staffMailDmReply.reply(message);
             }
         }
     }
@@ -90,6 +94,7 @@ export class MessageCreateHandler implements IHandler {
             this.logger.info(`Validating arguments for command ${command.name}...`);
             await command.validateArgs(args);
             this.logger.info(`Running command ${command.name}...`);
+            this.logger.trace(args);
             result = await command.run(message, args);
         } catch (error) {
             if (error instanceof ValidationError) {

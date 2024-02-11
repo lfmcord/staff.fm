@@ -1,6 +1,6 @@
 import { Interaction } from 'discord.js';
 
 export interface IInteraction {
-    customId: string;
+    customIds: string[];
     manage(interaction: Interaction): Promise<void>;
 }

@@ -41,8 +41,10 @@ import { InteractionCreateHandler } from '@src/handlers/interaction-create.handl
 import { StaffMailManagementCommand } from '@src/feature/commands/staffmail/staff-mail-management.command';
 import { StaffMailContactCommand } from '@src/feature/commands/staffmail/staff-mail-contact.command';
 import { StaffMailCloseCommand } from '@src/feature/commands/staffmail/staff-mail-close.command';
-import { StaffmailCreateReportInteraction } from '@src/feature/interactions/staffmail-create-report.interaction';
+import { StaffMailCreateReportInteraction } from '@src/feature/interactions/staff-mail-create-report.interaction';
 import { SelfMuteUnmuteCommand } from '@src/feature/commands/utility/self-mute-unmute.command';
+import { StaffMailDmReply } from '@src/feature/staffmail/staff-mail-dm-reply';
+import { StaffMailReplyCommand } from '@src/feature/commands/staffmail/staff-mail-reply.command';
 
 const container = new Container();
 
@@ -142,12 +144,14 @@ container.bind<ICommand>('Command').to(StaffMailManagementCommand);
 container.bind<ICommand>('Command').to(StaffMailContactCommand);
 container.bind<ICommand>('Command').to(StaffMailCloseCommand);
 container.bind<ICommand>('Command').to(StaffMailCreateCommand);
+container.bind<ICommand>('Command').to(StaffMailReplyCommand);
 
 // STAFFMAIL
+container.bind<StaffMailDmReply>(TYPES.StaffMailDmReply).to(StaffMailDmReply);
 
 // INTERACTIONS
 container.bind<IInteraction>('Interaction').to(EventCreateInteraction);
-container.bind<IInteraction>('Interaction').to(StaffmailCreateReportInteraction);
+container.bind<IInteraction>('Interaction').to(StaffMailCreateReportInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);

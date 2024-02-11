@@ -5,10 +5,9 @@ import {
     bold,
     ButtonBuilder,
     EmbedBuilder,
-    GuildMember,
     Interaction,
     Message,
-    User,
+    MessageComponentInteraction,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
@@ -22,6 +21,7 @@ import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { ComponentHelper } from '@src/helpers/component.helper';
 import { InteractionIds } from '@src/feature/interactions/models/interaction-ids';
+import { StaffMailType } from '@src/feature/staffmail/models/staff-mail-type.enum';
 
 @injectable()
 export class StaffMailContactCommand implements ICommand {
@@ -88,43 +88,57 @@ export class StaffMailContactCommand implements ICommand {
             ],
         });
 
+        let confirmation: MessageComponentInteraction;
         const collectorFilter = (interaction: Interaction) => interaction.user.id === message.author.id;
         try {
-            const confirmation: Interaction = await response.awaitMessageComponent({
+            confirmation = await response.awaitMessageComponent({
                 filter: collectorFilter,
                 time: 60_000,
             });
-            if (confirmation.customId == 'contact-member-cancel') {
-                await response.edit({ content: `You cancelled contacting the member.`, embeds: [], components: [] });
-                await confirmation.reply({ ephemeral: true, content: 'Cancelled.' });
-            } else {
-                await this.send(
-                    member,
-                    content,
-                    confirmation.customId == 'contact-member-send' ? message.author : null
-                );
-                const newStaffMail = await this.staffMailRepository.createStaffMail(
-                    member.user,
-                    StaffMailModeEnum.NAMED
-                );
-                await newStaffMail.channel!.send({
-                    embeds: [
-                        EmbedHelper.getStaffMailNewChannelEmbed(member.user, message.author),
-                        EmbedHelper.getStaffMailEmbed(message.author, true, false, content),
-                    ],
-                });
-                await response.edit({
-                    content: `I've sent the message to the user and created ${newStaffMail.channel}.`,
-                    embeds: [],
-                    components: [],
-                });
-            }
         } catch (e) {
             await response.edit({
                 content: 'Confirmation not received within 1 minute, cancelling.',
                 components: [],
             });
+            return {};
         }
+
+        if (confirmation!.customId == 'contact-member-cancel') {
+            await response.edit({ content: `You cancelled contacting the member.`, embeds: [], components: [] });
+            await confirmation!.reply({ ephemeral: true, content: 'Cancelled.' });
+            return {};
+        }
+        const summary = 'Message from Staff'; // TODO: Make this variable?
+        const isAnonymous = false; // TODO: Make this variable?
+        const embed = EmbedHelper.getStaffMailUserViewIncomingEmbed(
+            member.user,
+            isAnonymous,
+            content,
+            summary,
+            StaffMailType.staff
+        );
+        const messageToUser = await member.send({
+            embeds: [embed],
+        });
+        const newStaffMail = await this.staffMailRepository.createStaffMail(
+            member.user,
+            StaffMailType.staff,
+            StaffMailModeEnum.NAMED,
+            summary,
+            messageToUser
+        );
+        await newStaffMail.channel!.send({
+            embeds: [
+                EmbedHelper.getStaffMailStaffViewNewEmbed(member.user, message.author),
+                EmbedHelper.getStaffMailStaffViewIncomingEmbed(message.author, content),
+            ],
+        });
+        await response.edit({
+            content: `I've sent the message to the user and created ${newStaffMail.channel}.`,
+            embeds: [],
+            components: [],
+        });
+
         return {
             isSuccessful: true,
         };
@@ -145,12 +159,5 @@ export class StaffMailContactCommand implements ICommand {
         }
         this.logger.trace(args);
         return Promise.resolve();
-    }
-
-    public async send(recipient: GuildMember, messageContent: string, author: User | null) {
-        const embed = EmbedHelper.getStaffMailEmbed(author, true, true, messageContent);
-        await recipient.send({
-            embeds: [embed],
-        });
     }
 }
