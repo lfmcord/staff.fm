@@ -47,7 +47,7 @@ export class MessageCreateHandler implements IHandler {
         if (!isCommand && isDms) {
             if (!message.reference)
                 await message.reply(
-                    `It looks like you are trying to chat with me. If you want to reply to a StaffMail, please either reply to an existing StaffMail message or create a new StaffMail with ${inlineCode(this.prefix + 'staffmail')}!`
+                    `It looks like you are trying to chat with me. If you want to reply to an existing StaffMail, please reply to a pinned message. If you do not have any open StaffMails, you can create a new one with ${inlineCode(this.prefix + 'staffmail')}!`
                 );
             else {
                 await this.staffMailDmReply.reply(message);

@@ -1,5 +1,15 @@
 import { inject, injectable } from 'inversify';
-import { CategoryChannel, CategoryChildChannel, ChannelType, Client, GuildTextBasedChannel } from 'discord.js';
+import {
+    CategoryChannel,
+    CategoryChildChannel,
+    ChannelType,
+    Client,
+    GuildTextBasedChannel,
+    Message,
+    MessageResolvable,
+    MessageType,
+    User,
+} from 'discord.js';
 import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
 
@@ -62,5 +72,22 @@ export class ChannelService {
             type: ChannelType.GuildText,
             parent: category,
         });
+    }
+
+    async pinNewStaffMailMessageInDmChannel(message: Message, oldMessageId: string | null, recipient: User) {
+        try {
+            if (oldMessageId)
+                await (await recipient.dmChannel?.messages.fetch(oldMessageId as MessageResolvable))?.unpin();
+            await message.pin();
+            await recipient.dmChannel?.messages.cache
+                .filter((m: Message) => (m.type = MessageType.ChannelPinnedMessage))
+                .last()
+                ?.delete();
+        } catch (e) {
+            this.logger.warn(`Failed to manage pins for staffmail DM channel ${recipient.dmChannel?.id}`, e);
+            recipient.dmChannel?.send(
+                `😟 I couldn't update the pins with the newest message! But worry not, you can still reply as usual.`
+            );
+        }
     }
 }

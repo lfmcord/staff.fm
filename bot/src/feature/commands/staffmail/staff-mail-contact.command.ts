@@ -20,8 +20,9 @@ import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail
 import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode.enum';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { ComponentHelper } from '@src/helpers/component.helper';
-import { InteractionIds } from '@src/feature/interactions/models/interaction-ids';
-import { StaffMailType } from '@src/feature/staffmail/models/staff-mail-type.enum';
+import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
+import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
+import { ChannelService } from '@src/infrastructure/services/channel.service';
 
 @injectable()
 export class StaffMailContactCommand implements ICommand {
@@ -35,14 +36,17 @@ export class StaffMailContactCommand implements ICommand {
     isUsableInServer = true;
 
     private logger: Logger<StaffMailContactCommand>;
+    channelService: ChannelService;
     staffMailRepository: StaffMailRepository;
     memberService: MemberService;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<StaffMailContactCommand>,
         @inject(TYPES.MemberService) memberService: MemberService,
-        @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository
+        @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository,
+        @inject(TYPES.ChannelService) channelService: ChannelService
     ) {
+        this.channelService = channelService;
         this.staffMailRepository = staffMailRepository;
         this.memberService = memberService;
         this.logger = logger;
@@ -64,19 +68,11 @@ export class StaffMailContactCommand implements ICommand {
                 replyToUser: `I cannot find the user <@!${userId}>. Have they left the server?`,
             };
         }
-        const staffMail = await this.staffMailRepository.getStaffMailByUserId(userId);
-        if (staffMail != null) {
-            return {
-                isSuccessful: false,
-                reason: `Staffmail channel for user ${TextHelper.userLog(member.user)} already exists.`,
-                replyToUser: `There is already an open staff mail channel for this user! Please send your message in <#${staffMail.channel?.id}>.`,
-            };
-        }
 
         const content = args.slice(1).join(' ');
-        const sendButton = ComponentHelper.sendButton(InteractionIds.ContactMemberSend);
-        const sendAnonButton = ComponentHelper.sendButton(InteractionIds.ContactMemberSendAnon);
-        const cancelButton = ComponentHelper.sendButton(InteractionIds.ContactMemberCancel);
+        const sendButton = ComponentHelper.sendButton(StaffMailCustomIds.ContactMemberSend);
+        const sendAnonButton = ComponentHelper.sendAnonButton(StaffMailCustomIds.ContactMemberSendAnon);
+        const cancelButton = ComponentHelper.cancelButton(StaffMailCustomIds.ContactMemberCancel);
         const response = await message.reply({
             embeds: [
                 new EmbedBuilder()
@@ -108,29 +104,42 @@ export class StaffMailContactCommand implements ICommand {
             await confirmation!.reply({ ephemeral: true, content: 'Cancelled.' });
             return {};
         }
-        const summary = 'Message from Staff'; // TODO: Make this variable?
-        const isAnonymous = false; // TODO: Make this variable?
+        const summary = 'New Message from Staff';
+        const isAnonymousStaffMember = confirmation.customId.includes('anon');
         const embed = EmbedHelper.getStaffMailUserViewIncomingEmbed(
-            member.user,
-            isAnonymous,
+            isAnonymousStaffMember ? null : message.author,
+            false,
             content,
             summary,
-            StaffMailType.staff
+            StaffMailType.Staff
         );
         const messageToUser = await member.send({
+            content: `📫 You've received a new message from staff! I've pinned it for you so you can easily reply.`,
             embeds: [embed],
         });
         const newStaffMail = await this.staffMailRepository.createStaffMail(
             member.user,
-            StaffMailType.staff,
+            StaffMailType.Staff,
             StaffMailModeEnum.NAMED,
             summary,
             messageToUser
         );
+
+        await this.channelService.pinNewStaffMailMessageInDmChannel(messageToUser, null, member.user);
         await newStaffMail.channel!.send({
             embeds: [
-                EmbedHelper.getStaffMailStaffViewNewEmbed(member.user, message.author),
-                EmbedHelper.getStaffMailStaffViewIncomingEmbed(message.author, content),
+                EmbedHelper.getStaffMailStaffViewNewEmbed(
+                    member.user,
+                    message.author,
+                    StaffMailType.Staff,
+                    'Manually contacted member'
+                ),
+                EmbedHelper.getStaffMailStaffViewOutgoingEmbed(
+                    message.author,
+                    isAnonymousStaffMember,
+                    member.user,
+                    content
+                ),
             ],
         });
         await response.edit({

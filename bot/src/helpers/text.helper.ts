@@ -3,6 +3,7 @@ import { User } from 'discord.js';
 export class TextHelper {
     static success = '✅';
     static failure = '❌';
+    static lastfm = '<:lastfmred:900551196023083048>';
     static pascalCase(input: string): string {
         return input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
     }
@@ -12,7 +13,7 @@ export class TextHelper {
     }
 
     static userDisplay(user: User): string {
-        return `<@!${user.id}> (ID ${user.id}>`;
+        return `<@!${user.id}> (ID ${user.id})`;
     }
 
     static wordWrap(text: string): string {

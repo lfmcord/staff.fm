@@ -1,6 +1,5 @@
 import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode.enum';
 import { GuildTextBasedChannel, User } from 'discord.js';
-import { StaffMailType } from '@src/feature/staffmail/models/staff-mail-type.enum';
 
 export interface StaffMail {
     id: string;
@@ -8,8 +7,8 @@ export interface StaffMail {
     user: User | null;
     userId: string;
     mode: StaffMailModeEnum;
-    type: StaffMailType;
-    summary: string;
+    type: string;
+    summary: string | null;
     createdAt: Date;
     lastMessageAt: Date;
     lastMessageId: string;

@@ -1,6 +1,6 @@
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { Message, MessageResolvable, MessageType } from 'discord.js';
+import { Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { Logger } from 'tslog';
@@ -10,6 +10,7 @@ import { TextHelper } from '@src/helpers/text.helper';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode.enum';
+import { ChannelService } from '@src/infrastructure/services/channel.service';
 
 @injectable()
 export class StaffMailReplyCommand implements ICommand {
@@ -24,12 +25,15 @@ export class StaffMailReplyCommand implements ICommand {
     isUsableInServer = true;
 
     private logger: Logger<StaffMailReplyCommand>;
+    channelService: ChannelService;
     private staffMailRepository: StaffMailRepository;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<StaffMailReplyCommand>,
-        @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository
+        @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository,
+        @inject(TYPES.ChannelService) channelService: ChannelService
     ) {
+        this.channelService = channelService;
         this.logger = logger;
         this.staffMailRepository = staffMailRepository;
     }
@@ -63,7 +67,7 @@ export class StaffMailReplyCommand implements ICommand {
             embeds: [
                 EmbedHelper.getStaffMailUserViewIncomingEmbed(
                     message.author,
-                    false,
+                    staffMail.mode === StaffMailModeEnum.ANONYMOUS,
                     args.join(' '),
                     staffMail.summary,
                     staffMail.type
@@ -71,12 +75,11 @@ export class StaffMailReplyCommand implements ICommand {
             ],
         });
 
-        await (await staffMail.user.dmChannel?.messages.fetch(staffMail.lastMessageId as MessageResolvable))?.unpin();
-        await messageToUser.pin();
-        await staffMail.user.dmChannel?.messages.cache
-            .filter((m: Message) => (m.type = MessageType.ChannelPinnedMessage))
-            .last()
-            ?.delete();
+        await this.channelService.pinNewStaffMailMessageInDmChannel(
+            messageToUser,
+            staffMail.lastMessageId,
+            staffMail.user
+        );
 
         this.logger.debug(`Updating staff mail in DB and staff mail channel...`);
         await this.staffMailRepository.updateStaffMailLastMessageId(staffMail.id, messageToUser.id);

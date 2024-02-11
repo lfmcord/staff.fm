@@ -1,7 +1,20 @@
-import { Client, EmbedBuilder, Message, User } from 'discord.js';
+import {
+    ActionRowBuilder,
+    bold,
+    ButtonBuilder,
+    Client,
+    EmbedBuilder,
+    Message,
+    MessageCreateOptions,
+    MessageEditOptions,
+    StringSelectMenuBuilder,
+    User,
+} from 'discord.js';
 import { LogLevel } from '@src/helpers/models/LogLevel';
 import { TextHelper } from '@src/helpers/text.helper';
-import { StaffMailType } from '@src/feature/staffmail/models/staff-mail-type.enum';
+import { ComponentHelper } from '@src/helpers/component.helper';
+import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
+import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
 
 export class EmbedHelper {
     static readonly red = 12059152;
@@ -31,36 +44,50 @@ export class EmbedHelper {
             .setFooter({ text: `Command executed by @${message.author.username}` });
     }
 
-    // TODO: Fix this mess of staff mail embeds
-    static getStaffMailCreateEmbed(client: Client): EmbedBuilder {
-        return (
-            new EmbedBuilder()
-                // .setAuthor({
-                //     name: 'Staff.fm',
-                //     iconURL: client.user!.avatarURL() ?? undefined,
-                // })
-                .setTitle('✉️ StaffMail')
-                .setColor(12059152)
-                .setTimestamp()
-        );
+    static getStaffMailCreateEmbed(): MessageCreateOptions {
+        const embed = new EmbedBuilder()
+            .setDescription(
+                `Hello! Looks like you are trying to send a message to the Lastcord Staff team.\n\n${bold('Please select below what you need help with.')}`
+            )
+            .setTitle('✉️ Sending a new StaffMail')
+            .setColor(12059152)
+            .setTimestamp();
+        return {
+            embeds: [embed],
+            components: [
+                new ActionRowBuilder<StringSelectMenuBuilder>().setComponents(ComponentHelper.staffMailCreateMenu),
+                new ActionRowBuilder<ButtonBuilder>().setComponents(
+                    ComponentHelper.cancelButton(StaffMailCustomIds.CancelButton)
+                ),
+            ],
+        };
     }
 
-    static getStaffMailStaffViewNewEmbed(user: User | null, createdBy: User | null): EmbedBuilder {
+    static getStaffMailStaffViewNewEmbed(
+        user: User | null,
+        createdBy: User | null,
+        category: string,
+        summary: string | null
+    ): EmbedBuilder {
         // TODO: Add whois output, more info about user!
+        const fields = [{ name: 'Category', value: EmbedHelper.getHumanReadableStaffMailType(category), inline: true }];
+        if (summary) fields.push({ name: 'Summary', value: summary, inline: true });
+        fields.push(
+            { name: '\u200B', value: '\u200B', inline: false },
+            { name: 'User', value: user ? TextHelper.userDisplay(user) : 'Anonymous', inline: true },
+            {
+                name: 'Created by',
+                value: createdBy ? TextHelper.userDisplay(createdBy) : 'Anonymous',
+                inline: true,
+            }
+        );
         return new EmbedBuilder()
             .setTitle('New StaffMail')
             .setColor(EmbedHelper.blue)
-            .setFields([
-                { name: 'User', value: user ? TextHelper.userDisplay(user) : 'Anonymous', inline: true },
-                {
-                    name: 'Created by',
-                    value: createdBy ? TextHelper.userDisplay(createdBy) : 'Anonymous',
-                    inline: true,
-                },
-            ])
+            .setFields(fields)
             .setFooter({
-                text: user ? `${user.username} | ${user.id}` : 'Anonymous',
-                iconURL: user?.avatarURL() ?? 'https://cdn-icons-png.flaticon.com/512/1534/1534082.png',
+                text: user ? `${user.username} | ${user.id}` : 'Anonymous User',
+                iconURL: user?.avatarURL() ?? EmbedHelper.anonymousPictureLink,
             })
             .setTimestamp();
     }
@@ -69,19 +96,22 @@ export class EmbedHelper {
         staffMember: User | null,
         isAnonymous: boolean,
         content: string,
-        summary: string,
-        type: StaffMailType
+        summary: string | null,
+        type: string
     ): EmbedBuilder {
         let name = staffMember?.username != null ? staffMember.username : `Anonymous`;
         name += ` (Lastcord Staff) -> You`;
         if (isAnonymous) name += ` (Anonymous)`;
         const humanReadableType = EmbedHelper.getHumanReadableStaffMailType(type);
+
+        let title = `📥 ${humanReadableType}`;
+        if (summary) title += `: ${summary}`;
         return new EmbedBuilder()
             .setAuthor({
                 name: name,
                 iconURL: staffMember?.avatarURL() ?? EmbedHelper.lastfmPictureLink,
             })
-            .setTitle(`📥 ${humanReadableType}: ${summary}`)
+            .setTitle(title)
             .setColor(32768)
             .setDescription(content)
             .setFooter({
@@ -94,19 +124,21 @@ export class EmbedHelper {
         author: User,
         isAnonymous: boolean,
         content: string,
-        summary: string,
-        type: StaffMailType
+        summary: string | null,
+        type: string
     ): EmbedBuilder {
         let name = author.username;
         if (isAnonymous) name += ` (Anonymous)`;
         name += ` -> Lastcord Staff`;
         const humanReadableType = EmbedHelper.getHumanReadableStaffMailType(type);
+        let title = `📤 ${humanReadableType}`;
+        if (summary) title += `: ${summary}`;
         return new EmbedBuilder()
             .setAuthor({
                 name: name,
                 iconURL: isAnonymous ? this.anonymousPictureLink : author!.avatarURL() ?? '',
             })
-            .setTitle(`📤 ${humanReadableType}: ${summary}`)
+            .setTitle(title)
             .setColor(12059152)
             .setDescription(content)
             .setFooter({
@@ -121,7 +153,7 @@ export class EmbedHelper {
         const embed = new EmbedBuilder()
             .setAuthor({
                 name: name,
-                iconURL: author?.avatarURL() ?? 'https://discord.com/assets/c0e3fec8f08643b9c1fa.svg',
+                iconURL: author?.avatarURL() ?? EmbedHelper.anonymousPictureLink,
             })
             .setTitle(`📥 New Message`)
             .setColor(32768)
@@ -138,12 +170,12 @@ export class EmbedHelper {
         content: string
     ): EmbedBuilder {
         let name = staffMember.username;
-        if (isAnonymousReply) name += `(Anonymous)`;
+        if (isAnonymousReply) name += ` (Anonymous)`;
         recipient ? (name += ` -> ${recipient.username}`) : ` -> Anonymous User`;
         const embed = new EmbedBuilder()
             .setAuthor({
                 name: name,
-                iconURL: staffMember?.avatarURL() ?? 'https://discord.com/assets/c0e3fec8f08643b9c1fa.svg',
+                iconURL: staffMember?.avatarURL() ?? EmbedHelper.anonymousPictureLink,
             })
             .setTitle(`📤 Message sent`)
             .setColor(12059152)
@@ -154,24 +186,218 @@ export class EmbedHelper {
         return embed;
     }
 
-    static getHumanReadableStaffMailType(type: StaffMailType): string {
-        let humanReadableType = '';
+    static getStaffMailCategoryEmbed = (category: string) => {
+        let message: MessageEditOptions = EmbedHelper.getStaffMailCreateEmbed() as MessageEditOptions;
+        const embed = message.embeds![0] as EmbedBuilder;
+        switch (category) {
+            case StaffMailType.Report:
+                message = {
+                    embeds: [
+                        embed
+                            .setTitle('⚠️ StaffMail - Report')
+                            .setDescription(
+                                `💡 When reporting a user or a message, it's always helpful to include a message link with your report.\n\n` +
+                                    ` Please choose below if you want to send the report with your name or anonymously.`
+                            ),
+                    ],
+                    components: [
+                        new ActionRowBuilder<ButtonBuilder>().setComponents(
+                            ComponentHelper.sendButton(StaffMailCustomIds.ReportSendButton),
+                            ComponentHelper.sendAnonButton(StaffMailCustomIds.ReportSendAnonButton),
+                            ComponentHelper.cancelButton(StaffMailCustomIds.CancelButton)
+                        ),
+                    ],
+                };
+                break;
+            case StaffMailType.Crowns: // TODO: Add another submenu for crowns?
+                message = {
+                    embeds: [
+                        embed
+                            .setTitle('👑 StaffMail - Crowns Game Inquiry')
+                            .setDescription(`Please select from the menu below what you'd like to inquire about.`),
+                    ],
+                    components: [
+                        new ActionRowBuilder<StringSelectMenuBuilder>().setComponents(
+                            ComponentHelper.staffMailCreateCrownsSubmenu
+                        ),
+                        new ActionRowBuilder<ButtonBuilder>().setComponents(
+                            ComponentHelper.cancelButton(StaffMailCustomIds.CancelButton)
+                        ),
+                    ],
+                };
+                break;
+            case StaffMailType.Server:
+                message = {
+                    embeds: [
+                        embed
+                            .setTitle('❔ StaffMail - Server Question/Suggestion')
+                            .setDescription(
+                                `Whether you have a question about how the server works or if you have a suggestion on how to improve it - were happy to answer and hear you out!\n\n` +
+                                    `Click the send button below to send us your questions or suggestion.`
+                            ),
+                    ],
+                    components: [
+                        new ActionRowBuilder<ButtonBuilder>().setComponents(
+                            ComponentHelper.sendButton(StaffMailCustomIds.ServerSendButton),
+                            ComponentHelper.cancelButton(StaffMailCustomIds.CancelButton)
+                        ),
+                    ],
+                };
+                break;
+            case StaffMailType.Lastfm:
+                message = {
+                    embeds: [
+                        embed
+                            .setTitle(`🎵 StaffMail - Last.fm Inquiry`)
+                            .setDescription(
+                                `⚠️ ${bold(`BEFORE YOU SUBMIT:`)} Please be aware that the Last.fm Discord is not officially affiliated with Last.fm. ` +
+                                    `If you have an issue with your account or the website, we can't help you beyond pointing you in the right direction. For official Last.fm support, please visit the [Last.fm Support Forums](https://support.last.fm/).\n` +
+                                    `Similarly, if you experience issues with the .fmbot or Gowon Discord bots, please visit their respective servers:\n- [.fmbot server](https://discord.gg/fmbot)\n- [Gowon server](https://discord.gg/9Vr7Df7TZf)\n\n` +
+                                    `You might also get some help in #help-api-tools!`
+                            ),
+                    ],
+                    components: [
+                        new ActionRowBuilder<ButtonBuilder>().setComponents(
+                            ComponentHelper.sendButton(StaffMailCustomIds.LastfmSendButton),
+                            ComponentHelper.cancelButton(StaffMailCustomIds.CancelButton)
+                        ),
+                    ],
+                };
+                break;
+            case StaffMailType.Other:
+                message = {
+                    embeds: [
+                        embed
+                            .setTitle('🃏 StaffMail - Other Concerns')
+                            .setDescription(
+                                `The concern why you want to message staff falls under none of the other categories. We are still happy to hear you out and do what we can.\n\n` +
+                                    ` Please choose below if how you want to send your concern.`
+                            ),
+                    ],
+                    components: [
+                        new ActionRowBuilder<ButtonBuilder>().setComponents(
+                            ComponentHelper.sendButton(StaffMailCustomIds.OtherSendButton),
+                            ComponentHelper.sendAnonButton(StaffMailCustomIds.OtherSendAnonButton),
+                            ComponentHelper.cancelButton(StaffMailCustomIds.CancelButton)
+                        ),
+                    ],
+                };
+                break;
+        }
+        return message;
+    };
+
+    static getStaffMailCrownsSubcategoryEmbed = (subCategory: string) => {
+        const embed = EmbedHelper.getStaffMailCreateEmbed().embeds![0] as EmbedBuilder;
+        let messageCreateOptions: MessageEditOptions = { embeds: [embed] };
+        switch (subCategory) {
+            case StaffMailType.CrownsReport:
+                messageCreateOptions = {
+                    embeds: [
+                        embed
+                            .setTitle('👑 StaffMail - Crowns Game Report')
+                            .setDescription(
+                                `If you believe a user is violating the crowns game rules, please send us their Discord username and/or their Last.fm profile link along with a short reason why you think they are in violation of the rules.\n` +
+                                    `We'll get back to you about what action we took.`
+                            ),
+                    ],
+                    components: [
+                        new ActionRowBuilder<ButtonBuilder>().setComponents(
+                            ComponentHelper.sendButton(StaffMailCustomIds.CrownsReportSendButton),
+                            ComponentHelper.cancelButton(StaffMailCustomIds.CancelButton)
+                        ),
+                    ],
+                };
+                break;
+            case StaffMailType.CrownsBanInquiry: // TODO: Add another submenu for crowns?
+                messageCreateOptions = {
+                    embeds: [
+                        embed
+                            .setTitle('👑 StaffMail - Crowns Game Ban Inquiry')
+                            .setDescription(
+                                `If you're unsure about why you're not able to participate in the crowns game or would like to dispute your crowns game ban, please use the button below to send us a message.`
+                            ),
+                    ],
+                    components: [
+                        new ActionRowBuilder<ButtonBuilder>().setComponents(
+                            ComponentHelper.sendButton(StaffMailCustomIds.CrownsBanInquirySendButton),
+                            ComponentHelper.cancelButton(StaffMailCustomIds.CancelButton)
+                        ),
+                    ],
+                };
+                break;
+            case StaffMailType.CrownsFalseCrown:
+                messageCreateOptions = {
+                    embeds: [
+                        embed
+                            .setTitle('👑 StaffMail - False Crown')
+                            .setDescription(
+                                `If you've accidentally misspelled a crown or found someone holding a false crown, let us know and we'll delete it.\n\n` +
+                                    `Simply click the button below to send us the name of the false crown.`
+                            ),
+                    ],
+                    components: [
+                        new ActionRowBuilder<ButtonBuilder>().setComponents(
+                            ComponentHelper.sendButton(StaffMailCustomIds.CrownsFalseCrownSendButton),
+                            ComponentHelper.cancelButton(StaffMailCustomIds.CancelButton)
+                        ),
+                    ],
+                };
+                break;
+            case StaffMailType.CrownsOther:
+                messageCreateOptions = {
+                    embeds: [
+                        embed
+                            .setTitle('👑 StaffMail - Other Crowns Game Inquiry')
+                            .setDescription(
+                                `If your inquiry falls under none of the other categories, we are still happy to hear you out and assist!\n\n` +
+                                    `Simply click the button below to send us your crowns game concern.`
+                            ),
+                    ],
+                    components: [
+                        new ActionRowBuilder<ButtonBuilder>().setComponents(
+                            ComponentHelper.sendButton(StaffMailCustomIds.CrownsOtherSendButton),
+                            ComponentHelper.cancelButton(StaffMailCustomIds.CancelButton)
+                        ),
+                    ],
+                };
+                break;
+        }
+        return messageCreateOptions;
+    };
+
+    static getHumanReadableStaffMailType(type: string): string {
+        let humanReadableType = 'Unknown Category';
         switch (type) {
-            case StaffMailType.report:
+            case StaffMailType.Report:
                 humanReadableType = 'Report';
                 break;
-            case StaffMailType.server:
+            case StaffMailType.Server:
                 humanReadableType = 'Question/Suggestion';
                 break;
-            case StaffMailType.lastfm:
+            case StaffMailType.Lastfm:
                 humanReadableType = 'Last.fm Question';
                 break;
-            case StaffMailType.crowns:
+            case StaffMailType.Crowns:
                 humanReadableType = 'Crowns Game';
                 break;
-            case StaffMailType.other:
+            case StaffMailType.CrownsReport:
+                humanReadableType = 'Crowns Game Report';
+                break;
+            case StaffMailType.CrownsBanInquiry:
+                humanReadableType = 'Crowns Game Ban';
+                break;
+            case StaffMailType.CrownsFalseCrown:
+                humanReadableType = 'Crowns Game - False Crown';
+                break;
+            case StaffMailType.CrownsOther:
+                humanReadableType = 'Crowns Game - Other';
+                break;
+            case StaffMailType.Other:
                 humanReadableType = 'Other';
                 break;
+            case StaffMailType.Staff:
+                humanReadableType = 'Staff';
         }
         return humanReadableType;
     }

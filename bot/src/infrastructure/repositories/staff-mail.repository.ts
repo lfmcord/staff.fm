@@ -8,7 +8,6 @@ import { faker } from '@faker-js/faker';
 import moment = require('moment');
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
-import { StaffMailType } from '@src/feature/staffmail/models/staff-mail-type.enum';
 
 @injectable()
 export class StaffMailRepository {
@@ -46,9 +45,9 @@ export class StaffMailRepository {
 
     public async createStaffMail(
         user: User,
-        type: StaffMailType,
+        type: string,
         mode: StaffMailModeEnum,
-        summary: string,
+        summary: string | null,
         lastMessage: Message
     ): Promise<StaffMail> {
         const channel = await this.createStaffMailChannel(user, mode);
@@ -119,7 +118,7 @@ export class StaffMailRepository {
                 if (!channelsInCategory) channelName = generatedChannelName;
             } while (channelName === null);
         } else {
-            channelName = user.username;
+            channelName = user.username + '-' + faker.string.hexadecimal({ length: 4, casing: 'lower', prefix: '' });
         }
         return await this.channelService.createGuildTextChannelInCategory(channelName, category);
     }
@@ -139,7 +138,7 @@ export class StaffMailRepository {
             userId: model.userId,
             channel: channel as GuildTextBasedChannel | null,
             mode: model.mode.valueOf(),
-            type: model.type.valueOf(),
+            type: model.type,
             summary: model.summary,
             createdAt: model.createdAt,
             lastMessageAt: model.lastMessageAt,
@@ -153,8 +152,8 @@ export interface IStaffMailModel {
     channelId: string;
     userId: string;
     mode: StaffMailModeEnum;
-    type: StaffMailType;
-    summary: string;
+    type: string;
+    summary: string | null;
     createdAt: Date;
     lastMessageAt: Date;
     lastMessageId: string;
@@ -165,8 +164,8 @@ const staffMailSchema = new Schema<IStaffMailModel>(
         channelId: { type: String, required: true },
         userId: { type: String, required: true },
         mode: { type: Number, required: true },
-        type: { type: Number, required: true },
-        summary: { type: String, required: true },
+        type: { type: String, required: true },
+        summary: { type: String, required: false },
         createdAt: { type: Date, required: true },
         lastMessageAt: { type: Date, required: true },
         lastMessageId: { type: String, required: true },
