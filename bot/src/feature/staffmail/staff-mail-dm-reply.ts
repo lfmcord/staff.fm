@@ -40,6 +40,7 @@ export class StaffMailDmReply {
                     message.content
                 ),
             ],
+            files: Array.from(message.attachments.values()),
         });
 
         const newStaffMailMessage = await message.channel.send({
@@ -52,6 +53,7 @@ export class StaffMailDmReply {
                     staffMail.type
                 ),
             ],
+            files: Array.from(message.attachments.values()),
         });
         await this.channelService.pinNewStaffMailMessageInDmChannel(
             newStaffMailMessage,

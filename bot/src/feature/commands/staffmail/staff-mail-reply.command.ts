@@ -93,13 +93,16 @@ export class StaffMailReplyCommand implements ICommand {
                     args.join(' ')
                 ),
             ],
+            files: Array.from(message.attachments.values()),
         });
         await message.delete();
 
         return {};
     }
 
-    validateArgs(_: string[]): Promise<void> {
+    validateArgs(args: string[]): Promise<void> {
+        if (args.length === 0)
+            throw new ValidationError(new Error(`Empty reply args.`), `You have to provide a reply!`);
         return Promise.resolve();
     }
 }

@@ -7,6 +7,7 @@ import { TYPES } from '@src/types';
 import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode.enum';
 import { Logger } from 'tslog';
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
 
 @injectable()
 export class StaffMailCreateModalSubmitInteraction implements IInteraction {
@@ -23,12 +24,15 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
         'defer-' + StaffMailCustomIds.OtherSendAnonButton + '-modal',
     ];
     logger: Logger<StaffMailCreateModalSubmitInteraction>;
+    loggingService: LoggingService;
     staffMailRepository: StaffMailRepository;
 
     constructor(
         @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository,
-        @inject(TYPES.BotLogger) logger: Logger<StaffMailCreateModalSubmitInteraction>
+        @inject(TYPES.BotLogger) logger: Logger<StaffMailCreateModalSubmitInteraction>,
+        @inject(TYPES.LoggingService) loggingService: LoggingService
     ) {
+        this.loggingService = loggingService;
         this.logger = logger;
         this.staffMailRepository = staffMailRepository;
     }
@@ -88,5 +92,14 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
             ephemeral: true,
             content: `I've successfully sent your report! Staff will get back to you as soon as possible. I've also pinned the message. Check your pins to see all your open StaffMails!`,
         });
+
+        await this.loggingService.logStaffMailEvent(
+            true,
+            isCrownsModal ? null : summary,
+            staffMail.type,
+            mode === StaffMailModeEnum.NAMED ? interaction.user : null,
+            mode === StaffMailModeEnum.NAMED ? interaction.user : null,
+            null
+        );
     }
 }

@@ -84,8 +84,13 @@ export class StaffMailRepository {
         if (!deletedStaffMail) {
             return null;
         }
-        await this.deleteStaffMailChannel(channelId);
         return await this.mapModelToStaffMail(deletedStaffMail);
+    }
+
+    public async deleteStaffMailChannel(channelId: string) {
+        const channelToDelete = await this.channelService.getGuildChannelById(channelId);
+        if (!channelToDelete) throw Error(`Cannot delete channel with ID ID ${channelId}`);
+        await channelToDelete.delete(`StaffMail closed.`);
     }
 
     public async updateStaffMailLastMessageId(staffMailId: string, newLastMessageId: string) {
@@ -123,11 +128,6 @@ export class StaffMailRepository {
         return await this.channelService.createGuildTextChannelInCategory(channelName, category);
     }
 
-    private async deleteStaffMailChannel(channelId: string) {
-        const channelToDelete = await this.channelService.getGuildChannelById(channelId);
-        if (!channelToDelete) throw Error(`Cannot delete channel with ID ID ${channelId}`);
-        await channelToDelete.delete(`StaffMail closed.`);
-    }
     private async mapModelToStaffMail(model: IStaffMailModel): Promise<StaffMail> {
         const channel = await this.channelService.getGuildChannelById(model.channelId);
         const user = (await this.memberService.getGuildMemberFromUserId(model.userId))?.user;

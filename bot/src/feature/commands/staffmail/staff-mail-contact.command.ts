@@ -23,6 +23,7 @@ import { ComponentHelper } from '@src/helpers/component.helper';
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
 import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
 
 @injectable()
 export class StaffMailContactCommand implements ICommand {
@@ -36,6 +37,7 @@ export class StaffMailContactCommand implements ICommand {
     isUsableInServer = true;
 
     private logger: Logger<StaffMailContactCommand>;
+    loggingService: LoggingService;
     channelService: ChannelService;
     staffMailRepository: StaffMailRepository;
     memberService: MemberService;
@@ -44,8 +46,10 @@ export class StaffMailContactCommand implements ICommand {
         @inject(TYPES.BotLogger) logger: Logger<StaffMailContactCommand>,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository,
-        @inject(TYPES.ChannelService) channelService: ChannelService
+        @inject(TYPES.ChannelService) channelService: ChannelService,
+        @inject(TYPES.LoggingService) loggingService: LoggingService
     ) {
+        this.loggingService = loggingService;
         this.channelService = channelService;
         this.staffMailRepository = staffMailRepository;
         this.memberService = memberService;
@@ -142,6 +146,15 @@ export class StaffMailContactCommand implements ICommand {
                 ),
             ],
         });
+
+        await this.loggingService.logStaffMailEvent(
+            true,
+            'Manually contacted member',
+            StaffMailType.Staff,
+            member.user,
+            message.author,
+            null
+        );
         await response.edit({
             content: `I've sent the message to the user and created ${newStaffMail.channel}.`,
             embeds: [],

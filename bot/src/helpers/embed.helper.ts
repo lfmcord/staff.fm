@@ -82,7 +82,7 @@ export class EmbedHelper {
             .setTitle(`🔴 StaffMail Closed`)
             .setColor(EmbedHelper.red)
             .setDescription(
-                `Thank you for using the Lastcord StaffMail! This StaffMail has been closed:\n\n## ${title}\n\nPlease use the button below to reopen the StaffMail if you feel that this was wrong.`
+                `Thank you for using the Lastcord StaffMail! This StaffMail has been closed:\n\n${bold(title)}\n\nPlease use the button below to reopen the StaffMail if you feel that this was wrong.`
             )
             .setTimestamp();
         if (reason) embed.setFields({ name: 'Closure Reason', value: reason, inline: false });
@@ -99,12 +99,11 @@ export class EmbedHelper {
         const fields = [{ name: 'Category', value: EmbedHelper.getHumanReadableStaffMailType(category), inline: true }];
         if (summary) fields.push({ name: 'Summary', value: summary, inline: true });
         fields.push(
-            { name: '\u200B', value: '\u200B', inline: false },
-            { name: 'User', value: user ? TextHelper.userDisplay(user) : 'Anonymous', inline: true },
+            { name: 'User', value: user ? TextHelper.userDisplay(user) : 'Anonymous', inline: false },
             {
                 name: 'Created by',
                 value: createdBy ? TextHelper.userDisplay(createdBy) : 'Anonymous',
-                inline: true,
+                inline: false,
             }
         );
         return new EmbedBuilder()
@@ -181,11 +180,11 @@ export class EmbedHelper {
                 name: name,
                 iconURL: author?.avatarURL() ?? EmbedHelper.anonymousPictureLink,
             })
-            .setTitle(`📥 New Message`)
+            .setTitle(`📥 Message received`)
             .setColor(32768)
             .setDescription(content)
+            .setFooter({ text: author ? `${author.username} | ${author.id}` : 'Anonymous User' })
             .setTimestamp();
-        if (author) embed.setFooter({ text: `${author.username} | ${author.id}` });
         return embed;
     }
 
@@ -198,7 +197,7 @@ export class EmbedHelper {
         let name = staffMember.username;
         if (isAnonymousReply) name += ` (Anonymous)`;
         recipient ? (name += ` -> ${recipient.username}`) : ` -> Anonymous User`;
-        const embed = new EmbedBuilder()
+        return new EmbedBuilder()
             .setAuthor({
                 name: name,
                 iconURL: staffMember?.avatarURL() ?? EmbedHelper.anonymousPictureLink,
@@ -206,10 +205,8 @@ export class EmbedHelper {
             .setTitle(`📤 Message sent`)
             .setColor(12059152)
             .setDescription(content)
+            .setFooter({ text: `${staffMember.username} | ${staffMember.id}` })
             .setTimestamp();
-
-        if (recipient) embed.setFooter({ text: `${recipient.username} | ${recipient.id}` });
-        return embed;
     }
 
     static getStaffMailCategoryEmbed = (category: string) => {
@@ -235,7 +232,7 @@ export class EmbedHelper {
                     ],
                 };
                 break;
-            case StaffMailType.Crowns: // TODO: Add another submenu for crowns?
+            case StaffMailType.Crowns:
                 message = {
                     embeds: [
                         embed

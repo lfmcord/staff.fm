@@ -1,5 +1,15 @@
 import { inject, injectable } from 'inversify';
-import { bold, Client, EmbedBuilder, GuildMember, GuildTextBasedChannel, inlineCode, italic } from 'discord.js';
+import {
+    AttachmentBuilder,
+    bold,
+    Client,
+    EmbedBuilder,
+    GuildMember,
+    GuildTextBasedChannel,
+    inlineCode,
+    italic,
+    User,
+} from 'discord.js';
 import { TYPES } from '@src/types';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { CachedMessageModel } from '@src/infrastructure/repositories/models/cached-message.model';
@@ -10,6 +20,7 @@ import { Logger } from 'tslog';
 import moment = require('moment');
 import { Verification } from '@src/feature/commands/utility/models/verification.model';
 import { CountryCodeHelper } from '@src/helpers/country-code.helper';
+import { TextHelper } from '@src/helpers/text.helper';
 
 @injectable()
 export class LoggingService {
@@ -18,16 +29,19 @@ export class LoggingService {
     private selfmuteLogChannelId: string;
     private client: Client;
     private channelService: ChannelService;
+    staffMailLogChannelId: string;
     private logger: Logger<LoggingService>;
 
     constructor(
         @inject(TYPES.DELETED_MESSAGE_LOG_CHANNEL_ID) deletedMessageLogChannelId: string,
         @inject(TYPES.SELFMUTE_LOG_CHANNEL_ID) selfmuteLogChannelId: string,
         @inject(TYPES.USER_LOG_CHANNEL_ID) userLogChannelId: string,
+        @inject(TYPES.STAFFMAIL_LOG_CHANNEL_ID) staffMailLogChannelId: string,
         @inject(TYPES.ChannelService) channelService: ChannelService,
         @inject(TYPES.InfrastructureLogger) logger: Logger<LoggingService>,
         @inject(TYPES.Client) client: Client
     ) {
+        this.staffMailLogChannelId = staffMailLogChannelId;
         this.userLogChannelId = userLogChannelId;
         this.selfmuteLogChannelId = selfmuteLogChannelId;
         this.client = client;
@@ -141,6 +155,42 @@ export class LoggingService {
         }
 
         await logChannel.send({ embeds: embeds });
+    }
+
+    public async logStaffMailEvent(
+        isOpen: boolean,
+        summary: string | null,
+        type: string,
+        author: User | null,
+        actor: User | null,
+        reason: string | null,
+        attachments: AttachmentBuilder[] = []
+    ) {
+        const logChannel = await this.channelService.getGuildChannelById(this.staffMailLogChannelId);
+        if (!logChannel) return;
+
+        const humanReadableType = EmbedHelper.getHumanReadableStaffMailType(type);
+        const fields = [{ name: 'Category', value: humanReadableType, inline: true }];
+        if (summary) fields.push({ name: 'Summary', value: summary, inline: true });
+        fields.push(
+            { name: 'User', value: author ? TextHelper.userDisplay(author) : 'Anonymous', inline: false },
+            {
+                name: isOpen ? 'Created by' : 'Closed by',
+                value: actor ? TextHelper.userDisplay(actor) : 'Anonymous',
+                inline: false,
+            }
+        );
+        const embed = new EmbedBuilder()
+            .setColor(isOpen ? EmbedHelper.green : EmbedHelper.red)
+            .setTitle(isOpen ? `New StaffMail` : `Closed StaffMail`)
+            .setFields(fields)
+            .setTimestamp();
+        if (reason) embed.setDescription(`${bold('Reason:')} ${reason}`);
+        else if (!isOpen) embed.setDescription(`No reason provided.`);
+        await logChannel.send({
+            embeds: [embed],
+            files: attachments,
+        });
     }
 
     private async getLogChannel(channelId: string): Promise<GuildTextBasedChannel | null> {
