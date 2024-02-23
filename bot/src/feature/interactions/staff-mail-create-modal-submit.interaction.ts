@@ -24,14 +24,17 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
         'defer-' + StaffMailCustomIds.OtherSendAnonButton + '-modal',
     ];
     logger: Logger<StaffMailCreateModalSubmitInteraction>;
+    rolePingIds: string[];
     loggingService: LoggingService;
     staffMailRepository: StaffMailRepository;
 
     constructor(
         @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository,
         @inject(TYPES.BotLogger) logger: Logger<StaffMailCreateModalSubmitInteraction>,
-        @inject(TYPES.LoggingService) loggingService: LoggingService
+        @inject(TYPES.LoggingService) loggingService: LoggingService,
+        @inject(TYPES.STAFFMAIL_PING_ROLE_IDS) rolePings: string[]
     ) {
+        this.rolePingIds = rolePings;
         this.loggingService = loggingService;
         this.logger = logger;
         this.staffMailRepository = staffMailRepository;
@@ -60,8 +63,11 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
             summary,
             interaction.message!
         );
+
+        let rolePings = '';
+        this.rolePingIds.forEach((id) => (rolePings += `<@&${id}> `));
         await staffMail.channel!.send({
-            content: `New StaffMail: ${humanReadableCategory}`, // TODO Staff ping
+            content: `${rolePings}New StaffMail: ${humanReadableCategory}`,
             embeds: [
                 EmbedHelper.getStaffMailStaffViewNewEmbed(
                     isAnonymous ? null : interaction.user,
@@ -77,7 +83,7 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
         await interaction.message?.edit({
             components: [],
             embeds: [
-                EmbedHelper.getStaffMailOpenEmbed,
+                EmbedHelper.getStaffMailOpenEmbed(false),
                 EmbedHelper.getStaffMailUserViewOutgoingEmbed(
                     interaction.user,
                     mode === StaffMailModeEnum.ANONYMOUS,

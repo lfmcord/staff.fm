@@ -72,6 +72,9 @@ container
 container
     .bind<string>(TYPES.DELETED_MESSAGE_LOG_CHANNEL_ID)
     .toConstantValue(process.env.DELETED_MESSAGE_LOG_CHANNEL_ID ?? '');
+container
+    .bind<string[]>(TYPES.STAFFMAIL_PING_ROLE_IDS)
+    .toConstantValue(process.env.STAFFMAIL_PING_ROLE_IDS?.split(',') ?? []);
 
 // CORE
 container.bind<Logger<ILogObj>>(TYPES.BotLogger).toConstantValue(

@@ -119,7 +119,7 @@ export class StaffMailContactCommand implements ICommand {
         );
         const messageToUser = await member.send({
             content: `📫 You've received a new message from staff! I've pinned it for you so you can easily reply.`,
-            embeds: [EmbedHelper.getStaffMailOpenEmbed, embed],
+            embeds: [EmbedHelper.getStaffMailOpenEmbed(true), embed],
         });
         const newStaffMail = await this.staffMailRepository.createStaffMail(
             member.user,

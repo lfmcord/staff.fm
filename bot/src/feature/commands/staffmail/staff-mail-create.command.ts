@@ -110,6 +110,7 @@ export class StaffMailCreateCommand implements ICommand {
 
         if (sendInteraction.customId === StaffMailCustomIds.CancelButton) {
             await this.cancel(createMessage);
+            await sendInteraction.update({});
             return;
         }
 
