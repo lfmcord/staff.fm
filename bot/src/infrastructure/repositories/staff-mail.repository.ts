@@ -8,21 +8,22 @@ import { faker } from '@faker-js/faker';
 import moment = require('moment');
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class StaffMailRepository {
-    private staffMailCategoryId: string;
     private channelService: ChannelService;
+    private env: Environment;
     private memberService: MemberService;
 
     constructor(
-        @inject(TYPES.STAFFMAIL_CATEGORY_ID) staffMailCategoryId: string,
+        @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.ChannelService) channelService: ChannelService,
         @inject(TYPES.MemberService) memberService: MemberService
     ) {
+        this.env = env;
         this.memberService = memberService;
         this.channelService = channelService;
-        this.staffMailCategoryId = staffMailCategoryId;
     }
 
     public async getStaffMailByUserId(userId: string): Promise<StaffMail | null> {
@@ -105,8 +106,8 @@ export class StaffMailRepository {
     }
 
     private async createStaffMailChannel(user: User, mode: StaffMailModeEnum): Promise<GuildTextBasedChannel> {
-        const category = await this.channelService.getGuildCategoryById(this.staffMailCategoryId);
-        if (!category) throw Error(`Cannot find staff mail category with ID ${this.staffMailCategoryId}`);
+        const category = await this.channelService.getGuildCategoryById(this.env.STAFFMAIL_CATEGORY_ID);
+        if (!category) throw Error(`Cannot find staff mail category with ID ${this.env.STAFFMAIL_CATEGORY_ID}`);
         let channelName: string | null = null;
         if (mode === StaffMailModeEnum.ANONYMOUS) {
             // If the user wants to remain anonymous, we generate a random channel name and check for conflicts

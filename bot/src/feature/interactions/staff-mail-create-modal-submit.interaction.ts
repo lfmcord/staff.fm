@@ -8,6 +8,7 @@ import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode
 import { Logger } from 'tslog';
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class StaffMailCreateModalSubmitInteraction implements IInteraction {
@@ -24,17 +25,17 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
         'defer-' + StaffMailCustomIds.OtherSendAnonButton + '-modal',
     ];
     logger: Logger<StaffMailCreateModalSubmitInteraction>;
-    rolePingIds: string[];
     loggingService: LoggingService;
     staffMailRepository: StaffMailRepository;
+    env: Environment;
 
     constructor(
         @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository,
         @inject(TYPES.BotLogger) logger: Logger<StaffMailCreateModalSubmitInteraction>,
         @inject(TYPES.LoggingService) loggingService: LoggingService,
-        @inject(TYPES.STAFFMAIL_PING_ROLE_IDS) rolePings: string[]
+        @inject(TYPES.ENVIRONMENT) env: Environment
     ) {
-        this.rolePingIds = rolePings;
+        this.env = env;
         this.loggingService = loggingService;
         this.logger = logger;
         this.staffMailRepository = staffMailRepository;
@@ -65,7 +66,7 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
         );
 
         let rolePings = '';
-        this.rolePingIds.forEach((id) => (rolePings += `<@&${id}> `));
+        this.env.STAFFMAIL_PING_ROLE_IDS.forEach((id) => (rolePings += `<@&${id}> `));
         await staffMail.channel!.send({
             content: `${rolePings}New StaffMail: ${humanReadableCategory}`,
             embeds: [

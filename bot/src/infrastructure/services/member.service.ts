@@ -4,37 +4,26 @@ import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import moment = require('moment');
+import { Environment } from '@models/environment';
 
 @injectable()
 export class MemberService {
     private client: Client;
-    private readonly backstagerRoleIds: string[];
-    private readonly helperRoleIds: string[];
-    private readonly staffRoleIds: string[];
     scheduleService: ScheduleService;
-    private readonly mutedRoleId: string;
-    private readonly guildId: string;
+    env: Environment;
     constructor(
         @inject(TYPES.Client) client: Client,
-        @inject(TYPES.GUILD_ID) guildId: string,
-        @inject(TYPES.MUTED_ROLE_ID) mutedRoleId: string,
-        @inject(TYPES.BACKSTAGER_ROLE_IDS) backstagerRoleIds: string[],
-        @inject(TYPES.HELPER_ROLE_IDS) helperRoleIds: string[],
-        @inject(TYPES.STAFF_ROLE_IDS) staffRoleIds: string[],
+        @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.ScheduleService) scheduleService: ScheduleService
     ) {
+        this.env = env;
         this.scheduleService = scheduleService;
-        this.backstagerRoleIds = backstagerRoleIds;
-        this.helperRoleIds = helperRoleIds;
-        this.staffRoleIds = staffRoleIds;
-        this.mutedRoleId = mutedRoleId;
-        this.guildId = guildId;
         this.client = client;
     }
 
     // TODO: try catch for operations
     async getGuildMemberFromUserId(userId: string): Promise<GuildMember | null> {
-        const guild = await this.client.guilds.fetch(this.guildId);
+        const guild = await this.client.guilds.fetch(this.env.GUILD_ID);
         return await guild.members.fetch(userId);
     }
 
@@ -49,7 +38,7 @@ export class MemberService {
     }
 
     async getMemberRoleByRoleId(roleId: string): Promise<Role | null> {
-        const guild = await this.client.guilds.fetch(this.guildId);
+        const guild = await this.client.guilds.fetch(this.env.GUILD_ID);
         return await guild.roles.fetch(roleId);
     }
 
@@ -62,12 +51,12 @@ export class MemberService {
         const highestUserRole = await this.getHighestRoleFromGuildMember(member);
         const botMember = await this.getGuildMemberFromUserId(this.client.user!.id);
         const highestBotRole = await this.getHighestRoleFromGuildMember(botMember!);
-        const mutedRole = await (await this.client.guilds.fetch(this.guildId)).roles.fetch(this.mutedRoleId);
+        const mutedRole = await (await this.client.guilds.fetch(this.env.GUILD_ID)).roles.fetch(this.env.MUTED_ROLE_ID);
         if (highestUserRole.comparePositionTo(highestBotRole) > 0) {
             throw Error(`Cannot mute a member with a role higher than the bot role.`);
         }
         if (!mutedRole) {
-            throw Error(`Cannot find muted role with role ID ${this.mutedRoleId}`);
+            throw Error(`Cannot find muted role with role ID ${this.env.MUTED_ROLE_ID}`);
         }
         if (mutedRole!.comparePositionTo(highestBotRole) > 0) {
             throw Error(`Cannot assign the muted role because it is higher than the bot role.`);
@@ -75,7 +64,7 @@ export class MemberService {
 
         const roles = await this.getRolesFromGuildMember(member);
         roles.forEach((r) => r.comparePositionTo(botMember!.roles.highest));
-        await member.roles.add(this.mutedRoleId);
+        await member.roles.add(this.env.MUTED_ROLE_ID);
         await member.roles.remove(roles);
 
         await member.send({ content: muteMessage });
@@ -88,7 +77,7 @@ export class MemberService {
     }
 
     async unmuteGuildMember(member: GuildMember, rolesToRestore: Role[], unmuteMessage: string) {
-        await member.roles.remove(this.mutedRoleId);
+        await member.roles.remove(this.env.MUTED_ROLE_ID);
         rolesToRestore.forEach((r) => (r.name !== '@everyone' ? member.roles.add(r) : ''));
         await member.send(unmuteMessage);
     }
@@ -98,15 +87,15 @@ export class MemberService {
         const permissionLevelRoles = [
             {
                 level: CommandPermissionLevel.Staff,
-                roleIds: this.staffRoleIds,
+                roleIds: this.env.STAFF_ROLE_IDS,
             },
             {
                 level: CommandPermissionLevel.Helper,
-                roleIds: this.helperRoleIds,
+                roleIds: this.env.HELPER_ROLE_IDS,
             },
             {
                 level: CommandPermissionLevel.Backstager,
-                roleIds: this.backstagerRoleIds,
+                roleIds: this.env.BACKSTAGER_ROLE_IDS,
             },
         ];
 

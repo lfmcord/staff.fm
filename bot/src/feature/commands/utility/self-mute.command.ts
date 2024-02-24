@@ -13,6 +13,7 @@ import moment = require('moment');
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { TextHelper } from '@src/helpers/text.helper';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class SelfMuteCommand implements ICommand {
@@ -27,21 +28,21 @@ export class SelfMuteCommand implements ICommand {
 
     private selfMutesRepository: SelfMutesRepository;
     private scheduleService: ScheduleService;
+    private env: Environment;
     private loggingService: LoggingService;
-    private readonly prefix: string;
     private logger: Logger<SelfMuteCommand>;
     private memberService: MemberService;
 
     constructor(
-        @inject(TYPES.PREFIX) prefix: string,
+        @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.BotLogger) logger: Logger<SelfMuteCommand>,
         @inject(TYPES.SelfMutesRepository) selfMutesRepository: SelfMutesRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.ScheduleService) scheduleService: ScheduleService,
         @inject(TYPES.LoggingService) loggingService: LoggingService
     ) {
+        this.env = env;
         this.loggingService = loggingService;
-        this.prefix = prefix;
         this.logger = logger;
         this.scheduleService = scheduleService;
         this.memberService = memberService;
@@ -73,7 +74,7 @@ export class SelfMuteCommand implements ICommand {
         try {
             await this.memberService.muteGuildMember(
                 member,
-                `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>). You can prematurely end it by sending me ${inlineCode(this.prefix + 'unmute')} here.`,
+                `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>). You can prematurely end it by sending me ${inlineCode(this.env.PREFIX + 'unmute')} here.`,
                 `🔊 Your selfmute has ended and I've unmuted you. Welcome back!`
             );
         } catch (e) {

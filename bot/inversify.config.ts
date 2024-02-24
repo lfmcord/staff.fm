@@ -45,56 +45,64 @@ import { StaffMailCreateModalSubmitInteraction } from '@src/feature/interactions
 import { SelfMuteUnmuteCommand } from '@src/feature/commands/utility/self-mute-unmute.command';
 import { StaffMailDmReply } from '@src/feature/staffmail/staff-mail-dm-reply';
 import { StaffMailReplyCommand } from '@src/feature/commands/staffmail/staff-mail-reply.command';
+import { Environment } from '@models/environment';
 
 const container = new Container();
 
 // ENVIRONMENT
-container.bind<string>(TYPES.TOKEN).toConstantValue(process.env.TOKEN ?? '');
-container.bind<string>(TYPES.LOG_LEVEL).toConstantValue(process.env.LOG_LEVEL ?? '');
-container.bind<string>(TYPES.BOT_OWNER_ID).toConstantValue(process.env.BOT_OWNER_ID ?? '');
-container.bind<string>(TYPES.GUILD_ID).toConstantValue(process.env.GUILD_ID ?? '');
-container.bind<string>(TYPES.DB_CONNECTION_STRING).toConstantValue(process.env.DB_CONNECTION_STRING ?? '');
-container.bind<string>(TYPES.PREFIX).toConstantValue(process.env.PREFIX ?? '');
-container.bind<string>(TYPES.STAFFMAIL_CATEGORY_ID).toConstantValue(process.env.STAFFMAIL_CATEGORY_ID ?? '');
-container.bind<string>(TYPES.STAFFMAIL_LOG_CHANNEL_ID).toConstantValue(process.env.STAFFMAIL_LOG_CHANNEL_ID ?? '');
-container.bind<string>(TYPES.MUTED_ROLE_ID).toConstantValue(process.env.MUTED_ROLE_ID ?? '');
-container.bind<string>(TYPES.SELFMUTE_LOG_CHANNEL_ID).toConstantValue(process.env.SELFMUTE_LOG_CHANNEL_ID ?? '');
-container.bind<string[]>(TYPES.BACKSTAGER_ROLE_IDS).toConstantValue(process.env.BACKSTAGER_ROLE_IDS?.split(',') ?? []);
-container.bind<string[]>(TYPES.HELPER_ROLE_IDS).toConstantValue(process.env.HELPER_ROLE_IDS?.split(',') ?? []);
-container.bind<string[]>(TYPES.STAFF_ROLE_IDS).toConstantValue(process.env.STAFF_ROLE_IDS?.split(',') ?? []);
-container.bind<string>(TYPES.UNVERIFIED_ROLE_ID).toConstantValue(process.env.UNVERIFIED_ROLE_ID ?? '');
-container.bind<string>(TYPES.USER_LOG_CHANNEL_ID).toConstantValue(process.env.USER_LOG_CHANNEL_ID ?? '');
-container.bind<string>(TYPES.LASTFM_API_KEY).toConstantValue(process.env.LASTFM_API_KEY ?? '');
-container.bind<string>(TYPES.LASTFM_SHARED_SECRET).toConstantValue(process.env.LASTFM_SHARED_SECRET ?? '');
-container
-    .bind<number>(TYPES.MESSAGE_CACHING_DURATION_IN_SECONDS)
-    .toConstantValue(Number.parseInt(process.env.MESSAGE_CACHING_DURATION_IN_SECONDS ?? '86400') ?? 86400);
-container
-    .bind<string>(TYPES.DELETED_MESSAGE_LOG_CHANNEL_ID)
-    .toConstantValue(process.env.DELETED_MESSAGE_LOG_CHANNEL_ID ?? '');
-container
-    .bind<string[]>(TYPES.STAFFMAIL_PING_ROLE_IDS)
-    .toConstantValue(process.env.STAFFMAIL_PING_ROLE_IDS?.split(',') ?? []);
+container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue({
+    TOKEN: process.env.TOKEN ?? '',
+    LASTFM_API_KEY: process.env.LASTFM_API_KEY ?? '',
+    LASTFM_SHARED_SECRET: process.env.LASTFM_SHARED_SECRET ?? '',
+    DB_CONNECTION_STRING: process.env.DB_CONNECTION_STRING ?? '',
+    DB_ROOT_USER: process.env.DB_ROOT_USER ?? '',
+    DB_ROOT_PASS: process.env.DB_ROOT_PASS ?? '',
+    DB_ROOT_NAME: process.env.DB_ROOT_NAME ?? '',
+    DB_USER: process.env.DB_USER ?? '',
+    DB_PASS: process.env.DB_PASS ?? '',
+    DB_NAME: process.env.DB_NAME ?? '',
+    PREFIX: process.env.PREFIX ?? '',
+    BOT_OWNER_ID: process.env.BOT_OWNER_ID ?? '',
+    GUILD_ID: process.env.GUILD_ID ?? '',
+    MUTED_ROLE_ID: process.env.MUTED_ROLE_ID ?? '',
+    BACKSTAGER_ROLE_IDS: process.env.BACKSTAGER_ROLE_IDS?.split(',') ?? [],
+    HELPER_ROLE_IDS: process.env.HELPER_ROLE_IDS?.split(',') ?? [],
+    STAFF_ROLE_IDS: process.env.STAFF_ROLE_IDS?.split(',') ?? [],
+    UNVERIFIED_ROLE_ID: process.env.UNVERIFIED_ROLE_ID ?? '',
+    NO_LASTFM_ACCOUNT_ROLE_ID: process.env.NO_LASTFM_ACCOUNT_ROLE_ID ?? '',
+    SCROBBLE_MILESTONE_ROLE_IDS: process.env.SCROBBLE_MILESTONE_ROLE_IDS?.split(',') ?? [],
+    SCROBBLE_MILESTONE_NUMBERS:
+        process.env.SCROBBLE_MILESTONE_NUMBERS?.split(',').map((n) => Number.parseInt(n ?? 0)) ?? [],
+    STAFFMAIL_CATEGORY_ID: process.env.STAFFMAIL_CATEGORY_ID ?? '',
+    STAFFMAIL_PING_ROLE_IDS: process.env.STAFFMAIL_PING_ROLE_IDS?.split(',') ?? [],
+    STAFFMAIL_LOG_CHANNEL_ID: process.env.STAFFMAIL_LOG_CHANNEL_ID ?? '',
+    SELFMUTE_LOG_CHANNEL_ID: process.env.SELFMUTE_LOG_CHANNEL_ID ?? '',
+    USER_LOG_CHANNEL_ID: process.env.USER_LOG_CHANNEL_ID ?? '',
+    DELETED_MESSAGE_LOG_CHANNEL_ID: process.env.DELETED_MESSAGE_LOG_CHANNEL_ID ?? '',
+    LOG_LEVEL: Number.parseInt(process.env.LOG_LEVEL ?? '1') ?? 1,
+    MESSAGE_CACHING_DURATION_IN_SECONDS:
+        Number.parseInt(process.env.MESSAGE_CACHING_DURATION_IN_SECONDS ?? '86400') ?? 86400,
+});
 
 // CORE
 container.bind<Logger<ILogObj>>(TYPES.BotLogger).toConstantValue(
     new Logger({
         name: 'Bot Runtime',
-        minLevel: container.get<number>(TYPES.LOG_LEVEL),
+        minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOG_LEVEL,
         type: 'pretty',
     })
 );
 container.bind<Logger<ILogObj>>(TYPES.JobLogger).toConstantValue(
     new Logger({
         name: 'Job Runtime',
-        minLevel: container.get<number>(TYPES.LOG_LEVEL),
+        minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOG_LEVEL,
         type: 'pretty',
     })
 );
 container.bind<Logger<ILogObj>>(TYPES.InfrastructureLogger).toConstantValue(
     new Logger({
         name: 'Infrastructure Runtime',
-        minLevel: container.get<number>(TYPES.LOG_LEVEL),
+        minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOG_LEVEL,
         type: 'pretty',
     })
 );
@@ -118,8 +126,8 @@ container.bind<Client>(TYPES.Client).toConstantValue(
     })
 );
 container.bind<LastFM>(TYPES.LastFmClient).toConstantValue(
-    new LastFM(container.get<string>(TYPES.LASTFM_API_KEY), {
-        apiSecret: container.get<string>(TYPES.LASTFM_SHARED_SECRET),
+    new LastFM(container.get<Environment>(TYPES.ENVIRONMENT).LASTFM_API_KEY, {
+        apiSecret: container.get<Environment>(TYPES.ENVIRONMENT).LASTFM_SHARED_SECRET,
     })
 );
 container.bind<Redis>(TYPES.Redis).toConstantValue(new Redis());

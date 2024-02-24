@@ -11,6 +11,7 @@ import { Error } from 'mongoose';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { Logger } from 'tslog';
 import { TextHelper } from '@src/helpers/text.helper';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class MuteRndCommand implements ICommand {
@@ -18,10 +19,6 @@ export class MuteRndCommand implements ICommand {
     description: string =
         'Mutegame! Mutegame! Chooses a very special member to be muted for a random duration. Opt in or out by adding "optin" or "optout to the command.';
     usageHint: string = '[optin/optout/leaderboard]';
-    logger: Logger<MuteRndCommand>;
-    prefix: string;
-    memberService: MemberService;
-    private muteRndRepository: MuteRndRepository;
     examples: string[] = ['', 'optin', 'optout'];
     validArguments: (string | undefined)[] = [undefined, 'optin', 'optout', 'leaderboard'];
     permissionLevel = CommandPermissionLevel.User;
@@ -29,13 +26,18 @@ export class MuteRndCommand implements ICommand {
     isUsableInDms = false;
     isUsableInServer = true;
 
+    private logger: Logger<MuteRndCommand>;
+    private env: Environment;
+    private memberService: MemberService;
+    private muteRndRepository: MuteRndRepository;
+
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<MuteRndCommand>,
         @inject(TYPES.MuteRndRepository) muteRndRepository: MuteRndRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
-        @inject(TYPES.PREFIX) prefix: string
+        @inject(TYPES.ENVIRONMENT) env: Environment
     ) {
-        this.prefix = prefix;
+        this.env = env;
         this.logger = logger;
         this.memberService = memberService;
         this.muteRndRepository = muteRndRepository;
@@ -99,7 +101,7 @@ export class MuteRndCommand implements ICommand {
         const players = await this.muteRndRepository.getOptedInUsers();
         if (players.length === 0)
             return {
-                content: `:disappointed: Nobody is playing the mute game at the moment. Opt in with ${inlineCode(this.prefix + this.name + ' ' + 'optin')}!`,
+                content: `:disappointed: Nobody is playing the mute game at the moment. Opt in with ${inlineCode(this.env.PREFIX + this.name + ' ' + 'optin')}!`,
             };
 
         this.logger.debug(`Found ${players.length} players. Preparing random player...`);
@@ -131,7 +133,7 @@ export class MuteRndCommand implements ICommand {
     private async leaderboard(message: Message): Promise<MessageCreateOptions> {
         const users = await this.muteRndRepository.getAllUsers();
         if (users.length === 0)
-            return { content: `No players yet... Opt in with ${this.prefix + this.name + ' ' + 'optin'}!` };
+            return { content: `No players yet... Opt in with ${this.env.PREFIX + this.name + ' ' + 'optin'}!` };
         users.sort((a, b) => (a.winCount > b.winCount ? 1 : -1));
         const authorInLeaderboard = users.find((u) => u.member.id === message.author.id);
         let authorPosition;

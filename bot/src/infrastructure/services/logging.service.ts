@@ -21,37 +21,29 @@ import moment = require('moment');
 import { Verification } from '@src/feature/commands/utility/models/verification.model';
 import { CountryCodeHelper } from '@src/helpers/country-code.helper';
 import { TextHelper } from '@src/helpers/text.helper';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class LoggingService {
-    private deletedMessageLogChannelId: string;
-    private userLogChannelId: string;
-    private selfmuteLogChannelId: string;
     private client: Client;
     private channelService: ChannelService;
-    staffMailLogChannelId: string;
+    env: Environment;
     private logger: Logger<LoggingService>;
 
     constructor(
-        @inject(TYPES.DELETED_MESSAGE_LOG_CHANNEL_ID) deletedMessageLogChannelId: string,
-        @inject(TYPES.SELFMUTE_LOG_CHANNEL_ID) selfmuteLogChannelId: string,
-        @inject(TYPES.USER_LOG_CHANNEL_ID) userLogChannelId: string,
-        @inject(TYPES.STAFFMAIL_LOG_CHANNEL_ID) staffMailLogChannelId: string,
+        @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.ChannelService) channelService: ChannelService,
         @inject(TYPES.InfrastructureLogger) logger: Logger<LoggingService>,
         @inject(TYPES.Client) client: Client
     ) {
-        this.staffMailLogChannelId = staffMailLogChannelId;
-        this.userLogChannelId = userLogChannelId;
-        this.selfmuteLogChannelId = selfmuteLogChannelId;
+        this.env = env;
         this.client = client;
         this.logger = logger;
-        this.deletedMessageLogChannelId = deletedMessageLogChannelId;
         this.channelService = channelService;
     }
 
     public async logDeletedMessage(deletedMessage: CachedMessageModel, author: GuildMember | null) {
-        const logChannel = await this.getLogChannel(this.deletedMessageLogChannelId);
+        const logChannel = await this.getLogChannel(this.env.DELETED_MESSAGE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const logMessage = EmbedHelper.getLogEmbed(
@@ -83,7 +75,7 @@ export class LoggingService {
     }
 
     public async logSelfmute(selfMute: SelfMute, muteDuration?: string) {
-        const logChannel = await this.getLogChannel(this.selfmuteLogChannelId);
+        const logChannel = await this.getLogChannel(this.env.SELFMUTE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const description = muteDuration
@@ -97,19 +89,24 @@ export class LoggingService {
     }
 
     public async logVerification(verification: Verification) {
-        const logChannel = await this.channelService.getGuildChannelById(this.userLogChannelId);
+        const logChannel = await this.channelService.getGuildChannelById(this.env.USER_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const embeds: EmbedBuilder[] = [];
-        const description =
-            `${bold('Verified user')} ${inlineCode(verification.verifiedMember.user.username)} ${italic('(ID ' + verification.verifiedMember.user.id + ')')}\n\n` +
-            `📝 ${bold('Note:')} ${verification.verificationMessage.content}`;
+        const description = `${bold('Verified user')} ${inlineCode(verification.verifiedMember.user.username)} ${italic('(ID ' + verification.verifiedMember.user.id + ')')}`;
         embeds.push(
-            EmbedHelper.getLogEmbed(
-                verification.verifyingUser,
-                verification.verifiedMember.user,
-                LogLevel.Info
-            ).setDescription(description)
+            EmbedHelper.getLogEmbed(verification.verifyingUser, verification.verifiedMember.user, LogLevel.Info)
+                .setDescription(description)
+                .setFields([
+                    {
+                        name: `📝  Note`,
+                        value: `${verification.verificationMessage?.content ?? 'Manual Verification'}`,
+                    },
+                    {
+                        name: `Created`,
+                        value: `<t:${moment(verification.verifiedMember.user.createdAt).unix()}:D> (<t:${moment(verification.verifiedMember.user.createdAt).unix()}:R>)`,
+                    },
+                ])
         );
 
         if (verification.lastfmUser) {
@@ -166,7 +163,7 @@ export class LoggingService {
         reason: string | null,
         attachments: AttachmentBuilder[] = []
     ) {
-        const logChannel = await this.channelService.getGuildChannelById(this.staffMailLogChannelId);
+        const logChannel = await this.channelService.getGuildChannelById(this.env.STAFFMAIL_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const humanReadableType = EmbedHelper.getHumanReadableStaffMailType(type);
@@ -194,7 +191,7 @@ export class LoggingService {
     }
 
     private async getLogChannel(channelId: string): Promise<GuildTextBasedChannel | null> {
-        const logChannel = await this.channelService.getGuildChannelById(this.deletedMessageLogChannelId);
+        const logChannel = await this.channelService.getGuildChannelById(this.env.DELETED_MESSAGE_LOG_CHANNEL_ID);
         if (!logChannel) {
             this.logger.error(`Unable to log message to channel with Channel ID ${channelId}`);
         }

@@ -8,6 +8,7 @@ import { EmbedHelper } from '@src/helpers/embed.helper';
 import { TextHelper } from '@src/helpers/text.helper';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { MemberService } from '@src/infrastructure/services/member.service';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class HelpCommand implements ICommand {
@@ -17,20 +18,20 @@ export class HelpCommand implements ICommand {
     private memberService: MemberService;
     examples: string[] = ['', 'selfmute'];
     private client: Client;
-    private readonly prefix: string;
+    private readonly env: Environment;
     permissionLevel = CommandPermissionLevel.User;
     aliases = ['h'];
     isUsableInDms = true;
     isUsableInServer = true;
 
     constructor(
-        @inject(TYPES.PREFIX) prefix: string,
+        @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.Client) client: Client,
         @inject(TYPES.MemberService) memberService: MemberService
     ) {
         this.memberService = memberService;
         this.client = client;
-        this.prefix = prefix;
+        this.env = env;
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
@@ -61,7 +62,7 @@ export class HelpCommand implements ICommand {
 
         commands.forEach((command) => {
             if (memberPermissionLevel >= command.permissionLevel)
-                description += inlineCode(this.prefix + command.name) + `: ${command.description}\n`;
+                description += inlineCode(this.env.PREFIX + command.name) + `: ${command.description}\n`;
         });
 
         return {
@@ -85,7 +86,7 @@ export class HelpCommand implements ICommand {
 
         if (!command)
             return {
-                content: `I cannot find a command with the name ${commandName}. Use ${inlineCode(this.prefix + this.name)} to get an overview of all commands.`,
+                content: `I cannot find a command with the name ${commandName}. Use ${inlineCode(this.env.PREFIX + this.name)} to get an overview of all commands.`,
             };
 
         if (command.permissionLevel > memberPermissionLevel)
@@ -93,12 +94,12 @@ export class HelpCommand implements ICommand {
 
         description =
             `${bold('Description:')} ${command.description}\n\n` +
-            `${bold('Usage:')} ${inlineCode(this.prefix + command.name.toLowerCase() + ' ' + command.usageHint)}\n\n`;
+            `${bold('Usage:')} ${inlineCode(this.env.PREFIX + command.name.toLowerCase() + ' ' + command.usageHint)}\n\n`;
 
         if (command.examples.length > 0) {
             description += `${bold('Examples:\n')}`;
             command.examples.forEach(
-                (e) => (description += inlineCode(this.prefix + command.name.toLowerCase() + ' ' + e) + '\n')
+                (e) => (description += inlineCode(this.env.PREFIX + command.name.toLowerCase() + ' ' + e) + '\n')
             );
             description += '\n';
         }

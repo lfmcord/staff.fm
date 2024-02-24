@@ -12,24 +12,25 @@ import {
 } from 'discord.js';
 import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class ChannelService {
     private client: Client;
     logger: Logger<ChannelService>;
-    private guildId: string;
+    private environment: Environment;
     constructor(
         @inject(TYPES.Client) client: Client,
-        @inject(TYPES.GUILD_ID) guildId: string,
+        @inject(TYPES.ENVIRONMENT) environment: Environment,
         @inject(TYPES.InfrastructureLogger) logger: Logger<ChannelService>
     ) {
         this.logger = logger;
-        this.guildId = guildId;
+        this.environment = environment;
         this.client = client;
     }
     async getGuildChannelById(channelId: string): Promise<GuildTextBasedChannel | null> {
         try {
-            const guild = await this.client.guilds.fetch(this.guildId);
+            const guild = await this.client.guilds.fetch(this.environment.GUILD_ID);
             return (await guild.channels.fetch(channelId)) as GuildTextBasedChannel | null;
         } catch (e) {
             this.logger.warn(`Failed while trying to get guild channel for ID ${channelId}.`, e);
@@ -39,7 +40,7 @@ export class ChannelService {
 
     async getGuildCategoryById(categoryId: string): Promise<CategoryChannel | null> {
         try {
-            const guild = await this.client.guilds.fetch(this.guildId);
+            const guild = await this.client.guilds.fetch(this.environment.GUILD_ID);
             return (await guild.channels.fetch(categoryId)) as CategoryChannel | null;
         } catch (e) {
             this.logger.warn(`Failed while trying to get guild category for ID ${categoryId}.`, e);
@@ -66,7 +67,7 @@ export class ChannelService {
         channelName: string,
         category: CategoryChannel
     ): Promise<GuildTextBasedChannel> {
-        const guild = await this.client.guilds.fetch(this.guildId);
+        const guild = await this.client.guilds.fetch(this.environment.GUILD_ID);
         return await guild.channels.create({
             name: channelName,
             type: ChannelType.GuildText,

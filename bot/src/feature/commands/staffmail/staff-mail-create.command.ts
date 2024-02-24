@@ -9,6 +9,7 @@ import { CommandPermissionLevel } from '@src/feature/commands/models/command-per
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class StaffMailCreateCommand implements ICommand {
@@ -22,15 +23,15 @@ export class StaffMailCreateCommand implements ICommand {
     isUsableInServer = false;
 
     private logger: Logger<StaffMailCreateCommand>;
-    prefix: string;
+    private env: Environment;
     private client: Client;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<StaffMailCreateCommand>,
         @inject(TYPES.Client) client: Client,
-        @inject(TYPES.PREFIX) prefix: string
+        @inject(TYPES.ENVIRONMENT) env: Environment
     ) {
-        this.prefix = prefix;
+        this.env = env;
         this.client = client;
         this.logger = logger;
     }
@@ -123,7 +124,7 @@ export class StaffMailCreateCommand implements ICommand {
     private async cancel(message: Message) {
         this.logger.info(`User has cancelled sending a staff mail.`);
         await message.edit({
-            content: `You've cancelled the process of messaging staff. If you'd like to message after all, simply type ${inlineCode(`${this.prefix}${this.name}`)} here.`,
+            content: `You've cancelled the process of messaging staff. If you'd like to message after all, simply type ${inlineCode(`${this.env.PREFIX}${this.name}`)} here.`,
             components: [],
             embeds: [],
         });
@@ -132,7 +133,7 @@ export class StaffMailCreateCommand implements ICommand {
     private async timeout(message: Message) {
         this.logger.info(`Staff mail creation has timed out.`);
         await message.edit({
-            content: `Request timed out after 2 minutes. If you'd still like to message, simply type ${inlineCode(`${this.prefix}${this.name}`)} here.`,
+            content: `Request timed out after 2 minutes. If you'd still like to message, simply type ${inlineCode(`${this.env.PREFIX}${this.name}`)} here.`,
             components: [],
             embeds: [],
         });

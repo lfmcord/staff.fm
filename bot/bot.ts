@@ -6,6 +6,7 @@ import { IHandlerFactory } from '@src/handlers/models/handler-factory.interface'
 import { MongoDbConnector } from '@src/infrastructure/connectors/mongo-db.connector';
 import { TextHelper } from '@src/helpers/text.helper';
 import { RedisConnector } from '@src/infrastructure/connectors/redis.connector';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class Bot {
@@ -13,12 +14,12 @@ export class Bot {
     redisConnector: RedisConnector;
     private mongoDbConnector: MongoDbConnector;
     private handlerFactory: IHandlerFactory;
-    private readonly token: string;
+    private readonly env: Environment;
     private client: Client;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<Bot>,
-        @inject(TYPES.TOKEN) token: string,
+        @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.Client) client: Client,
         @inject(TYPES.HandlerFactory) handlerFactory: IHandlerFactory,
         @inject(TYPES.MongoDbConnector) mongoDbConnector: MongoDbConnector,
@@ -27,7 +28,7 @@ export class Bot {
         this.redisConnector = redisConnector;
         this.mongoDbConnector = mongoDbConnector;
         this.handlerFactory = handlerFactory;
-        this.token = token;
+        this.env = env;
         this.client = client;
         this.logger = logger;
 
@@ -41,7 +42,7 @@ export class Bot {
         await this.mongoDbConnector.connect();
         await this.redisConnector.connect();
         this.listen();
-        await this.client.login(this.token);
+        await this.client.login(this.env.TOKEN);
     }
 
     private listen(): void {

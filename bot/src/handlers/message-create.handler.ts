@@ -11,33 +11,34 @@ import { MemberService } from '@src/infrastructure/services/member.service';
 import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { StaffMailDmReply } from '@src/feature/staffmail/staff-mail-dm-reply';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class MessageCreateHandler implements IHandler {
     eventType: string = 'messageCreate';
 
     private logger: Logger<MessageCreateHandler>;
+    env: Environment;
     private readonly staffMailDmReply: StaffMailDmReply;
     private readonly cachingRepository: CachingRepository;
     private memberService: MemberService;
-    private readonly prefix: string;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<MessageCreateHandler>,
-        @inject(TYPES.PREFIX) prefix: string,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.CachingRepository) cachingRepository: CachingRepository,
-        @inject(TYPES.StaffMailDmReply) staffMailDmReply: StaffMailDmReply
+        @inject(TYPES.StaffMailDmReply) staffMailDmReply: StaffMailDmReply,
+        @inject(TYPES.ENVIRONMENT) env: Environment
     ) {
+        this.env = env;
         this.staffMailDmReply = staffMailDmReply;
         this.cachingRepository = cachingRepository;
         this.memberService = memberService;
-        this.prefix = prefix;
         this.logger = logger;
     }
 
     public async handle(message: Message) {
-        const isCommand = message.content.startsWith(this.prefix);
+        const isCommand = message.content.startsWith(this.env.PREFIX);
         const isBot = message.author.bot;
         const isDms = message.channel.isDMBased();
 
@@ -47,7 +48,7 @@ export class MessageCreateHandler implements IHandler {
         if (!isCommand && isDms) {
             if (!message.reference)
                 await message.reply(
-                    `It looks like you are trying to chat with me. If you want to reply to an existing StaffMail, please reply to a pinned message. If you do not have any open StaffMails, you can create a new one with ${inlineCode(this.prefix + 'staffmail')}!`
+                    `It looks like you are trying to chat with me. If you want to reply to an existing StaffMail, please reply to a pinned message. If you do not have any open StaffMails, you can create a new one with ${inlineCode(this.env.PREFIX + 'staffmail')}!`
                 );
             else {
                 await this.staffMailDmReply.reply(message);
@@ -102,7 +103,7 @@ export class MessageCreateHandler implements IHandler {
                 await this.handleCommandError(
                     message,
                     error.messageToUser +
-                        ` For more details, use ${inlineCode(this.prefix + 'help ' + command.name.toLowerCase())}.`
+                        ` For more details, use ${inlineCode(this.env.PREFIX + 'help ' + command.name.toLowerCase())}.`
                 );
                 return;
             }
@@ -154,7 +155,7 @@ export class MessageCreateHandler implements IHandler {
 
     private async resolveCommand(message: Message): Promise<ICommand | null> {
         const commandName = message.content.slice(
-            this.prefix.length,
+            this.env.PREFIX.length,
             message.content.indexOf(' ') == -1 ? undefined : message.content.indexOf(' ')
         );
         this.logger.debug(`Matching command for command name '${commandName}'...`);
@@ -168,7 +169,7 @@ export class MessageCreateHandler implements IHandler {
             await this.handleCommandError(
                 message,
                 `I could not find a command called '${commandName.toLowerCase()}'. ` +
-                    `Use \`${this.prefix}help\` to see a list of all commands.`
+                    `Use \`${this.env.PREFIX}help\` to see a list of all commands.`
             );
             return null;
         }

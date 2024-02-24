@@ -3,16 +3,14 @@ import Redis from 'ioredis';
 import { TYPES } from '@src/types';
 import { Message } from 'discord.js';
 import { CachedMessageModel } from '@src/infrastructure/repositories/models/cached-message.model';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class CachingRepository {
     redis: Redis;
-    messageCachingDuration: number;
-    constructor(
-        @inject(TYPES.Redis) redis: Redis,
-        @inject(TYPES.MESSAGE_CACHING_DURATION_IN_SECONDS) messageCachingDuration: number
-    ) {
-        this.messageCachingDuration = messageCachingDuration;
+    env: Environment;
+    constructor(@inject(TYPES.Redis) redis: Redis, @inject(TYPES.ENVIRONMENT) env: Environment) {
+        this.env = env;
         this.redis = redis;
     }
 
@@ -41,7 +39,7 @@ export class CachingRepository {
         };
         const value = JSON.stringify(cache);
         await this.redis.set(key, value);
-        await this.redis.expire(key, this.messageCachingDuration);
+        await this.redis.expire(key, this.env.MESSAGE_CACHING_DURATION_IN_SECONDS);
     }
 
     private async cacheLastUserMessage(message: Message) {
