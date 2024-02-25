@@ -429,18 +429,16 @@ export class EmbedHelper {
         return humanReadableType;
     }
 
-    static getLogEmbed(actor: User | string, subject: User | null, level: LogLevel): EmbedBuilder {
+    static getLogEmbed(actor: User | null, subject: User | null, level: LogLevel): EmbedBuilder {
         const logEmbed = new EmbedBuilder()
             .setColor(this.getLogLevelColor(level))
             .setThumbnail(subject?.avatarURL() ?? null)
             .setTimestamp();
-        if (actor instanceof User) {
+        if (actor) {
             logEmbed.setAuthor({
                 name: `${actor.username} (ID ${actor.id})`,
                 iconURL: actor.avatarURL() ?? undefined,
             });
-        } else {
-            logEmbed.setAuthor({ name: `User Not Found (ID ${actor})` });
         }
         return logEmbed;
     }

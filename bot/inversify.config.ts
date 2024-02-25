@@ -46,6 +46,7 @@ import { SelfMuteUnmuteCommand } from '@src/feature/commands/utility/self-mute-u
 import { StaffMailDmReply } from '@src/feature/staffmail/staff-mail-dm-reply';
 import { StaffMailReplyCommand } from '@src/feature/commands/staffmail/staff-mail-reply.command';
 import { Environment } from '@models/environment';
+import { AuditService } from '@src/infrastructure/services/audit.service';
 
 const container = new Container();
 
@@ -176,5 +177,6 @@ container.bind<MemberService>(TYPES.MemberService).to(MemberService);
 container.bind<ScheduleService>(TYPES.ScheduleService).to(ScheduleService);
 container.bind<ChannelService>(TYPES.ChannelService).to(ChannelService);
 container.bind<LoggingService>(TYPES.LoggingService).to(LoggingService);
+container.bind<AuditService>(TYPES.AuditService).to(AuditService);
 
 export default container;

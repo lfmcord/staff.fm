@@ -32,7 +32,8 @@ export class CachingRepository {
     private async cacheMessageContents(message: Message) {
         const key = `MESSAGECONTENT_${message.id}`;
         const cache: CachedMessageModel = {
-            userId: message.author.id,
+            messageId: message.id,
+            authorId: message.author.id,
             channelId: message.channel.id,
             contents: message.content,
             attachments: message.attachments.map((a) => a.url),

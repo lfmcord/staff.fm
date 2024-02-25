@@ -3,6 +3,7 @@ import {
     AttachmentBuilder,
     bold,
     Client,
+    codeBlock,
     EmbedBuilder,
     GuildMember,
     GuildTextBasedChannel,
@@ -42,36 +43,27 @@ export class LoggingService {
         this.channelService = channelService;
     }
 
-    public async logDeletedMessage(deletedMessage: CachedMessageModel, author: GuildMember | null) {
+    public async logDeletedMessage(
+        deletedMessage: CachedMessageModel,
+        author: GuildMember | null,
+        actor: GuildMember | null
+    ) {
         const logChannel = await this.getLogChannel(this.env.DELETED_MESSAGE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
-        const logMessage = EmbedHelper.getLogEmbed(
-            author?.user ?? deletedMessage.userId,
-            null,
-            LogLevel.Failure
-        ).setTitle(`🗑️ Message Deleted`);
+        const logEmbed = new EmbedBuilder()
+            .setColor(EmbedHelper.red)
+            .setFooter({ text: `Message ID: ${deletedMessage.messageId}` })
+            .setTimestamp();
 
-        const fields = [];
-        fields.push({
-            name: 'Author',
-            value: `<@${deletedMessage.userId}>`,
-            inline: true,
-        });
-        fields.push({
-            name: 'Channel',
-            value: `<#${deletedMessage.channelId}>`,
-            inline: true,
-        });
-        if (deletedMessage.contents !== '')
-            fields.push({
-                name: 'Contents',
-                value: deletedMessage.contents,
-                inline: false,
-            });
-        logMessage.setFields(fields);
+        let description = `🗑️ Message from ${TextHelper.userDisplay(author?.user, false)} deleted `;
+        if (actor) description += `by ${TextHelper.userDisplay(actor?.user, false)} `;
+        description += `in <#${deletedMessage.channelId}>`;
+        if (deletedMessage.contents !== '') description += `:\n${codeBlock(deletedMessage.contents)}`;
 
-        await logChannel.send({ embeds: [logMessage], files: deletedMessage.attachments });
+        logEmbed.setDescription(description);
+
+        await logChannel.send({ embeds: [logEmbed], files: deletedMessage.attachments });
     }
 
     public async logSelfmute(selfMute: SelfMute, muteDuration?: string) {

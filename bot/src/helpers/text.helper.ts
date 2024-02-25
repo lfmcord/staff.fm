@@ -1,4 +1,4 @@
-import { User } from 'discord.js';
+import { inlineCode, italic, User } from 'discord.js';
 
 export class TextHelper {
     static success = '✅';
@@ -12,8 +12,11 @@ export class TextHelper {
         return `${user.username} (ID ${user.id})`;
     }
 
-    static userDisplay(user: User): string {
-        return `<@!${user.id}> (ID ${user.id})`;
+    static userDisplay(user: User | null | undefined, useMention = true): string {
+        if (!user) return `${inlineCode('unknown')} ${italic(`(ID Not Found)`)}`;
+        return useMention
+            ? `<@!${user.id}> (ID ${user.id})`
+            : `${inlineCode(user.username)} ${italic(`(ID ${user.id})`)}`;
     }
 
     static wordWrap(text: string): string {
