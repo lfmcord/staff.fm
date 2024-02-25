@@ -12,6 +12,7 @@ import {
     Interaction,
     Message,
     PartialMessage,
+    RoleResolvable,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { MessageService } from '@src/infrastructure/services/message.service';
@@ -26,6 +27,7 @@ import { EmbedHelper } from '@src/helpers/embed.helper';
 import { ComponentHelper } from '@src/helpers/component.helper';
 import { Environment } from '@models/environment';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 
 @injectable()
 export class VerifyCommand implements ICommand {
@@ -41,6 +43,7 @@ export class VerifyCommand implements ICommand {
     private loggingService: LoggingService;
     private lastFmClient: LastFM;
     private logger: Logger<VerifyCommand>;
+    usersRepository: UsersRepository;
     private env: Environment;
     private memberService: MemberService;
     private messageService: MessageService;
@@ -51,8 +54,10 @@ export class VerifyCommand implements ICommand {
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.LastFmClient) lastFmClient: LastFM,
         @inject(TYPES.LoggingService) loggingService: LoggingService,
-        @inject(TYPES.ENVIRONMENT) env: Environment
+        @inject(TYPES.ENVIRONMENT) env: Environment,
+        @inject(TYPES.UsersRepository) usersRepository: UsersRepository
     ) {
+        this.usersRepository = usersRepository;
         this.env = env;
         this.loggingService = loggingService;
         this.lastFmClient = lastFmClient;
@@ -146,7 +151,7 @@ export class VerifyCommand implements ICommand {
                 await noLastFmVerificationMessage.delete();
                 return {};
             } else {
-                await memberToVerify.roles.add(this.env.NO_LASTFM_ACCOUNT_ROLE_ID);
+                await memberToVerify.roles.add(this.env.NO_LASTFM_ACCOUNT_ROLE_ID as RoleResolvable);
                 await noLastFmVerificationMessage.delete();
             }
         } else {
@@ -172,11 +177,18 @@ export class VerifyCommand implements ICommand {
             lastfmUser: lastfmUser ?? null,
             discordAccountCreated: memberToVerify.user.createdTimestamp,
             lastfmAccountCreated: lastfmUser?.registered ?? null,
+            isReturningUser: false,
         };
 
-        // TODO: Save data model
+        const existingUser = await this.usersRepository.getUserByUserId(verification.verifiedMember.id);
+        if (!existingUser) {
+            await this.usersRepository.addUser(verification);
+        } else {
+            verification.isReturningUser = true;
+            await this.usersRepository.addVerificationToUser(verification);
+        }
 
-        // await memberToVerify.roles.remove(this.unverifiedRoleId);
+        await memberToVerify.roles.remove(this.env.UNVERIFIED_ROLE_ID as RoleResolvable);
 
         await this.loggingService.logVerification(verification);
 

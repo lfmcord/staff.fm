@@ -8,6 +8,7 @@ export class Verification {
     verificationMessage: Message | null;
     discordAccountCreated: number;
     lastfmAccountCreated: number | null;
+    isReturningUser: boolean;
 
     constructor(
         verifiedMember: GuildMember,
@@ -15,7 +16,8 @@ export class Verification {
         lastfmUser: getInfo | null,
         verificationMessage: Message,
         discordAccountCreated: number,
-        lastfmAccountCreated: number | null
+        lastfmAccountCreated: number | null,
+        isReturningUser: boolean
     ) {
         this.verifiedMember = verifiedMember;
         this.verifyingUser = verifyingUser;
@@ -23,5 +25,6 @@ export class Verification {
         this.verificationMessage = verificationMessage;
         this.discordAccountCreated = discordAccountCreated;
         this.lastfmAccountCreated = lastfmAccountCreated;
+        this.isReturningUser = isReturningUser;
     }
 }

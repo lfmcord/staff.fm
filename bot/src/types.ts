@@ -30,6 +30,7 @@ export const TYPES = {
     CachingRepository: Symbol('CachingRepository'),
     MuteRndRepository: Symbol('MuteRndRepository'),
     FlagsRepository: Symbol('FlagsRepository'),
+    UsersRepository: Symbol('UsersRepository'),
 
     // SERVICES
     MessageService: Symbol('MessageService'),

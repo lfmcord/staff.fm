@@ -53,6 +53,7 @@ import { FlagsRepository } from '@src/infrastructure/repositories/flags.reposito
 import { FlagCommand } from '@src/feature/commands/moderation/flag.command';
 import { FlagsCommand } from '@src/feature/commands/moderation/flags.command';
 import { RemoveFlagCommand } from '@src/feature/commands/moderation/remove-flag.command';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 
 const container = new Container();
 
@@ -185,6 +186,7 @@ container.bind<SelfMutesRepository>(TYPES.SelfMutesRepository).to(SelfMutesRepos
 container.bind<CachingRepository>(TYPES.CachingRepository).to(CachingRepository);
 container.bind<MuteRndRepository>(TYPES.MuteRndRepository).to(MuteRndRepository);
 container.bind<FlagsRepository>(TYPES.FlagsRepository).to(FlagsRepository);
+container.bind<UsersRepository>(TYPES.UsersRepository).to(UsersRepository);
 
 // SERVICES
 container.bind<MessageService>(TYPES.MessageService).to(MessageService);

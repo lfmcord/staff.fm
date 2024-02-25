@@ -87,7 +87,8 @@ export class LoggingService {
         if (!logChannel) return;
 
         const embeds: EmbedBuilder[] = [];
-        const description = `${bold('Verified user')} ${inlineCode(verification.verifiedMember.user.username)} ${italic('(ID ' + verification.verifiedMember.user.id + ')')}`;
+        let description = `${bold('Verified user')} ${inlineCode(verification.verifiedMember.user.username)} ${italic('(ID ' + verification.verifiedMember.user.id + ')')}`;
+        if (verification.isReturningUser) description += `\n⚠️ ${bold(`Returning User`)}`;
         embeds.push(
             EmbedHelper.getLogEmbed(verification.verifyingUser, verification.verifiedMember.user, LogLevel.Info)
                 .setDescription(description)
