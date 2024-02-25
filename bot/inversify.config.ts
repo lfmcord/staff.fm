@@ -47,6 +47,7 @@ import { StaffMailDmReply } from '@src/feature/staffmail/staff-mail-dm-reply';
 import { StaffMailReplyCommand } from '@src/feature/commands/staffmail/staff-mail-reply.command';
 import { Environment } from '@models/environment';
 import { AuditService } from '@src/infrastructure/services/audit.service';
+import * as process from 'process';
 
 const container = new Container();
 
@@ -80,6 +81,7 @@ container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue({
     SELFMUTE_LOG_CHANNEL_ID: process.env.SELFMUTE_LOG_CHANNEL_ID ?? '',
     USER_LOG_CHANNEL_ID: process.env.USER_LOG_CHANNEL_ID ?? '',
     DELETED_MESSAGE_LOG_CHANNEL_ID: process.env.DELETED_MESSAGE_LOG_CHANNEL_ID ?? '',
+    DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS: process.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS?.split(',') ?? [],
     LOG_LEVEL: Number.parseInt(process.env.LOG_LEVEL ?? '1') ?? 1,
     MESSAGE_CACHING_DURATION_IN_SECONDS:
         Number.parseInt(process.env.MESSAGE_CACHING_DURATION_IN_SECONDS ?? '86400') ?? 86400,

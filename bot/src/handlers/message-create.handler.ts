@@ -1,5 +1,5 @@
 import { Logger } from 'tslog';
-import { inlineCode, Message } from 'discord.js';
+import { GuildTextBasedChannel, inlineCode, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { ICommand } from '@src/feature/commands/models/command.interface';
@@ -42,7 +42,14 @@ export class MessageCreateHandler implements IHandler {
         const isBot = message.author.bot;
         const isDms = message.channel.isDMBased();
 
-        if (isBot) return;
+        if (
+            isBot ||
+            this.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS.includes(message.channelId) ||
+            this.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS.includes(
+                (message.channel as GuildTextBasedChannel).parentId!
+            )
+        )
+            return;
         void this.cachingRepository.cacheMessage(message);
         if (isCommand) await this.handleCommand(message);
         if (!isCommand && isDms) {

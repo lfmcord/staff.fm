@@ -26,6 +26,7 @@ export interface Environment {
     SELFMUTE_LOG_CHANNEL_ID: string;
     USER_LOG_CHANNEL_ID: string;
     DELETED_MESSAGE_LOG_CHANNEL_ID: string;
+    DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS: string[];
     LOG_LEVEL: number;
     MESSAGE_CACHING_DURATION_IN_SECONDS: number;
 }

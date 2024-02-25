@@ -24,7 +24,6 @@ export class AuditService {
     ): Promise<string | null> {
         const guild = await this.client.guilds.fetch(this.environment.GUILD_ID);
         const auditLog = await guild.fetchAuditLogs({ type: AuditLogEvent.MessageDelete, limit: 5 });
-        this.logger.trace(auditLog);
         return (
             auditLog.entries.find((log) => log.targetId === messageAuthorId && log.extra.channel.id === channelId)
                 ?.executorId ?? null

@@ -7,11 +7,13 @@ import { CachingRepository } from '@src/infrastructure/repositories/caching.repo
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { AuditService } from '@src/infrastructure/services/audit.service';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class MessageDeleteHandler implements IHandler {
     eventType = 'messageDelete';
     private logger: Logger<MessageDeleteHandler>;
+    env: Environment;
     private auditService: AuditService;
     private loggingService: LoggingService;
     private memberService: MemberService;
@@ -22,8 +24,10 @@ export class MessageDeleteHandler implements IHandler {
         @inject(TYPES.CachingRepository) cachingRepository: CachingRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.LoggingService) loggingService: LoggingService,
-        @inject(TYPES.AuditService) auditService: AuditService
+        @inject(TYPES.AuditService) auditService: AuditService,
+        @inject(TYPES.ENVIRONMENT) env: Environment
     ) {
+        this.env = env;
         this.auditService = auditService;
         this.loggingService = loggingService;
         this.memberService = memberService;
@@ -34,7 +38,7 @@ export class MessageDeleteHandler implements IHandler {
         this.logger.info(`Message with message ID ${message.id} was deleted. Trying to fetch contents...`);
         const cachedMessage = await this.cachingRepository.getCachedMessage(message.id);
         if (!cachedMessage) {
-            this.logger.info(`Deleted message was too old and cannot be fetched.`);
+            this.logger.info(`Deleted message in channel ID ${message.channelId} was not cached.`);
             return;
         }
         const actorId = await this.auditService.getDeletionActorIdForMessageAuthor(
