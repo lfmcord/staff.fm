@@ -56,6 +56,7 @@ import { UnflagCommand } from '@src/feature/commands/moderation/unflag.command';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { GuildBanAddHandler } from '@src/handlers/guild-ban-add.handler';
 import { GuildBanRemoveHandler } from '@src/handlers/guild-ban-remove.handler';
+import { WhoisCommand } from '@src/feature/commands/utility/whois.command';
 
 const container = new Container();
 
@@ -175,6 +176,7 @@ container.bind<ICommand>('Command').to(StaffMailReplyCommand);
 container.bind<ICommand>('Command').to(FlagCommand);
 container.bind<ICommand>('Command').to(FlagsCommand);
 container.bind<ICommand>('Command').to(UnflagCommand);
+container.bind<ICommand>('Command').to(WhoisCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
