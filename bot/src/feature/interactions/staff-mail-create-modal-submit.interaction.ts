@@ -4,7 +4,7 @@ import { ModalSubmitInteraction } from 'discord.js';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { TYPES } from '@src/types';
-import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode.enum';
+import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
 import { Logger } from 'tslog';
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
 import { LoggingService } from '@src/infrastructure/services/logging.service';

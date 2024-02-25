@@ -43,11 +43,12 @@ import { StaffMailContactCommand } from '@src/feature/commands/staffmail/staff-m
 import { StaffMailCloseCommand } from '@src/feature/commands/staffmail/staff-mail-close.command';
 import { StaffMailCreateModalSubmitInteraction } from '@src/feature/interactions/staff-mail-create-modal-submit.interaction';
 import { SelfMuteUnmuteCommand } from '@src/feature/commands/utility/self-mute-unmute.command';
-import { StaffMailDmReply } from '@src/feature/staffmail/staff-mail-dm-reply';
+import { StaffMailDmTrigger } from '@src/feature/triggers/staff-mail-dm.trigger';
 import { StaffMailReplyCommand } from '@src/feature/commands/staffmail/staff-mail-reply.command';
 import { Environment } from '@models/environment';
 import { AuditService } from '@src/infrastructure/services/audit.service';
 import * as process from 'process';
+import { VerificationLastFmTrigger } from '@src/feature/triggers/verification-lastfm.trigger';
 
 const container = new Container();
 
@@ -75,6 +76,8 @@ container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue({
     SCROBBLE_MILESTONE_ROLE_IDS: process.env.SCROBBLE_MILESTONE_ROLE_IDS?.split(',') ?? [],
     SCROBBLE_MILESTONE_NUMBERS:
         process.env.SCROBBLE_MILESTONE_NUMBERS?.split(',').map((n) => Number.parseInt(n ?? 0)) ?? [],
+    VERIFICATION_CHANNEL_ID: process.env.VERIFICATION_CHANNEL_ID ?? '',
+    BACKSTAGE_CHANNEL_ID: process.env.BACKSTAGE_CHANNEL_ID ?? '',
     STAFFMAIL_CATEGORY_ID: process.env.STAFFMAIL_CATEGORY_ID ?? '',
     STAFFMAIL_PING_ROLE_IDS: process.env.STAFFMAIL_PING_ROLE_IDS?.split(',') ?? [],
     STAFFMAIL_LOG_CHANNEL_ID: process.env.STAFFMAIL_LOG_CHANNEL_ID ?? '',
@@ -82,6 +85,7 @@ container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue({
     USER_LOG_CHANNEL_ID: process.env.USER_LOG_CHANNEL_ID ?? '',
     DELETED_MESSAGE_LOG_CHANNEL_ID: process.env.DELETED_MESSAGE_LOG_CHANNEL_ID ?? '',
     DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS: process.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS?.split(',') ?? [],
+    LASTFM_AGE_ALERT_IN_DAYS: Number.parseInt(process.env.LASTFM_AGE_ALERT_IN_DAYS ?? '30') ?? 30,
     LOG_LEVEL: Number.parseInt(process.env.LOG_LEVEL ?? '1') ?? 1,
     MESSAGE_CACHING_DURATION_IN_SECONDS:
         Number.parseInt(process.env.MESSAGE_CACHING_DURATION_IN_SECONDS ?? '86400') ?? 86400,
@@ -160,8 +164,9 @@ container.bind<ICommand>('Command').to(StaffMailCloseCommand);
 container.bind<ICommand>('Command').to(StaffMailCreateCommand);
 container.bind<ICommand>('Command').to(StaffMailReplyCommand);
 
-// STAFFMAIL
-container.bind<StaffMailDmReply>(TYPES.StaffMailDmReply).to(StaffMailDmReply);
+// TRIGGERS
+container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
+container.bind<VerificationLastFmTrigger>(TYPES.VerificationLastFmTrigger).to(VerificationLastFmTrigger);
 
 // INTERACTIONS
 container.bind<IInteraction>('Interaction').to(EventCreateInteraction);

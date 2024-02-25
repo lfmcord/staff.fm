@@ -1,29 +1,40 @@
 import { inject, injectable } from 'inversify';
-import { Message } from 'discord.js';
+import { inlineCode, Message } from 'discord.js';
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { TYPES } from '@src/types';
 import { EmbedHelper } from '@src/helpers/embed.helper';
-import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode.enum';
+import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
 import { Logger } from 'tslog';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
+import { Environment } from '@models/environment';
 
 @injectable()
-export class StaffMailDmReply {
+export class StaffMailDmTrigger {
     staffMailRepository: StaffMailRepository;
-    logger: Logger<StaffMailDmReply>;
+    logger: Logger<StaffMailDmTrigger>;
+    env: Environment;
     channelService: ChannelService;
 
     constructor(
         @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository,
-        @inject(TYPES.BotLogger) logger: Logger<StaffMailDmReply>,
-        @inject(TYPES.ChannelService) channelService: ChannelService
+        @inject(TYPES.BotLogger) logger: Logger<StaffMailDmTrigger>,
+        @inject(TYPES.ChannelService) channelService: ChannelService,
+        @inject(TYPES.ENVIRONMENT) env: Environment
     ) {
+        this.env = env;
         this.channelService = channelService;
         this.logger = logger;
         this.staffMailRepository = staffMailRepository;
     }
 
-    public async reply(message: Message): Promise<void> {
+    public async run(message: Message): Promise<void> {
+        if (!message.reference) {
+            await message.reply(
+                `It looks like you are trying to chat with me. If you want to reply to an existing StaffMail, please reply to a pinned message. If you do not have any open StaffMails, you can create a new one with ${inlineCode(this.env.PREFIX + 'triggers')}!`
+            );
+            return;
+        }
+
         const staffMail = await this.staffMailRepository.getStaffMailByLastMessageId(message.reference!.messageId!);
         if (staffMail == null) {
             await message.reply({

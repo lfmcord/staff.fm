@@ -20,8 +20,9 @@ export const TYPES = {
     // COMMANDS
     Command: Symbol('Command'),
 
-    // STAFFMAIL
-    StaffMailDmReply: Symbol('StaffMailDmReply'),
+    // TRIGGERS
+    StaffMailDmTrigger: Symbol('StaffMailDmTrigger'),
+    VerificationLastFmTrigger: Symbol('VerificationLastFmTrigger'),
 
     // REPOSITORIES
     StaffMailRepository: Symbol('StaffMailRepository'),

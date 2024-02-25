@@ -15,12 +15,15 @@ import { TextHelper } from '@src/helpers/text.helper';
 import { ComponentHelper } from '@src/helpers/component.helper';
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
 import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
+import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
+import { CountryCodeHelper } from '@src/helpers/country-code.helper';
 
 export class EmbedHelper {
     static readonly red = 12059152;
     static readonly blue = 2002943;
     static readonly green = 6538847;
     static readonly grey = 5730958;
+    static readonly orange = 16556627;
 
     static readonly anonymousPictureLink = 'https://em-content.zobj.net/source/twitter/376/detective_1f575-fe0f.png';
     static readonly lastfmPictureLink =
@@ -443,6 +446,46 @@ export class EmbedHelper {
         return logEmbed;
     }
 
+    static getLastFmUserEmbed(lastFmUser: getInfo, shouldAlert = false): EmbedBuilder {
+        return new EmbedBuilder()
+            .setTitle('Last.fm Account')
+            .setURL(lastFmUser.url)
+            .setFields([
+                {
+                    name: 'Username',
+                    value: lastFmUser.name,
+                    inline: true,
+                },
+                {
+                    name: 'Real name',
+                    value: lastFmUser.realname,
+                    inline: true,
+                },
+                {
+                    name: 'Scrobble Count',
+                    value: lastFmUser.playcount.toString(),
+                    inline: false,
+                },
+                {
+                    name: 'Country',
+                    value:
+                        lastFmUser.country !== 'None'
+                            ? `:flag_${CountryCodeHelper.getTwoLetterIsoCountryCode(lastFmUser.country)?.toLowerCase()}: ` +
+                              lastFmUser.country
+                            : lastFmUser.country,
+                    inline: true,
+                },
+                {
+                    name: 'Created',
+                    value: `${shouldAlert ? '⚠️ ' : ''}<t:${lastFmUser.registered}:D> (<t:${lastFmUser.registered}:R>)`,
+                    inline: true,
+                },
+            ])
+            .setThumbnail(lastFmUser.image.find((i) => i.size === 'extralarge')?.url ?? null)
+            .setColor(shouldAlert ? EmbedHelper.orange : EmbedHelper.blue)
+            .setTimestamp();
+    }
+
     static getLogLevelColor(level: LogLevel): number {
         switch (level) {
             case LogLevel.Failure:
@@ -453,6 +496,8 @@ export class EmbedHelper {
                 return EmbedHelper.blue;
             case LogLevel.Trace:
                 return EmbedHelper.grey;
+            case LogLevel.Warning:
+                return EmbedHelper.orange;
         }
     }
 }

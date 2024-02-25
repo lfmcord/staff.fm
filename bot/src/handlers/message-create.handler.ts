@@ -10,16 +10,18 @@ import { TextHelper } from '@src/helpers/text.helper';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
-import { StaffMailDmReply } from '@src/feature/staffmail/staff-mail-dm-reply';
+import { StaffMailDmTrigger } from '@src/feature/triggers/staff-mail-dm.trigger';
 import { Environment } from '@models/environment';
+import { VerificationLastFmTrigger } from '@src/feature/triggers/verification-lastfm.trigger';
 
 @injectable()
 export class MessageCreateHandler implements IHandler {
     eventType: string = 'messageCreate';
 
     private logger: Logger<MessageCreateHandler>;
+    verificationLastFmTrigger: VerificationLastFmTrigger;
     env: Environment;
-    private readonly staffMailDmReply: StaffMailDmReply;
+    private readonly staffMailDmReply: StaffMailDmTrigger;
     private readonly cachingRepository: CachingRepository;
     private memberService: MemberService;
 
@@ -27,9 +29,11 @@ export class MessageCreateHandler implements IHandler {
         @inject(TYPES.BotLogger) logger: Logger<MessageCreateHandler>,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.CachingRepository) cachingRepository: CachingRepository,
-        @inject(TYPES.StaffMailDmReply) staffMailDmReply: StaffMailDmReply,
-        @inject(TYPES.ENVIRONMENT) env: Environment
+        @inject(TYPES.StaffMailDmTrigger) staffMailDmReply: StaffMailDmTrigger,
+        @inject(TYPES.ENVIRONMENT) env: Environment,
+        @inject(TYPES.VerificationLastFmTrigger) verificationLastFmTrigger: VerificationLastFmTrigger
     ) {
+        this.verificationLastFmTrigger = verificationLastFmTrigger;
         this.env = env;
         this.staffMailDmReply = staffMailDmReply;
         this.cachingRepository = cachingRepository;
@@ -41,26 +45,26 @@ export class MessageCreateHandler implements IHandler {
         const isCommand = message.content.startsWith(this.env.PREFIX);
         const isBot = message.author.bot;
         const isDms = message.channel.isDMBased();
+        const isVerification = message.channelId === this.env.VERIFICATION_CHANNEL_ID;
 
-        if (
-            isBot ||
-            this.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS.includes(message.channelId) ||
-            this.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS.includes(
-                (message.channel as GuildTextBasedChannel).parentId!
-            )
-        )
-            return;
-        void this.cachingRepository.cacheMessage(message);
+        if (isBot) return;
         if (isCommand) await this.handleCommand(message);
         if (!isCommand && isDms) {
-            if (!message.reference)
-                await message.reply(
-                    `It looks like you are trying to chat with me. If you want to reply to an existing StaffMail, please reply to a pinned message. If you do not have any open StaffMails, you can create a new one with ${inlineCode(this.env.PREFIX + 'staffmail')}!`
-                );
-            else {
-                await this.staffMailDmReply.reply(message);
-            }
+            await this.staffMailDmReply.run(message);
         }
+        if (isVerification) await this.verificationLastFmTrigger.run(message);
+
+        // cache message if needed
+        if (
+            !isDms &&
+            !(
+                this.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS.includes(message.channelId) ||
+                this.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS.includes(
+                    (message.channel as GuildTextBasedChannel).parentId!
+                )
+            )
+        )
+            void this.cachingRepository.cacheMessage(message);
     }
 
     private async handleCommand(message: Message) {

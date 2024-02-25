@@ -9,7 +9,7 @@ import { TYPES } from '@src/types';
 import { TextHelper } from '@src/helpers/text.helper';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { EmbedHelper } from '@src/helpers/embed.helper';
-import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode.enum';
+import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 
 @injectable()

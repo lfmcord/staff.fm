@@ -1,4 +1,4 @@
-import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode.enum';
+import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
 import { GuildTextBasedChannel, User } from 'discord.js';
 
 export interface StaffMail {

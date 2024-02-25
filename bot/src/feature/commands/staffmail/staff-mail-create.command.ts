@@ -13,7 +13,7 @@ import { Environment } from '@models/environment';
 
 @injectable()
 export class StaffMailCreateCommand implements ICommand {
-    name: string = 'staffmail';
+    name: string = 'triggers';
     description: string = 'Creates a new staff mail message. Only usable in DMs.';
     usageHint: string = '';
     examples: string[] = ['', ''];

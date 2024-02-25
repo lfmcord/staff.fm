@@ -17,7 +17,7 @@ import { Logger } from 'tslog';
 import { TextHelper } from '@src/helpers/text.helper';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
-import { StaffMailModeEnum } from '@src/feature/staffmail/models/staff-mail-mode.enum';
+import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { ComponentHelper } from '@src/helpers/component.helper';
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
@@ -28,7 +28,7 @@ import { LoggingService } from '@src/infrastructure/services/logging.service';
 @injectable()
 export class StaffMailContactCommand implements ICommand {
     name: string = 'contact';
-    description: string = 'Messages a user and opens a new staffmail channel with them.';
+    description: string = 'Messages a user and opens a new triggers channel with them.';
     usageHint: string = '<user/id> <message to user>';
     examples: string[] = ['356178941913858049 Hello, we would like to speak to you!'];
     permissionLevel = CommandPermissionLevel.Staff;

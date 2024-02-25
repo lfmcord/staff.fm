@@ -9,6 +9,7 @@ import {
     GuildTextBasedChannel,
     inlineCode,
     italic,
+    Message,
     User,
 } from 'discord.js';
 import { TYPES } from '@src/types';
@@ -18,11 +19,11 @@ import { EmbedHelper } from '@src/helpers/embed.helper';
 import { LogLevel } from '@src/helpers/models/LogLevel';
 import { SelfMute } from '@src/feature/commands/utility/models/self-mute.model';
 import { Logger } from 'tslog';
-import moment = require('moment');
 import { Verification } from '@src/feature/commands/utility/models/verification.model';
-import { CountryCodeHelper } from '@src/helpers/country-code.helper';
 import { TextHelper } from '@src/helpers/text.helper';
 import { Environment } from '@models/environment';
+import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
+import moment = require('moment');
 
 @injectable()
 export class LoggingService {
@@ -102,43 +103,7 @@ export class LoggingService {
         );
 
         if (verification.lastfmUser) {
-            embeds.push(
-                new EmbedBuilder()
-                    .setTitle('Last.fm Account')
-                    .setURL(verification.lastfmUser.url)
-                    .setFields([
-                        {
-                            name: 'Username',
-                            value: verification.lastfmUser.name,
-                            inline: true,
-                        },
-                        {
-                            name: 'Real name',
-                            value: verification.lastfmUser.realname,
-                            inline: true,
-                        },
-                        {
-                            name: 'Scrobble Count',
-                            value: verification.lastfmUser.playcount.toString(),
-                            inline: false,
-                        },
-                        {
-                            name: 'Country',
-                            value:
-                                `:flag_${CountryCodeHelper.getTwoLetterIsoCountryCode(verification.lastfmUser.country)?.toLowerCase()}: ` +
-                                verification.lastfmUser.country,
-                            inline: true,
-                        },
-                        {
-                            name: 'Created',
-                            value: `<t:${verification.lastfmUser.registered}:D> (<t:${verification.lastfmUser.registered}:R>)`,
-                            inline: true,
-                        },
-                    ])
-                    .setThumbnail(verification.lastfmUser.image.find((i) => i.size === 'extralarge')?.url ?? null)
-                    .setColor(EmbedHelper.blue)
-                    .setTimestamp()
-            );
+            embeds.push(EmbedHelper.getLastFmUserEmbed(verification.lastfmUser));
         } else {
             embeds.push(new EmbedBuilder().setTitle('No Last.fm Account'));
         }
@@ -180,6 +145,16 @@ export class LoggingService {
             embeds: [embed],
             files: attachments,
         });
+    }
+
+    async logLastFmAgeAlert(message: Message, lastFmUser: getInfo) {
+        const logChannel = await this.channelService.getGuildChannelById(this.env.USER_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const logEmbed = EmbedHelper.getLogEmbed(message.author, message.author, LogLevel.Warning).setDescription(
+            `${TextHelper.userDisplay(message.author, false)} is trying to verify with a new Last.fm Account that is younger than 30 days: ${TextHelper.getDiscordMessageLink(message)}`
+        );
+        logChannel.send({ embeds: [logEmbed, EmbedHelper.getLastFmUserEmbed(lastFmUser, true)] });
     }
 
     private async getLogChannel(channelId: string): Promise<GuildTextBasedChannel | null> {

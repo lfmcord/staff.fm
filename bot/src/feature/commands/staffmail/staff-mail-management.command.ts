@@ -39,7 +39,7 @@ export class StaffMailManagementCommand implements ICommand {
             .setStyle(ButtonStyle.Primary)
             .setEmoji({ name: '📫' });
         const staffmailButton = new ButtonBuilder()
-            .setCustomId('staff-contact-staffmail-create')
+            .setCustomId('staff-contact-triggers-create')
             .setLabel('Anonymous Message')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji({ name: '🕵️' });

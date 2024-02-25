@@ -1,4 +1,4 @@
-import { inlineCode, italic, User } from 'discord.js';
+import { inlineCode, italic, Message, User } from 'discord.js';
 
 export class TextHelper {
     static success = '✅';
@@ -38,5 +38,9 @@ export class TextHelper {
     }
     static getDiscordUserId(stringToCheck: string): string | null {
         return stringToCheck.match(/[0-9]{17,18}/g)?.pop() ?? null;
+    }
+
+    static getDiscordMessageLink(message: Message): string {
+        return `https://discord.com/channels/${message.guild?.id}/${message.channelId}/${message.id}`;
     }
 }

@@ -20,6 +20,8 @@ export interface Environment {
     NO_LASTFM_ACCOUNT_ROLE_ID: string;
     SCROBBLE_MILESTONE_ROLE_IDS: string[];
     SCROBBLE_MILESTONE_NUMBERS: number[];
+    VERIFICATION_CHANNEL_ID: string;
+    BACKSTAGE_CHANNEL_ID: string;
     STAFFMAIL_CATEGORY_ID: string;
     STAFFMAIL_PING_ROLE_IDS: string[];
     STAFFMAIL_LOG_CHANNEL_ID: string;
@@ -27,6 +29,7 @@ export interface Environment {
     USER_LOG_CHANNEL_ID: string;
     DELETED_MESSAGE_LOG_CHANNEL_ID: string;
     DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS: string[];
+    LASTFM_AGE_ALERT_IN_DAYS: number;
     LOG_LEVEL: number;
     MESSAGE_CACHING_DURATION_IN_SECONDS: number;
 }

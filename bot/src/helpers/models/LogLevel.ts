@@ -3,4 +3,5 @@ export enum LogLevel {
     Failure,
     Info,
     Trace,
+    Warning,
 }
