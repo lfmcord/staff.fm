@@ -1,4 +1,12 @@
-import { ButtonInteraction, Client, inlineCode, Interaction, Message, StringSelectMenuInteraction } from 'discord.js';
+import {
+    ButtonInteraction,
+    Client,
+    inlineCode,
+    Interaction,
+    InteractionReplyOptions,
+    Message,
+    StringSelectMenuInteraction,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
@@ -13,7 +21,7 @@ import { Environment } from '@models/environment';
 
 @injectable()
 export class StaffMailCreateCommand implements ICommand {
-    name: string = 'triggers';
+    name: string = 'staffmail';
     description: string = 'Creates a new staff mail message. Only usable in DMs.';
     usageHint: string = '';
     examples: string[] = ['', ''];
@@ -42,12 +50,17 @@ export class StaffMailCreateCommand implements ICommand {
         return {};
     }
 
+    async runInteraction(interaction: ButtonInteraction) {
+        this.logger.info(`New staff mail create interaction received.`);
+        await this.createNewStaffMailEphemeral(interaction);
+    }
+
     public validateArgs(_: string[]): Promise<void> {
         return Promise.resolve();
     }
 
     private async createNewStaffMail(message: Message): Promise<void> {
-        const createMessage = await message.channel.send(EmbedHelper.getStaffMailCreateEmbed());
+        const createMessage: Message = await message.channel.send(EmbedHelper.getStaffMailCreateEmbed());
 
         // Handling the category selection menu
         let categorySelection: StringSelectMenuInteraction | ButtonInteraction;
@@ -121,21 +134,112 @@ export class StaffMailCreateCommand implements ICommand {
         await sendInteraction.showModal(modal);
     }
 
-    private async cancel(message: Message) {
+    private async createNewStaffMailEphemeral(interaction: ButtonInteraction) {
+        const replyOptions = EmbedHelper.getStaffMailCreateEmbed() as InteractionReplyOptions;
+        replyOptions.ephemeral = true;
+        replyOptions.fetchReply = true;
+        const createMessage = await interaction.reply(replyOptions);
+
+        // Handling the category selection menu
+        let categorySelection: StringSelectMenuInteraction | ButtonInteraction;
+        const collectorFilter = (interaction: Interaction) => interaction.user.id === interaction.user.id;
+
+        try {
+            categorySelection = (await createMessage.awaitMessageComponent({
+                filter: collectorFilter,
+                time: 120_000,
+            })) as StringSelectMenuInteraction | ButtonInteraction;
+        } catch (e) {
+            await this.timeout(interaction);
+            return;
+        }
+
+        if (categorySelection instanceof ButtonInteraction) {
+            await this.cancel(interaction);
+            return;
+        }
+
+        // Setting the detail view for the chosen category
+        await categorySelection.update({});
+        const category: string = (categorySelection as StringSelectMenuInteraction).values[0];
+        this.logger.debug(`User has selected a category (${category}). Proceeding to next menu.`);
+        const response = EmbedHelper.getStaffMailCategoryEmbed(category) as InteractionReplyOptions;
+        response.ephemeral = true;
+        response.fetchReply = true;
+        await interaction.editReply(response);
+
+        // Crowns has a submenu, get the response for it.
+        if (category === StaffMailType.Crowns) {
+            let crownsSubmenuSelection: StringSelectMenuInteraction | ButtonInteraction;
+            try {
+                crownsSubmenuSelection = (await createMessage.awaitMessageComponent({
+                    filter: collectorFilter,
+                    time: 120_000,
+                })) as StringSelectMenuInteraction | ButtonInteraction;
+            } catch (e) {
+                await this.timeout(interaction);
+                return;
+            }
+
+            if (crownsSubmenuSelection instanceof ButtonInteraction) {
+                await this.cancel(interaction);
+                return;
+            }
+
+            await crownsSubmenuSelection.update({});
+            const crownsSubcategory: string = (crownsSubmenuSelection as StringSelectMenuInteraction).values[0];
+            this.logger.debug(`User has selected a crowns sub-category (${crownsSubcategory}). Showing send button.`);
+            const response = EmbedHelper.getStaffMailCrownsSubcategoryEmbed(
+                crownsSubcategory
+            ) as InteractionReplyOptions;
+            response.ephemeral = true;
+            response.fetchReply = true;
+            await interaction.editReply(response);
+        }
+
+        // User gets a selection of send buttons (named and anon as optional)
+        let sendInteraction: ButtonInteraction;
+        try {
+            sendInteraction = (await createMessage.awaitMessageComponent({
+                filter: collectorFilter,
+                time: 120_000,
+            })) as ButtonInteraction;
+        } catch (e) {
+            await this.timeout(interaction);
+            return;
+        }
+
+        if (sendInteraction.customId === StaffMailCustomIds.CancelButton) {
+            await this.cancel(interaction);
+            await sendInteraction.update({});
+            return;
+        }
+
+        // Show the modal according to the chosen send button
+        this.logger.debug(`Menus finished, trying to show modal for report type: ${sendInteraction.customId}.`);
+        const modal = ComponentHelper.staffMailCreateModal(sendInteraction.customId);
+        await sendInteraction.showModal(modal);
+    }
+
+    private async cancel(message: Message | ButtonInteraction) {
         this.logger.info(`User has cancelled sending a staff mail.`);
-        await message.edit({
+        const content = {
             content: `You've cancelled the process of messaging staff. If you'd like to message after all, simply type ${inlineCode(`${this.env.PREFIX}${this.name}`)} here.`,
             components: [],
             embeds: [],
-        });
+        };
+        if (message instanceof Message) await message.edit(content);
+        else await message.editReply(content);
     }
 
-    private async timeout(message: Message) {
+    private async timeout(message: Message | ButtonInteraction) {
         this.logger.info(`Staff mail creation has timed out.`);
-        await message.edit({
+        const content = {
             content: `Request timed out after 2 minutes. If you'd still like to message, simply type ${inlineCode(`${this.env.PREFIX}${this.name}`)} here.`,
             components: [],
             embeds: [],
-        });
+        };
+        if (message instanceof Message) await message.edit(content);
+        else await message.editReply(content);
     }
 }

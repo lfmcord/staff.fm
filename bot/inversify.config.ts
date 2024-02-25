@@ -57,6 +57,7 @@ import { UsersRepository } from '@src/infrastructure/repositories/users.reposito
 import { GuildBanAddHandler } from '@src/handlers/guild-ban-add.handler';
 import { GuildBanRemoveHandler } from '@src/handlers/guild-ban-remove.handler';
 import { WhoisCommand } from '@src/feature/commands/utility/whois.command';
+import { StaffMailCreateButtonInteraction } from '@src/feature/interactions/staff-mail-create-button.interaction';
 
 const container = new Container();
 
@@ -185,6 +186,7 @@ container.bind<VerificationLastFmTrigger>(TYPES.VerificationLastFmTrigger).to(Ve
 // INTERACTIONS
 container.bind<IInteraction>('Interaction').to(EventCreateInteraction);
 container.bind<IInteraction>('Interaction').to(StaffMailCreateModalSubmitInteraction);
+container.bind<IInteraction>('Interaction').to(StaffMailCreateButtonInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);

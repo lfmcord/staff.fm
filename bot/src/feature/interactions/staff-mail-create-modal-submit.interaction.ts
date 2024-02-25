@@ -81,7 +81,7 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
         });
 
         this.logger.debug(`StaffMail channel is set up. Sending response to user...`);
-        await interaction.message?.edit({
+        const openedStaffMailMessage = await interaction.user.send({
             components: [],
             embeds: [
                 EmbedHelper.getStaffMailOpenEmbed(false),
@@ -94,7 +94,7 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
                 ),
             ],
         });
-        interaction.message?.pin();
+        openedStaffMailMessage?.pin();
         await interaction.reply({
             ephemeral: true,
             content: `I've successfully sent your report! Staff will get back to you as soon as possible. I've also pinned the message. Check your pins to see all your open StaffMails!`,

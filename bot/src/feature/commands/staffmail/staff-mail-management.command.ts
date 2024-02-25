@@ -5,14 +5,16 @@ import {
     bold,
     ButtonBuilder,
     ButtonStyle,
-    Client,
     EmbedBuilder,
+    inlineCode,
     Message,
     PartialMessage,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { TYPES } from '@src/types';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class StaffMailManagementCommand implements ICommand {
@@ -20,48 +22,36 @@ export class StaffMailManagementCommand implements ICommand {
     description: string =
         'Creates a staff mail management post where you can anonymously send a message to staff or open a ticket with them.';
     usageHint: string = '';
-    client: Client;
     examples: string[] = [];
     permissionLevel = CommandPermissionLevel.Staff;
     aliases = ['staffmailmanage', 'staffmailmenu'];
     isUsableInDms = false;
     isUsableInServer = true;
 
-    constructor(@inject(TYPES.Client) client: Client) {
-        this.client = client;
+    private env: Environment;
+
+    constructor(@inject(TYPES.ENVIRONMENT) env: Environment) {
+        this.env = env;
     }
 
     async run(message: Message | PartialMessage): Promise<CommandResult> {
-        // TODO: Finalize this. Just one button that starts the process in the channel ephemereal?
-        const ticketButton = new ButtonBuilder()
-            .setCustomId('staff-contact-ticket-create')
-            .setLabel('Create Ticket')
+        const createButton = new ButtonBuilder()
+            .setCustomId('defer-staff-mail-create-button')
+            .setLabel('Send a message')
             .setStyle(ButtonStyle.Primary)
             .setEmoji({ name: '📫' });
-        const staffmailButton = new ButtonBuilder()
-            .setCustomId('staff-contact-triggers-create')
-            .setLabel('Anonymous Message')
-            .setStyle(ButtonStyle.Secondary)
-            .setEmoji({ name: '🕵️' });
         message.channel.send({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle('Create a ticket')
+                    .setTitle('How to contact staff')
+                    .setColor(EmbedHelper.blue)
                     .setDescription(
-                        'Click the button below to open a ticket with staff for matters like questions about the server, crowns game issues or when reporting rule violations. '
+                        `If you wish to contact the staff team, ${bold('please use the button below')}. You can also simply DM me ${inlineCode(this.env.PREFIX + 'staffmail')} to start the process!` +
+                            `\n\nSending a message to staff will start a conversation in our Direct Messages. Nobody but you and the staff team are able to see them.\n\n` +
+                            `If it is an urgent matter, feel free to use the <@&${this.env.STAFF_ROLE_IDS[0]}> ping!`
                     ),
             ],
-            components: [new ActionRowBuilder<ButtonBuilder>().addComponents(ticketButton)],
-        });
-        message.channel.send({
-            embeds: [
-                new EmbedBuilder()
-                    .setTitle('Message Staff anonymously')
-                    .setDescription(
-                        `If you have a sensitive matter where you feel more comfortable to message staff without revealing your name to them, please use this button. Your name will not show up for the staff team when using this option.\n\n⚠️ ${bold('Note:')} Please create a ticket instead if your matter requires us to know your name!`
-                    ),
-            ],
-            components: [new ActionRowBuilder<ButtonBuilder>().addComponents(staffmailButton)],
+            components: [new ActionRowBuilder<ButtonBuilder>().addComponents(createButton)],
         });
         return {
             isSuccessful: true,
