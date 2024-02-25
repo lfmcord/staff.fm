@@ -24,7 +24,7 @@ export class UsersRepository {
     }
 
     async getUsersByLastFmUsername(username: string) {
-        return await UsersModelInstance.find({ verifications: { username: username.toLowerCase() } }).exec();
+        return await UsersModelInstance.find({ 'verifications.username': username.toLowerCase() }).exec();
     }
 
     async addVerificationToUser(verification: Verification) {

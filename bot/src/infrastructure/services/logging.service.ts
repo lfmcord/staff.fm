@@ -87,19 +87,25 @@ export class LoggingService {
         if (!logChannel) return;
 
         const embeds: EmbedBuilder[] = [];
-        let description = `${bold('Verified user')} ${inlineCode(verification.verifiedMember.user.username)} ${italic('(ID ' + verification.verifiedMember.user.id + ')')}`;
-        if (verification.isReturningUser) description += `\n⚠️ ${bold(`Returning User`)}`;
+        const description = `${bold('Verified user')} ${inlineCode(verification.verifiedMember.user.username)} ${italic('(ID ' + verification.verifiedMember.user.id + ')')}`;
         embeds.push(
             EmbedHelper.getLogEmbed(verification.verifyingUser, verification.verifiedMember.user, LogLevel.Info)
                 .setDescription(description)
                 .setFields([
                     {
-                        name: `📝  Note`,
-                        value: `${verification.verificationMessage?.content ?? 'Manual Verification'}`,
-                    },
-                    {
                         name: `Created`,
                         value: `<t:${moment(verification.verifiedMember.user.createdAt).unix()}:D> (<t:${moment(verification.verifiedMember.user.createdAt).unix()}:R>)`,
+                        inline: true,
+                    },
+                    {
+                        name: `Returning?`,
+                        value: verification.isReturningUser ? `⚠️ Yes` : 'No',
+                        inline: true,
+                    },
+                    {
+                        name: `Note`,
+                        value: `${verification.verificationMessage?.content ?? 'Manual Verification'}`,
+                        inline: false,
                     },
                 ])
         );
@@ -171,6 +177,24 @@ export class LoggingService {
                     `${bold(`Flagged term: `)} ${inlineCode(flag.term)}\n` +
                     `${bold(`Reason: `)} ${flag.reason}`
             );
+        logChannel.send({ embeds: [logEmbed] });
+    }
+
+    async logDuplicateLastFmUsername(message: Message, otherMembers: GuildMember[]) {
+        const logChannel = await this.channelService.getGuildChannelById(this.env.BACKSTAGE_CHANNEL_ID);
+        if (!logChannel) return;
+
+        let description =
+            `${TextHelper.userDisplay(message.author, false)} is trying to verify with a Last.fm account that is already verified and tied to a different account.\n\n` +
+            `${bold(`Last.fm Link: `)} https://last.fm/user/${TextHelper.getLastfmUsername(message.content)}\n` +
+            `${bold(`Other users using this last.fm username:`)}\n`;
+
+        otherMembers.forEach((member) => (description += `- ${TextHelper.userDisplay(member.user)}\n`));
+
+        const logEmbed = EmbedHelper.getLogEmbed(this.client.user, message.author, LogLevel.Warning)
+            .setTitle(`⚠️ Last.fm Account Duplicate`)
+            .setDescription(description)
+            .setFooter({ text: `Please make sure they are not an alt account. When in doubt, ask staff!` });
         logChannel.send({ embeds: [logEmbed] });
     }
 
