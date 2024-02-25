@@ -152,7 +152,6 @@ export class VerifyCommand implements ICommand {
         } else {
             try {
                 lastfmUser = await this.lastFmClient.user.getInfo({ username: lastfmUsername });
-                this.logger.trace(JSON.stringify(lastfmUser));
             } catch (e) {
                 this.logger.error(e);
                 throw Error(`Last.fm API returned an error.`);

@@ -8,9 +8,11 @@ import { MemberService } from '@src/infrastructure/services/member.service';
 @injectable()
 export class SelfMutesRepository {
     private memberService: MemberService;
+
     constructor(@inject(TYPES.MemberService) memberService: MemberService) {
         this.memberService = memberService;
     }
+
     public async createSelfMute(user: User, createdAt: Date, endsAt: Date, roles: Role[]) {
         const selfMuteInstance = new SelfMutesModelInstance({
             userId: user.id,

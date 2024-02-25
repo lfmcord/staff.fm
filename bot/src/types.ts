@@ -29,6 +29,7 @@ export const TYPES = {
     SelfMutesRepository: Symbol('SelfMutesRepository'),
     CachingRepository: Symbol('CachingRepository'),
     MuteRndRepository: Symbol('MuteRndRepository'),
+    FlagsRepository: Symbol('FlagsRepository'),
 
     // SERVICES
     MessageService: Symbol('MessageService'),

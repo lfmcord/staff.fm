@@ -49,6 +49,10 @@ import { Environment } from '@models/environment';
 import { AuditService } from '@src/infrastructure/services/audit.service';
 import * as process from 'process';
 import { VerificationLastFmTrigger } from '@src/feature/triggers/verification-lastfm.trigger';
+import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
+import { FlagCommand } from '@src/feature/commands/moderation/flag.command';
+import { FlagsCommand } from '@src/feature/commands/moderation/flags.command';
+import { RemoveFlagCommand } from '@src/feature/commands/moderation/remove-flag.command';
 
 const container = new Container();
 
@@ -163,6 +167,9 @@ container.bind<ICommand>('Command').to(StaffMailContactCommand);
 container.bind<ICommand>('Command').to(StaffMailCloseCommand);
 container.bind<ICommand>('Command').to(StaffMailCreateCommand);
 container.bind<ICommand>('Command').to(StaffMailReplyCommand);
+container.bind<ICommand>('Command').to(FlagCommand);
+container.bind<ICommand>('Command').to(FlagsCommand);
+container.bind<ICommand>('Command').to(RemoveFlagCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
@@ -177,6 +184,7 @@ container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepos
 container.bind<SelfMutesRepository>(TYPES.SelfMutesRepository).to(SelfMutesRepository);
 container.bind<CachingRepository>(TYPES.CachingRepository).to(CachingRepository);
 container.bind<MuteRndRepository>(TYPES.MuteRndRepository).to(MuteRndRepository);
+container.bind<FlagsRepository>(TYPES.FlagsRepository).to(FlagsRepository);
 
 // SERVICES
 container.bind<MessageService>(TYPES.MessageService).to(MessageService);

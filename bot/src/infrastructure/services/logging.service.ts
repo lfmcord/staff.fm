@@ -24,6 +24,7 @@ import { TextHelper } from '@src/helpers/text.helper';
 import { Environment } from '@models/environment';
 import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
 import moment = require('moment');
+import { Flag } from '@src/feature/commands/moderation/models/flag.model';
 
 @injectable()
 export class LoggingService {
@@ -155,6 +156,21 @@ export class LoggingService {
             `${TextHelper.userDisplay(message.author, false)} is trying to verify with a new Last.fm Account that is younger than 30 days: ${TextHelper.getDiscordMessageLink(message)}`
         );
         logChannel.send({ embeds: [logEmbed, EmbedHelper.getLastFmUserEmbed(lastFmUser, true)] });
+    }
+
+    async logLastFmFlagAlert(message: Message, flag: Flag) {
+        const logChannel = await this.channelService.getGuildChannelById(this.env.BACKSTAGE_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const logEmbed = EmbedHelper.getLogEmbed(this.client.user, message.author, LogLevel.Warning)
+            .setTitle(`⚠️ Last.fm Account Flagged`)
+            .setDescription(
+                `${TextHelper.userDisplay(message.author, false)} is trying to verify with a Last.fm account that was flagged as suspicious or malicious by staff.\n\n` +
+                    `${bold(`Last.fm Link: `)} https://last.fm/user/${TextHelper.getLastfmUsername(message.content)}\n` +
+                    `${bold(`Flagged term: `)} ${inlineCode(flag.term)}\n` +
+                    `${bold(`Reason: `)} ${flag.reason}`
+            );
+        logChannel.send({ embeds: [logEmbed] });
     }
 
     private async getLogChannel(channelId: string): Promise<GuildTextBasedChannel | null> {
