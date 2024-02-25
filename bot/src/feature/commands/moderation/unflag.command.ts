@@ -9,13 +9,13 @@ import { ValidationError } from '@src/feature/commands/models/validation-error.m
 import { TextHelper } from '@src/helpers/text.helper';
 
 @injectable()
-export class RemoveFlagCommand implements ICommand {
-    name: string = 'removeflag';
+export class UnflagCommand implements ICommand {
+    name: string = 'unflag';
     description: string = 'Deletes a flagged term.';
     usageHint: string = '';
     examples: string[] = [];
     permissionLevel = CommandPermissionLevel.Staff;
-    aliases = ['deleteflag', 'rflag', 'dflag'];
+    aliases = ['deleteflag', 'removeflag'];
     isUsableInDms = false;
     isUsableInServer = true;
 

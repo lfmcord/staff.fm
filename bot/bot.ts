@@ -1,6 +1,15 @@
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
-import { Client, Events, GuildMember, Interaction, InteractionType, Message, PartialMessage } from 'discord.js';
+import {
+    Client,
+    Events,
+    GuildBan,
+    GuildMember,
+    Interaction,
+    InteractionType,
+    Message,
+    PartialMessage,
+} from 'discord.js';
 import { TYPES } from '@src/types';
 import { IHandlerFactory } from '@src/handlers/models/handler-factory.interface';
 import { MongoDbConnector } from '@src/infrastructure/connectors/mongo-db.connector';
@@ -77,6 +86,16 @@ export class Bot {
                 `Message with message ID ${interaction.id} and type '${InteractionType[interaction.type]}' was created by ${TextHelper.userLog(interaction.user)}.`
             );
             await this.handlerFactory.createHandler(Events.InteractionCreate).handle(interaction);
+        });
+
+        this.client.on(Events.GuildBanAdd, async (ban: GuildBan) => {
+            this.logger.info(`New ban on user with user ID ${ban.user.id} with reason ${ban.reason}.`);
+            await this.handlerFactory.createHandler(Events.GuildBanAdd).handle(ban);
+        });
+
+        this.client.on(Events.GuildBanRemove, async (ban: GuildBan) => {
+            this.logger.info(`New unban for user with user ID ${ban.user.id}.`);
+            await this.handlerFactory.createHandler(Events.GuildBanRemove).handle(ban);
         });
 
         this.client.on('ready', async () => {

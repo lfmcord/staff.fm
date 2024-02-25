@@ -52,8 +52,10 @@ import { VerificationLastFmTrigger } from '@src/feature/triggers/verification-la
 import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
 import { FlagCommand } from '@src/feature/commands/moderation/flag.command';
 import { FlagsCommand } from '@src/feature/commands/moderation/flags.command';
-import { RemoveFlagCommand } from '@src/feature/commands/moderation/remove-flag.command';
+import { UnflagCommand } from '@src/feature/commands/moderation/unflag.command';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { GuildBanAddHandler } from '@src/handlers/guild-ban-add.handler';
+import { GuildBanRemoveHandler } from '@src/handlers/guild-ban-remove.handler';
 
 const container = new Container();
 
@@ -153,6 +155,8 @@ container.bind<IHandler>('Handler').to(GuildMemberAddHandler);
 container.bind<IHandler>('Handler').to(ReadyHandler);
 container.bind<IHandler>('Handler').to(MessageDeleteHandler);
 container.bind<IHandler>('Handler').to(InteractionCreateHandler);
+container.bind<IHandler>('Handler').to(GuildBanAddHandler);
+container.bind<IHandler>('Handler').to(GuildBanRemoveHandler);
 
 // COMMANDS
 container.bind<ICommand>('Command').to(PingCommand);
@@ -170,7 +174,7 @@ container.bind<ICommand>('Command').to(StaffMailCreateCommand);
 container.bind<ICommand>('Command').to(StaffMailReplyCommand);
 container.bind<ICommand>('Command').to(FlagCommand);
 container.bind<ICommand>('Command').to(FlagsCommand);
-container.bind<ICommand>('Command').to(RemoveFlagCommand);
+container.bind<ICommand>('Command').to(UnflagCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
