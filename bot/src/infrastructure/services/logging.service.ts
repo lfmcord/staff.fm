@@ -169,14 +169,21 @@ export class LoggingService {
         const logChannel = await this.channelService.getGuildChannelById(this.env.BACKSTAGE_CHANNEL_ID);
         if (!logChannel) return;
 
+        const lastFmUsername = TextHelper.getLastfmUsername(message.content);
+        let description = `${TextHelper.userDisplay(message.author, false)} `;
+        if (lastFmUsername) description += `is trying to verify with a Last.fm account`;
+        else description += `mentioned a term`;
+        description += ` that was flagged as suspicious or malicious by staff.\n\n`;
+        if (lastFmUsername)
+            description += `${bold(`Last.fm Link: `)} https://last.fm/user/${TextHelper.getLastfmUsername(message.content)}\n`;
+        description +=
+            `${bold(`Message: `)} ${TextHelper.getDiscordMessageLink(message)}\n` +
+            `${bold(`Flagged term: `)} ${inlineCode(flag.term)}\n` +
+            `${bold(`Reason: `)} ${flag.reason}`;
+
         const logEmbed = EmbedHelper.getLogEmbed(this.client.user, message.author, LogLevel.Warning)
             .setTitle(`⚠️ Last.fm Account Flagged`)
-            .setDescription(
-                `${TextHelper.userDisplay(message.author, false)} is trying to verify with a Last.fm account that was flagged as suspicious or malicious by staff.\n\n` +
-                    `${bold(`Last.fm Link: `)} https://last.fm/user/${TextHelper.getLastfmUsername(message.content)}\n` +
-                    `${bold(`Flagged term: `)} ${inlineCode(flag.term)}\n` +
-                    `${bold(`Reason: `)} ${flag.reason}`
-            );
+            .setDescription(description);
         logChannel.send({ embeds: [logEmbed] });
     }
 

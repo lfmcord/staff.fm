@@ -41,23 +41,25 @@ export class VerificationLastFmTrigger {
 
     async run(message: Message) {
         const lastFmUsername = TextHelper.getLastfmUsername(message.content);
-        if (!lastFmUsername) return;
 
         // check if username is flagged
-        const flag = await this.flagsRepository.getFlagByTerm(lastFmUsername.toLowerCase());
+        this.logger.debug(`Checking if '${lastFmUsername?.toLowerCase() ?? message.content}' is in flagged terms list`);
+        const flag = await this.flagsRepository.getFlagByTerm(lastFmUsername?.toLowerCase() ?? message.content);
         if (flag) {
             this.logger.info(`Verification message ${message.content} is exact match a flagged term (${flag.term})`);
             await this.loggingService.logLastFmFlagAlert(message, flag);
         } else {
             const flags = await this.flagsRepository.getAllFlags();
             for (const flag1 of flags) {
-                this.logger.info(`Verification message ${message.content} contains a flagged term (${flag1.term})`);
-                if (lastFmUsername.match(flag1.term)?.length !== 0) {
+                if (message.content?.match(flag1.term)) {
+                    this.logger.info(`Verification message ${message.content} contains a flagged term (${flag1.term})`);
                     await this.loggingService.logLastFmFlagAlert(message, flag1);
                     break;
                 }
             }
         }
+
+        if (!lastFmUsername) return;
 
         let lastFmUser;
         try {
