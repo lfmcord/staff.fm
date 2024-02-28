@@ -34,9 +34,7 @@ import Redis from 'ioredis';
 import { MessageDeleteHandler } from '@src/handlers/message-delete.handler';
 import { MuteRndRepository } from '@src/infrastructure/repositories/mute-rnd.repository';
 import { MuteRndCommand } from '@src/feature/commands/fun/mute-rnd.command';
-import { EventManagementCommand } from '@src/feature/commands/events/event-management.command';
 import { IInteraction } from '@src/feature/interactions/abstractions/IInteraction.interface';
-import { EventCreateInteraction } from '@src/feature/interactions/event-create.interaction';
 import { InteractionCreateHandler } from '@src/handlers/interaction-create.handler';
 import { StaffMailManagementCommand } from '@src/feature/commands/staffmail/staff-mail-management.command';
 import { StaffMailContactCommand } from '@src/feature/commands/staffmail/staff-mail-contact.command';
@@ -58,6 +56,7 @@ import { GuildBanAddHandler } from '@src/handlers/guild-ban-add.handler';
 import { GuildBanRemoveHandler } from '@src/handlers/guild-ban-remove.handler';
 import { WhoisCommand } from '@src/feature/commands/utility/whois.command';
 import { StaffMailCreateButtonInteraction } from '@src/feature/interactions/staff-mail-create-button.interaction';
+import { StaffMailCreateUrgentReportButtonInteraction } from '@src/feature/interactions/staff-mail-create-urgentreport-button.interaction';
 
 const container = new Container();
 
@@ -79,7 +78,8 @@ container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue({
     MUTED_ROLE_ID: process.env.MUTED_ROLE_ID ?? '',
     BACKSTAGER_ROLE_IDS: process.env.BACKSTAGER_ROLE_IDS?.split(',') ?? [],
     HELPER_ROLE_IDS: process.env.HELPER_ROLE_IDS?.split(',') ?? [],
-    STAFF_ROLE_IDS: process.env.STAFF_ROLE_IDS?.split(',') ?? [],
+    ADMIN_ROLE_IDS: process.env.ADMIN_ROLE_IDS?.split(',') ?? [],
+    MODERATOR_ROLE_IDS: process.env.MODERATOR_ROLE_IDS?.split(',') ?? [],
     UNVERIFIED_ROLE_ID: process.env.UNVERIFIED_ROLE_ID ?? '',
     NO_LASTFM_ACCOUNT_ROLE_ID: process.env.NO_LASTFM_ACCOUNT_ROLE_ID ?? '',
     SCROBBLE_MILESTONE_ROLE_IDS: process.env.SCROBBLE_MILESTONE_ROLE_IDS?.split(',') ?? [],
@@ -168,7 +168,6 @@ container.bind<ICommand>('Command').to(SelfMuteUnmuteCommand);
 container.bind<ICommand>('Command').to(OkBuddyCommand);
 container.bind<ICommand>('Command').to(VerifyCommand);
 container.bind<ICommand>('Command').to(MuteRndCommand);
-container.bind<ICommand>('Command').to(EventManagementCommand);
 container.bind<ICommand>('Command').to(StaffMailManagementCommand);
 container.bind<ICommand>('Command').to(StaffMailContactCommand);
 container.bind<ICommand>('Command').to(StaffMailCloseCommand);
@@ -184,9 +183,9 @@ container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigg
 container.bind<VerificationLastFmTrigger>(TYPES.VerificationLastFmTrigger).to(VerificationLastFmTrigger);
 
 // INTERACTIONS
-container.bind<IInteraction>('Interaction').to(EventCreateInteraction);
 container.bind<IInteraction>('Interaction').to(StaffMailCreateModalSubmitInteraction);
 container.bind<IInteraction>('Interaction').to(StaffMailCreateButtonInteraction);
+container.bind<IInteraction>('Interaction').to(StaffMailCreateUrgentReportButtonInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);

@@ -177,6 +177,18 @@ export class ComponentHelper {
                         .setStyle(TextInputStyle.Paragraph)
                         .setMaxLength(2048)
                 );
+                break;
+            case StaffMailCustomIds.UrgentReportSendButton:
+            case StaffMailCustomIds.UrgentReportSendAnonButton:
+                modal.setTitle('Sending a report');
+                modalComponents.push(
+                    new TextInputBuilder()
+                        .setCustomId(`${id}-text`)
+                        .setLabel("What you'd like to report")
+                        .setStyle(TextInputStyle.Paragraph)
+                        .setMaxLength(2048)
+                );
+                break;
         }
 
         modalComponents.forEach((c) => modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(c)));

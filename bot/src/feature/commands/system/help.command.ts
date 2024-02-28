@@ -69,7 +69,10 @@ export class HelpCommand implements ICommand {
             embeds: [
                 EmbedHelper.getVerboseCommandEmbed(this.client, message)
                     .setDescription(description)
-                    .setTitle('Command Reference'),
+                    .setTitle('Command Reference')
+                    .setFooter({
+                        text: `Type ${this.env.PREFIX}help [command name] to find out more about a command.`,
+                    }),
             ],
         };
     }

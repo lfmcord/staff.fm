@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify';
 import { IInteraction } from '@src/feature/interactions/abstractions/IInteraction.interface';
-import { ModalSubmitInteraction } from 'discord.js';
+import { EmbedBuilder, ModalSubmitInteraction } from 'discord.js';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { TYPES } from '@src/types';
@@ -9,6 +9,9 @@ import { Logger } from 'tslog';
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Environment } from '@models/environment';
+import container from '../../../inversify.config';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { WhoisCommand } from '@src/feature/commands/utility/whois.command';
 
 @injectable()
 export class StaffMailCreateModalSubmitInteraction implements IInteraction {
@@ -23,6 +26,8 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
         'defer-' + StaffMailCustomIds.LastfmSendButton + '-modal',
         'defer-' + StaffMailCustomIds.OtherSendButton + '-modal',
         'defer-' + StaffMailCustomIds.OtherSendAnonButton + '-modal',
+        'defer-' + StaffMailCustomIds.UrgentReportSendButton + '-modal',
+        'defer-' + StaffMailCustomIds.UrgentReportSendAnonButton + '-modal',
     ];
     logger: Logger<StaffMailCreateModalSubmitInteraction>;
     loggingService: LoggingService;
@@ -44,40 +49,47 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
     async manage(interaction: ModalSubmitInteraction) {
         this.logger.debug(`Compiling information to create staff mail from customId ${interaction.customId}`);
         const isCrownsModal = interaction.customId.includes('crowns');
+        const isUrgent = interaction.customId.includes('urgent');
         const category = isCrownsModal
             ? interaction.customId.split('-')[4] + '-' + interaction.customId.split('-')[5]
             : interaction.customId.split('-')[4];
         const isAnonymous = interaction.customId.includes('anon');
         const mode = isAnonymous ? StaffMailModeEnum.ANONYMOUS : StaffMailModeEnum.NAMED;
         const humanReadableCategory = EmbedHelper.getHumanReadableStaffMailType(category);
-        const summary = isCrownsModal ? null : interaction.components[0].components[0].value;
-        const text = isCrownsModal
-            ? interaction.components[0].components[0].value
-            : interaction.components[1].components[0].value;
+
+        // crowns and urgent reports don't require a user summary
+        const summary = isCrownsModal || isUrgent ? null : interaction.components[0].components[0].value;
+        const text =
+            isCrownsModal || isUrgent
+                ? interaction.components[0].components[0].value
+                : interaction.components[1].components[0].value;
 
         this.logger.debug(`Interaction is of category ${category} and mode ${mode}. Creating StaffMail...`);
         this.logger.trace(`Summary: ${summary}`);
-        const staffMail = await this.staffMailRepository.createStaffMail(
-            interaction.user,
-            category,
-            mode,
-            summary,
-            interaction.message!
-        );
+        const staffMailChannel = await this.staffMailRepository.createStaffMailChannel(interaction.user, mode);
 
         let rolePings = '';
         this.env.STAFFMAIL_PING_ROLE_IDS.forEach((id) => (rolePings += `<@&${id}> `));
-        await staffMail.channel!.send({
+        const embeds: EmbedBuilder[] = [];
+        embeds.push(
+            EmbedHelper.getStaffMailStaffViewNewEmbed(
+                isAnonymous ? null : interaction.user,
+                isAnonymous ? null : interaction.user,
+                category,
+                summary
+            )
+        );
+        if (!isAnonymous)
+            (
+                await (
+                    container.getAll<ICommand>('Command').find((c) => c.name == 'whois') as WhoisCommand
+                ).getEmbedsByDiscordUserId(interaction.user.id)
+            ).forEach((e) => embeds.push(e));
+
+        embeds.push(EmbedHelper.getStaffMailStaffViewIncomingEmbed(isAnonymous ? null : interaction.user, text));
+        await staffMailChannel!.send({
             content: `${rolePings}New StaffMail: ${humanReadableCategory}`,
-            embeds: [
-                EmbedHelper.getStaffMailStaffViewNewEmbed(
-                    isAnonymous ? null : interaction.user,
-                    isAnonymous ? null : interaction.user,
-                    category,
-                    summary
-                ),
-                EmbedHelper.getStaffMailStaffViewIncomingEmbed(isAnonymous ? null : interaction.user, text),
-            ],
+            embeds: embeds,
         });
 
         this.logger.debug(`StaffMail channel is set up. Sending response to user...`);
@@ -90,20 +102,28 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
                     mode === StaffMailModeEnum.ANONYMOUS,
                     text,
                     isCrownsModal ? null : summary,
-                    staffMail.type
+                    category
                 ),
             ],
         });
         openedStaffMailMessage?.pin();
+        await this.staffMailRepository.createStaffMail(
+            interaction.user,
+            category,
+            mode,
+            summary,
+            openedStaffMailMessage,
+            staffMailChannel
+        );
         await interaction.reply({
             ephemeral: true,
-            content: `I've successfully sent your report! Staff will get back to you as soon as possible. I've also pinned the message. Check your pins to see all your open StaffMails!`,
+            content: `I've successfully sent your report! Staff will get back to you as soon as possible. I've also pinned the message in our direct messages. Check the pins in our DM chanel to see all your open StaffMails!`,
         });
 
         await this.loggingService.logStaffMailEvent(
             true,
             isCrownsModal ? null : summary,
-            staffMail.type,
+            category,
             mode === StaffMailModeEnum.NAMED ? interaction.user : null,
             mode === StaffMailModeEnum.NAMED ? interaction.user : null,
             null

@@ -15,7 +15,7 @@ export class FlagCommand implements ICommand {
         "Flags a term as suspicious or otherwise malicious in order to show a warning if someone' last.fm username contains it. Can be a full last.fm username or just a part of it.";
     usageHint: string = '<term to flag> <reason>';
     examples: string[] = ['haiyn big dummy', '1488 people with that in their name are nazis'];
-    permissionLevel = CommandPermissionLevel.Staff;
+    permissionLevel = CommandPermissionLevel.Moderator;
     aliases = [];
     isUsableInDms = false;
     isUsableInServer = true;

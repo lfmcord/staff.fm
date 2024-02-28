@@ -30,6 +30,7 @@ export class CachingRepository {
     }
 
     private async cacheMessageContents(message: Message) {
+        if (!message.channel) return;
         const key = `MESSAGECONTENT_${message.id}`;
         const cache: CachedMessageModel = {
             messageId: message.id,

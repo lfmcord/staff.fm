@@ -108,10 +108,6 @@ export class MuteRndCommand implements ICommand {
         const randomPlayer = players[Math.floor(Math.random() * (players.length - 1))];
         const randomDurationInSeconds = Math.floor(Math.random() * 60);
         await message.channel.send(`Uh-oh! Looks like it's mute game time!`);
-        await message.channel.send(`In 3...`);
-        for (let i = 2; i > 0; i--) {
-            this.doSetTimeout(i, message);
-        }
 
         this.logger.debug(`Muting random player ${TextHelper.userLog(randomPlayer.member.user)}...`);
         this.logger.trace(`Random player: ${JSON.stringify(randomPlayer)}`);

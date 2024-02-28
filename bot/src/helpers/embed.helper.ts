@@ -81,7 +81,6 @@ export class EmbedHelper {
     };
 
     static getStaffMailCloseEmbed(summary: string | null, type: string, reason: string | null): EmbedBuilder {
-        // TODO: Implement reopen button
         const humanReadableType = EmbedHelper.getHumanReadableStaffMailType(type);
         let title = `${humanReadableType}`;
         if (summary) title += ` (${summary})`;
@@ -89,7 +88,7 @@ export class EmbedHelper {
             .setTitle(`🔴 StaffMail Closed`)
             .setColor(EmbedHelper.red)
             .setDescription(
-                `Thank you for using the Lastcord StaffMail! This StaffMail has been closed:\n\n${bold(title)}\n\nPlease use the button below to reopen the StaffMail if you feel that this was wrong.`
+                `Thank you for using the Lastcord StaffMail! This StaffMail has been closed:\n\n${bold(title)}\n\nPlease open another StaffMail if you feel that this closing was not correct.`
             )
             .setTimestamp();
         if (reason) embed.setFields({ name: 'Closure Reason', value: reason, inline: false });
@@ -102,7 +101,6 @@ export class EmbedHelper {
         category: string,
         summary: string | null
     ): EmbedBuilder {
-        // TODO: Add whois output, more info about user!
         const fields = [{ name: 'Category', value: EmbedHelper.getHumanReadableStaffMailType(category), inline: true }];
         if (summary) fields.push({ name: 'Summary', value: summary, inline: true });
         fields.push(
@@ -428,6 +426,9 @@ export class EmbedHelper {
                 break;
             case StaffMailType.Staff:
                 humanReadableType = 'Staff';
+                break;
+            case StaffMailType.UrgentReport:
+                humanReadableType = 'Report - Urgent';
         }
         return humanReadableType;
     }

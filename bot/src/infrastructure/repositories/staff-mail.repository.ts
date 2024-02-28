@@ -1,4 +1,4 @@
-import { GuildTextBasedChannel, Message, User } from 'discord.js';
+import { Channel, GuildTextBasedChannel, Message, User } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { model, Schema } from 'mongoose';
@@ -49,9 +49,9 @@ export class StaffMailRepository {
         type: string,
         mode: StaffMailModeEnum,
         summary: string | null,
-        lastMessage: Message
-    ): Promise<StaffMail> {
-        const channel = await this.createStaffMailChannel(user, mode);
+        lastMessage: Message,
+        channel: Channel
+    ) {
         const now = moment.utc().toDate();
 
         const staffMailInstance = new StaffMailInstanceModel({
@@ -65,19 +65,6 @@ export class StaffMailRepository {
             lastMessageId: lastMessage.id,
         });
         await staffMailInstance.save();
-
-        return {
-            id: staffMailInstance._id,
-            user: user,
-            userId: user.id,
-            channel: channel,
-            mode: mode,
-            type: type,
-            summary: summary,
-            createdAt: now,
-            lastMessageAt: now,
-            lastMessageId: lastMessage.id,
-        };
     }
 
     public async deleteStaffMail(channelId: string): Promise<StaffMail | null> {
@@ -105,7 +92,7 @@ export class StaffMailRepository {
             );
     }
 
-    private async createStaffMailChannel(user: User, mode: StaffMailModeEnum): Promise<GuildTextBasedChannel> {
+    public async createStaffMailChannel(user: User, mode: StaffMailModeEnum): Promise<GuildTextBasedChannel> {
         const category = await this.channelService.getGuildCategoryById(this.env.STAFFMAIL_CATEGORY_ID);
         if (!category) throw Error(`Cannot find staff mail category with ID ${this.env.STAFFMAIL_CATEGORY_ID}`);
         let channelName: string | null = null;

@@ -2,5 +2,6 @@ export enum CommandPermissionLevel {
     User,
     Backstager,
     Helper,
-    Staff,
+    Moderator,
+    Administrator,
 }

@@ -60,7 +60,7 @@ export class MessageCreateHandler implements IHandler {
             !(
                 this.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS.includes(message.channelId) ||
                 this.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS.includes(
-                    (message.channel as GuildTextBasedChannel).parentId!
+                    (message.channel as GuildTextBasedChannel)?.parentId ?? message.channelId
                 )
             )
         )

@@ -31,7 +31,7 @@ export class StaffMailContactCommand implements ICommand {
     description: string = 'Messages a user and opens a new triggers channel with them.';
     usageHint: string = '<user/id> <message to user>';
     examples: string[] = ['356178941913858049 Hello, we would like to speak to you!'];
-    permissionLevel = CommandPermissionLevel.Staff;
+    permissionLevel = CommandPermissionLevel.Administrator;
     aliases = [];
     isUsableInDms = false;
     isUsableInServer = true;
@@ -121,16 +121,21 @@ export class StaffMailContactCommand implements ICommand {
             content: `📫 You've received a new message from staff! I've pinned it for you so you can easily reply.`,
             embeds: [EmbedHelper.getStaffMailOpenEmbed(true), embed],
         });
+        const newStaffMailChannel = await this.staffMailRepository.createStaffMailChannel(
+            member.user,
+            StaffMailModeEnum.NAMED
+        );
         const newStaffMail = await this.staffMailRepository.createStaffMail(
             member.user,
             StaffMailType.Staff,
             StaffMailModeEnum.NAMED,
             summary,
-            messageToUser
+            messageToUser,
+            newStaffMailChannel
         );
 
         await this.channelService.pinNewStaffMailMessageInDmChannel(messageToUser, null, member.user);
-        await newStaffMail.channel!.send({
+        await newStaffMailChannel!.send({
             embeds: [
                 EmbedHelper.getStaffMailStaffViewNewEmbed(
                     member.user,
@@ -156,7 +161,7 @@ export class StaffMailContactCommand implements ICommand {
             null
         );
         await response.edit({
-            content: `I've sent the message to the user and created ${newStaffMail.channel}.`,
+            content: `I've sent the message to the user and created channel ${newStaffMailChannel.name}.`,
             embeds: [],
             components: [],
         });

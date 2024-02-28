@@ -15,7 +15,8 @@ export interface Environment {
     MUTED_ROLE_ID: string;
     BACKSTAGER_ROLE_IDS: string[];
     HELPER_ROLE_IDS: string[];
-    STAFF_ROLE_IDS: string[];
+    ADMIN_ROLE_IDS: string[];
+    MODERATOR_ROLE_IDS: string[];
     UNVERIFIED_ROLE_ID: string;
     NO_LASTFM_ACCOUNT_ROLE_ID: string;
     SCROBBLE_MILESTONE_ROLE_IDS: string[];

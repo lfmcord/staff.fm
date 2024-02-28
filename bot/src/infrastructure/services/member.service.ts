@@ -86,8 +86,12 @@ export class MemberService {
         const memberHighestRole = await this.getHighestRoleFromGuildMember(member!);
         const permissionLevelRoles = [
             {
-                level: CommandPermissionLevel.Staff,
-                roleIds: this.env.STAFF_ROLE_IDS,
+                level: CommandPermissionLevel.Administrator,
+                roleIds: this.env.ADMIN_ROLE_IDS,
+            },
+            {
+                level: CommandPermissionLevel.Moderator,
+                roleIds: this.env.MODERATOR_ROLE_IDS,
             },
             {
                 level: CommandPermissionLevel.Helper,

@@ -18,7 +18,7 @@ export class StaffMailCloseCommand implements ICommand {
     description: string = 'Closes a staff mail channel. Reasons are not disclosed to the user.';
     usageHint: string = '<reason>';
     examples: string[] = ['Closing because of inactivity.', 'Crowns unban request, granted.'];
-    permissionLevel = CommandPermissionLevel.Staff;
+    permissionLevel = CommandPermissionLevel.Administrator;
     aliases = [];
     isUsableInDms = false;
     isUsableInServer = true;
@@ -69,7 +69,11 @@ export class StaffMailCloseCommand implements ICommand {
             };
         }
 
-        await (await deleted.user.dmChannel?.messages.fetch(deleted.lastMessageId as MessageResolvable))?.unpin();
+        try {
+            await (await deleted.user.dmChannel?.messages.fetch(deleted.lastMessageId as MessageResolvable))?.unpin();
+        } catch (e) {
+            this.logger.warn(`Could not send closing message to unpin staffmail message from pins.`, e);
+        }
 
         this.logger.debug(`Staffmail channel was closed.`);
 

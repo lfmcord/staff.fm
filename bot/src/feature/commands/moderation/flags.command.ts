@@ -14,7 +14,7 @@ export class FlagsCommand implements ICommand {
     description: string = 'Shows all flagged terms.';
     usageHint: string = '';
     examples: string[] = [];
-    permissionLevel = CommandPermissionLevel.Staff;
+    permissionLevel = CommandPermissionLevel.Moderator;
     aliases = ['showflags', 'flagsshow'];
     isUsableInDms = false;
     isUsableInServer = true;

@@ -7,6 +7,7 @@ import {
     ButtonStyle,
     EmbedBuilder,
     inlineCode,
+    italic,
     Message,
     PartialMessage,
 } from 'discord.js';
@@ -15,6 +16,7 @@ import { CommandPermissionLevel } from '@src/feature/commands/models/command-per
 import { TYPES } from '@src/types';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { Environment } from '@models/environment';
+import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
 
 @injectable()
 export class StaffMailManagementCommand implements ICommand {
@@ -23,7 +25,7 @@ export class StaffMailManagementCommand implements ICommand {
         'Creates a staff mail management post where you can anonymously send a message to staff or open a ticket with them.';
     usageHint: string = '';
     examples: string[] = [];
-    permissionLevel = CommandPermissionLevel.Staff;
+    permissionLevel = CommandPermissionLevel.Administrator;
     aliases = ['staffmailmanage', 'staffmailmenu'];
     isUsableInDms = false;
     isUsableInServer = true;
@@ -48,10 +50,31 @@ export class StaffMailManagementCommand implements ICommand {
                     .setDescription(
                         `If you wish to contact the staff team, ${bold('please use the button below')}. You can also simply DM me ${inlineCode(this.env.PREFIX + 'staffmail')} to start the process!` +
                             `\n\nSending a message to staff will start a conversation in our Direct Messages. Nobody but you and the staff team are able to see them.\n\n` +
-                            `If it is an urgent matter, feel free to use the <@&${this.env.STAFF_ROLE_IDS[0]}> ping!`
+                            `If it is an urgent matter, feel free to use the <@&${this.env.MODERATOR_ROLE_IDS[0]}> ping!`
                     ),
             ],
             components: [new ActionRowBuilder<ButtonBuilder>().addComponents(createButton)],
+        });
+        const quickReportButton = new ButtonBuilder()
+            .setCustomId(`defer-staff-mail-create-${StaffMailType.UrgentReport}-button`)
+            .setLabel('Urgent Report')
+            .setStyle(ButtonStyle.Danger)
+            .setEmoji({ name: '⚠️' });
+        const quickReportButtonAnon = new ButtonBuilder()
+            .setCustomId(`defer-staff-mail-create-${StaffMailType.UrgentReport}-button-anon`)
+            .setLabel('Anonymous Urgent Report')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji({ name: '🕵️' });
+        message.channel.send({
+            embeds: [
+                new EmbedBuilder()
+                    .setTitle('Urgent Report')
+                    .setColor(EmbedHelper.red)
+                    .setDescription(
+                        `If you have a report of someone breaking rules or another situation that requires ${bold("Staff's immediate attention")}, click the button below.\n\n${italic(`Note: Including message links make it easy for us to react quickly!`)}`
+                    ),
+            ],
+            components: [new ActionRowBuilder<ButtonBuilder>().addComponents(quickReportButton, quickReportButtonAnon)],
         });
         return {
             isSuccessful: true,

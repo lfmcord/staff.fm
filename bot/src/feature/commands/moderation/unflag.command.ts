@@ -14,7 +14,7 @@ export class UnflagCommand implements ICommand {
     description: string = 'Deletes a flagged term.';
     usageHint: string = '';
     examples: string[] = [];
-    permissionLevel = CommandPermissionLevel.Staff;
+    permissionLevel = CommandPermissionLevel.Moderator;
     aliases = ['deleteflag', 'removeflag'];
     isUsableInDms = false;
     isUsableInServer = true;
