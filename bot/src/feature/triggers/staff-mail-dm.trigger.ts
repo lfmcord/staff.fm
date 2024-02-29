@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { inlineCode, Message } from 'discord.js';
+import { Embed, inlineCode, Message } from 'discord.js';
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { TYPES } from '@src/types';
 import { EmbedHelper } from '@src/helpers/embed.helper';
@@ -66,6 +66,22 @@ export class StaffMailDmTrigger {
             ],
             files: Array.from(message.attachments.values()),
         });
+
+        try {
+            const oldStaffMailMessage = await this.channelService.getMessageFromChannelByMessageId(
+                message.reference.messageId!,
+                message.channel
+            );
+            const newEmbeds: Embed[] =
+                oldStaffMailMessage?.embeds.map((e: Embed) => {
+                    return { ...e.data, footer: undefined } as unknown as Embed;
+                }) ?? oldStaffMailMessage!.embeds;
+            await oldStaffMailMessage?.edit({ embeds: newEmbeds });
+            await oldStaffMailMessage?.unpin();
+        } catch (e) {
+            this.logger.warn(`Could not edit old staff mail embed.`, e);
+        }
+
         await this.channelService.pinNewStaffMailMessageInDmChannel(
             newStaffMailMessage,
             staffMail.lastMessageId,

@@ -8,6 +8,7 @@ import {
     Message,
     MessageResolvable,
     MessageType,
+    TextBasedChannel,
     User,
 } from 'discord.js';
 import { TYPES } from '@src/types';
@@ -89,6 +90,16 @@ export class ChannelService {
             recipient.dmChannel?.send(
                 `😟 I couldn't update the pins with the newest message! But worry not, you can still reply as usual.`
             );
+        }
+    }
+
+    async getMessageFromChannelByMessageId(messageId: string, channel: TextBasedChannel): Promise<Message | null> {
+        try {
+            const message = await channel.messages.fetch(messageId as MessageResolvable);
+            return message ?? null;
+        } catch (e) {
+            this.logger.warn(`Could not fetch message with message ID ${messageId} from channel with ID ${channel.id}`);
+            return null;
         }
     }
 }

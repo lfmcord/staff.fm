@@ -1,6 +1,6 @@
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { Message } from 'discord.js';
+import { Embed, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { Logger } from 'tslog';
@@ -20,7 +20,7 @@ export class StaffMailReplyCommand implements ICommand {
     usageHint: string = '<message to user>';
     examples: string[] = ['Hi, thank you for reaching out!'];
     permissionLevel = CommandPermissionLevel.Administrator;
-    aliases = [];
+    aliases = ['areply'];
     isUsableInDms = false;
     isUsableInServer = true;
 
@@ -40,10 +40,10 @@ export class StaffMailReplyCommand implements ICommand {
 
     // TODO: Support anonymous reply
     async run(message: Message, args: string[]): Promise<CommandResult> {
-        this.logger.trace(args);
         this.logger.info(
             `New staffmail reply by user ${TextHelper.userLog(message.author)} for channel ID ${message.channelId}.`
         );
+        const isAnonReply = message.content.match(this.aliases[0]) != null;
         const staffMail = await this.staffMailRepository.getStaffMailByChannelId(message.channelId);
         if (!staffMail) {
             throw new ValidationError(
@@ -66,7 +66,7 @@ export class StaffMailReplyCommand implements ICommand {
         const messageToUser = await staffMail.user?.send({
             embeds: [
                 EmbedHelper.getStaffMailUserViewIncomingEmbed(
-                    message.author,
+                    isAnonReply ? null : message.author,
                     staffMail.mode === StaffMailModeEnum.ANONYMOUS,
                     args.join(' '),
                     staffMail.summary,
@@ -74,6 +74,21 @@ export class StaffMailReplyCommand implements ICommand {
                 ),
             ],
         });
+
+        try {
+            const oldStaffMailMessage = await this.channelService.getMessageFromChannelByMessageId(
+                staffMail.lastMessageId,
+                staffMail.user.dmChannel!
+            );
+            const newEmbeds: Embed[] =
+                oldStaffMailMessage?.embeds.map((e: Embed) => {
+                    return { ...e.data, footer: undefined } as unknown as Embed;
+                }) ?? oldStaffMailMessage!.embeds;
+            await oldStaffMailMessage?.edit({ embeds: newEmbeds });
+            await oldStaffMailMessage?.unpin();
+        } catch (e) {
+            this.logger.warn(`Could not edit old staff mail embed.`, e);
+        }
 
         await this.channelService.pinNewStaffMailMessageInDmChannel(
             messageToUser,
@@ -88,7 +103,7 @@ export class StaffMailReplyCommand implements ICommand {
             embeds: [
                 EmbedHelper.getStaffMailStaffViewOutgoingEmbed(
                     message.author,
-                    false,
+                    isAnonReply,
                     staffMail.mode === StaffMailModeEnum.ANONYMOUS ? null : staffMail.user,
                     args.join(' ')
                 ),
