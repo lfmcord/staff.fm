@@ -21,7 +21,10 @@ export class StaffMailCreateUrgentReportButtonInteraction implements IInteractio
 
     async manage(interaction: ButtonInteraction) {
         this.logger.debug(`New urgent report button interaction.`);
-        const modal = ComponentHelper.staffMailCreateModal(StaffMailCustomIds.UrgentReportSendButton);
+        const isAnon = interaction.customId.match('anon') != null;
+        const modal = ComponentHelper.staffMailCreateModal(
+            isAnon ? StaffMailCustomIds.UrgentReportSendAnonButton : StaffMailCustomIds.UrgentReportSendButton
+        );
         await interaction.showModal(modal);
     }
 }
