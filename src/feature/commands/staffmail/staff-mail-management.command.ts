@@ -71,7 +71,7 @@ export class StaffMailManagementCommand implements ICommand {
                     .setTitle('Urgent Report')
                     .setColor(EmbedHelper.red)
                     .setDescription(
-                        `If you have a report of someone breaking rules or another situation that requires ${bold("Staff's immediate attention")}, click the button below.\n\n${italic(`Note: Including message links make it easy for us to react quickly!`)}`
+                        `If you have a report of someone breaking rules or another situation that requires ${bold("Staff's immediate attention")}, click the button below.\n\n${italic(`Note: Including message links makes it easy for us to react quickly!`)}`
                     ),
             ],
             components: [new ActionRowBuilder<ButtonBuilder>().addComponents(quickReportButton, quickReportButtonAnon)],

@@ -14,6 +14,7 @@ import { CommandPermissionLevel } from '@src/feature/commands/models/command-per
 import { TextHelper } from '@src/helpers/text.helper';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Environment } from '@models/environment';
+import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 
 @injectable()
 export class SelfMuteCommand implements ICommand {
@@ -100,14 +101,17 @@ export class SelfMuteCommand implements ICommand {
 
     async validateArgs(args: string[]): Promise<void> {
         if (args.length == 0) {
-            throw Error('You have to give me a duration you want to be muted for!');
+            throw new ValidationError('0 args provided.', 'You have to give me a duration you want to be muted for!');
         }
         if (args.length > 1) {
-            throw Error('You have to give me only one duration.');
+            throw new ValidationError('More than 1 args provided.', 'You have to give me only one duration.');
         }
         const match = args[0].match(/[1-9][0-9]{0,2}([mhdw])/);
         if (match == null) {
-            throw Error('Please give me a valid duration (m, h, d, w)!');
+            throw new ValidationError(
+                `${args[0]} is not a recognizable time duration`,
+                'Please give me a valid duration (m, h, d, w)!'
+            );
         }
     }
 
@@ -116,8 +120,7 @@ export class SelfMuteCommand implements ICommand {
             `Selfmute duration expired. Trying to unmute user ${selfMute.member.user.username} (ID: ${selfMute.member.user.id}). Roles to restore: ${selfMute.roles.map((r) => r.name)}`
         );
         try {
-            this.scheduleService.runJob(`SELFMUTE_${selfMute.member.id}`);
-            await this.selfMutesRepository.deleteSelfMute(selfMute);
+            this.scheduleService.runJob(`UNMUTE_${selfMute.member.id}`);
         } catch (e) {
             this.logger.error(
                 `Cannot unmute user ${selfMute.member.user.username} (ID: ${selfMute.member.user.id}).`,

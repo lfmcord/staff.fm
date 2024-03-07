@@ -36,10 +36,7 @@ export class UnflagCommand implements ICommand {
 
     validateArgs(args: string[]): Promise<void> {
         if (args.length === 0) {
-            throw new ValidationError(
-                new Error(`args are 0.`),
-                `You have to provide one or more flagged term to remove!`
-            );
+            throw new ValidationError(`args length is 0.`, `You have to provide one or more flagged term to remove!`);
         }
         return Promise.resolve();
     }

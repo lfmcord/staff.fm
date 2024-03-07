@@ -1,9 +1,9 @@
 export class ValidationError {
-    error: Error;
+    internalMessage: string;
     messageToUser: string;
 
-    constructor(error: Error, messageToUser: string) {
-        this.error = error;
+    constructor(internalMessage: string, messageToUser: string) {
+        this.internalMessage = internalMessage;
         this.messageToUser = messageToUser;
     }
 }

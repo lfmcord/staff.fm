@@ -43,11 +43,13 @@ export class StaffMailReplyCommand implements ICommand {
         this.logger.info(
             `New staffmail reply by user ${TextHelper.userLog(message.author)} for channel ID ${message.channelId}.`
         );
+        if (args.length === 0 && message.attachments.size === 0)
+            throw new ValidationError(`Empty reply args and no attachment.`, `You have to provide a reply!`);
         const isAnonReply = message.content.match(this.aliases[0]) != null;
         const staffMail = await this.staffMailRepository.getStaffMailByChannelId(message.channelId);
         if (!staffMail) {
             throw new ValidationError(
-                new Error(`No StaffMail in DB for channel ID ${message.channelId}.`),
+                `No StaffMail in DB for channel ID ${message.channelId}.`,
                 'You can only use this command in an open StaffMail channel!'
             );
         }
@@ -116,8 +118,6 @@ export class StaffMailReplyCommand implements ICommand {
     }
 
     validateArgs(args: string[]): Promise<void> {
-        if (args.length === 0)
-            throw new ValidationError(new Error(`Empty reply args.`), `You have to provide a reply!`);
         return Promise.resolve();
     }
 }

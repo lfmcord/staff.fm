@@ -77,13 +77,13 @@ export class VerifyCommand implements ICommand {
         if (!message.reference) {
             if (args.length < 1)
                 throw new ValidationError(
-                    new Error(`args length is ${args.length}, expected length 2.`),
+                    `args length is ${args.length}, expected length 2.`,
                     `Either reply to a user to verify them or supply the user and last.fm account name (optional)!`
                 );
             const userId = TextHelper.getDiscordUserId(args[0]);
             if (!userId)
                 throw new ValidationError(
-                    new Error(`The supplied first argument is not a discord user: ${args[0]}`),
+                    `The supplied first argument is not a discord user: ${args[0]}`,
                     `The first argument in the command has to be a valid Discord user!`
                 );
             memberToVerify = await this.memberService.getGuildMemberFromUserId(userId);

@@ -115,6 +115,7 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
             openedStaffMailMessage,
             staffMailChannel
         );
+        if (interaction.message?.deletable) await interaction.message.delete();
         await interaction.reply({
             ephemeral: true,
             content: `I've successfully sent your report! Staff will get back to you as soon as possible. I've also pinned the message in our direct messages. Check the pins in our DM chanel to see all your open StaffMails!`,

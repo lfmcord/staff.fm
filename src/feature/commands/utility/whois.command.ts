@@ -188,7 +188,7 @@ export class WhoisCommand implements ICommand {
     validateArgs(args: string[]): Promise<void> {
         if (args.length === 0) {
             throw new ValidationError(
-                new Error(`No args provided for whois.`),
+                `No args provided for whois.`,
                 `You must provide a Discord user or last.fm username!`
             );
         }

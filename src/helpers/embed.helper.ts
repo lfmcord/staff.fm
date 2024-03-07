@@ -112,7 +112,7 @@ export class EmbedHelper {
             }
         );
         return new EmbedBuilder()
-            .setTitle('New StaffMail')
+            .setTitle(summary ?? 'New StaffMail')
             .setColor(EmbedHelper.blue)
             .setFields(fields)
             .setFooter({
@@ -136,18 +136,19 @@ export class EmbedHelper {
 
         let title = `📥 ${humanReadableType}`;
         if (summary) title += `: ${summary}`;
-        return new EmbedBuilder()
+        const embed = new EmbedBuilder()
             .setAuthor({
                 name: name,
                 iconURL: staffMember?.avatarURL() ?? EmbedHelper.lastfmPictureLink,
             })
             .setTitle(title)
             .setColor(32768)
-            .setDescription(content)
             .setFooter({
                 text: 'Please reply to this message to send a reply to staff.',
             })
             .setTimestamp();
+        if (content !== '') embed.setDescription(content);
+        return embed;
     }
 
     static getStaffMailUserViewOutgoingEmbed(
@@ -163,18 +164,19 @@ export class EmbedHelper {
         const humanReadableType = EmbedHelper.getHumanReadableStaffMailType(type);
         let title = `📤 ${humanReadableType}`;
         if (summary) title += `: ${summary}`;
-        return new EmbedBuilder()
+        const embed = new EmbedBuilder()
             .setAuthor({
                 name: name,
                 iconURL: isAnonymous ? this.anonymousPictureLink : author!.avatarURL() ?? '',
             })
             .setTitle(title)
             .setColor(12059152)
-            .setDescription(content)
             .setFooter({
                 text: 'To send a follow up message, reply to this message.',
             })
             .setTimestamp();
+        if (content !== '') embed.setDescription(content);
+        return embed;
     }
 
     static getStaffMailStaffViewIncomingEmbed(author: User | null, content: string): EmbedBuilder {
@@ -187,9 +189,9 @@ export class EmbedHelper {
             })
             .setTitle(`📥 Message received`)
             .setColor(32768)
-            .setDescription(content)
             .setFooter({ text: author ? `${author.username} | ${author.id}` : 'Anonymous User' })
             .setTimestamp();
+        if (content !== '') embed.setDescription(content);
         return embed;
     }
 
@@ -202,7 +204,7 @@ export class EmbedHelper {
         let name = staffMember.username;
         if (isAnonymousReply) name += ` (Anonymous)`;
         recipient ? (name += ` -> ${recipient.username}`) : ` -> Anonymous User`;
-        return new EmbedBuilder()
+        const embed = new EmbedBuilder()
             .setAuthor({
                 name: name,
                 iconURL: staffMember?.avatarURL() ?? EmbedHelper.anonymousPictureLink,
@@ -212,6 +214,8 @@ export class EmbedHelper {
             .setDescription(content)
             .setFooter({ text: `${staffMember.username} | ${staffMember.id}` })
             .setTimestamp();
+        if (content !== '') embed.setDescription(content);
+        return embed;
     }
 
     static getStaffMailCategoryEmbed = (category: string) => {

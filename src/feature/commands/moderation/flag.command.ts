@@ -50,15 +50,12 @@ export class FlagCommand implements ICommand {
     validateArgs(args: string[]): Promise<void> {
         if (args.length === 0) {
             throw new ValidationError(
-                new Error(`No args provided for flag.`),
+                `No args provided for flag.`,
                 `You must provide a term to flag, together with a reason!`
             );
         }
         if (args.length === 1) {
-            throw new ValidationError(
-                new Error(`No reason provided for flag.`),
-                `You must provide a reason for the flag!`
-            );
+            throw new ValidationError(`No reason provided for flag.`, `You must provide a reason for the flag!`);
         }
         return Promise.resolve();
     }

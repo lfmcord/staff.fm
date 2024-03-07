@@ -110,7 +110,7 @@ export class MessageCreateHandler implements IHandler {
             result = await command.run(message, args);
         } catch (error) {
             if (error instanceof ValidationError) {
-                this.logger.info(`Command validation failed: ${error.error.message}`);
+                this.logger.info(`Command validation failed: ${error.internalMessage}`);
                 await this.handleCommandError(
                     message,
                     error.messageToUser +
@@ -153,7 +153,7 @@ export class MessageCreateHandler implements IHandler {
 
         let reply: Message;
         if (result.replyToUser) {
-            reply = await message.reply(`${emoji} ${result.replyToUser}`);
+            reply = await message.channel.send(`${result.replyToUser}`);
         }
 
         if (result.shouldDelete) {
@@ -165,21 +165,23 @@ export class MessageCreateHandler implements IHandler {
     }
 
     private async resolveCommand(message: Message): Promise<ICommand | null> {
-        const commandName = message.content.slice(
-            this.env.PREFIX.length,
-            message.content.indexOf(' ') == -1 ? undefined : message.content.indexOf(' ')
-        );
+        const commandName = message.content
+            .slice(
+                this.env.PREFIX.length,
+                message.content.indexOf(' ') == -1 ? undefined : message.content.indexOf(' ')
+            )
+            .toLowerCase();
         this.logger.debug(`Matching command for command name '${commandName}'...`);
         const commands: ICommand[] = container.getAll('Command');
         const command = commands.find(
-            (c) => c.name == commandName.toLowerCase() || c.aliases.includes(commandName)
+            (c) => c.name == commandName || c.aliases.includes(commandName)
         ) as ICommand | null;
 
         if (!command) {
             this.logger.debug(`Could not find a command for name ${commandName}`);
             await this.handleCommandError(
                 message,
-                `I could not find a command called '${commandName.toLowerCase()}'. ` +
+                `I could not find a command called '${commandName}'. ` +
                     `Use \`${this.env.PREFIX}help\` to see a list of all commands.`
             );
             return null;

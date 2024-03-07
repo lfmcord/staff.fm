@@ -19,13 +19,13 @@ export class ComponentHelper {
     public static sendButton = (customId: string) =>
         new ButtonBuilder()
             .setCustomId(customId)
-            .setLabel('Send')
+            .setLabel('Create Message')
             .setStyle(ButtonStyle.Success)
             .setEmoji({ name: '✉️' });
     public static sendAnonButton = (customId: string) =>
         new ButtonBuilder()
             .setCustomId(customId)
-            .setLabel('Send anonymously')
+            .setLabel('Create Anonymous Message')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji({ name: '🕵️' });
 

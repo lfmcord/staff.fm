@@ -60,7 +60,7 @@ export class StaffMailContactCommand implements ICommand {
         const userId = TextHelper.getDiscordUserId(args[0]);
         if (!userId) {
             throw new ValidationError(
-                new Error(`Cannot get user ID from string '${args[0]}'`),
+                `Cannot get user ID from string '${args[0]}'`,
                 `${args[0]} doesn't seem to be a user mention or a valid user ID.`
             );
         }
@@ -174,13 +174,13 @@ export class StaffMailContactCommand implements ICommand {
     validateArgs(args: string[]): Promise<void> {
         if (args.length < 2) {
             throw new ValidationError(
-                new Error('Not enough arguments supplied for contact command.'),
+                'Not enough arguments supplied for contact command.',
                 'You must supply both a user to contact and the message to send them!'
             );
         }
         if (!TextHelper.isDiscordUser(args[0])) {
             throw new ValidationError(
-                new Error(`'${args[0]}' is not a valid discord user mention or ID!`),
+                `'${args[0]}' is not a valid discord user mention or ID!`,
                 `Your first argument must be either a mention or a user ID.`
             );
         }

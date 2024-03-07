@@ -7,7 +7,6 @@ import { MuteRndRepository } from '@src/infrastructure/repositories/mute-rnd.rep
 import { TYPES } from '@src/types';
 import moment = require('moment');
 import { MemberService } from '@src/infrastructure/services/member.service';
-import { Error } from 'mongoose';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { Logger } from 'tslog';
 import { TextHelper } from '@src/helpers/text.helper';
@@ -72,7 +71,7 @@ export class MuteRndCommand implements ICommand {
         this.logger.debug(`Trying to opt in user...`);
         if ((await this.muteRndRepository.getUser(message.author!))?.isActive)
             throw new ValidationError(
-                new Error(`${TextHelper.userLog(message.author)} is already present in the database. Nothing to do.`),
+                `${TextHelper.userLog(message.author)} is already present in the database. Nothing to do.`,
                 `You're already opted in!`
             );
         else {
@@ -166,7 +165,7 @@ export class MuteRndCommand implements ICommand {
     validateArgs(args: string[]): Promise<void> {
         if (!this.validArguments.includes(args[0])) {
             throw new ValidationError(
-                new Error(`'${args[0]}' could not be recognized as a parameter of muternd.`),
+                `'${args[0]}' could not be recognized as a parameter of muternd.`,
                 `I can't recognize '${args[0]}' as an argument for this command.`
             );
         }
