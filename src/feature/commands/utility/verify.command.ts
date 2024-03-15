@@ -28,6 +28,7 @@ import { ComponentHelper } from '@src/helpers/component.helper';
 import { Environment } from '@models/environment';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { LastfmError } from '@models/lastfm-error.model';
 
 @injectable()
 export class VerifyCommand implements ICommand {
@@ -100,7 +101,7 @@ export class VerifyCommand implements ICommand {
         if (!memberToVerify) {
             return {
                 isSuccessful: false,
-                replyToUser: `Looks like the user has left the server.`,
+                replyToUser: `I cannot find this user!.`,
             };
         }
 
@@ -158,8 +159,12 @@ export class VerifyCommand implements ICommand {
             try {
                 lastfmUser = await this.lastFmClient.user.getInfo({ username: lastfmUsername });
             } catch (e) {
-                this.logger.error(e);
-                throw Error(`Last.fm API returned an error.`);
+                if ((e as LastfmError).code == '6') {
+                    this.logger.info(`Last.fm user with name '${lastfmUsername}' could not be found.`);
+                } else {
+                    this.logger.error('Last.fm returned an error that is not code 6 (not found)', e);
+                    throw Error(`Last.fm API returned an error.`);
+                }
             }
             if (!lastfmUser) {
                 return {

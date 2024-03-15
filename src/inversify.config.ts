@@ -57,6 +57,7 @@ import { GuildBanRemoveHandler } from '@src/handlers/guild-ban-remove.handler';
 import { WhoisCommand } from '@src/feature/commands/utility/whois.command';
 import { StaffMailCreateButtonInteraction } from '@src/feature/interactions/staff-mail-create-button.interaction';
 import { StaffMailCreateUrgentReportButtonInteraction } from '@src/feature/interactions/staff-mail-create-urgentreport-button.interaction';
+import { StaffMailCreateModalShowInteraction } from '@src/feature/interactions/staff-mail-create-modal-show.interaction';
 
 const container = new Container();
 
@@ -186,6 +187,7 @@ container.bind<VerificationLastFmTrigger>(TYPES.VerificationLastFmTrigger).to(Ve
 container.bind<IInteraction>('Interaction').to(StaffMailCreateModalSubmitInteraction);
 container.bind<IInteraction>('Interaction').to(StaffMailCreateButtonInteraction);
 container.bind<IInteraction>('Interaction').to(StaffMailCreateUrgentReportButtonInteraction);
+container.bind<IInteraction>('Interaction').to(StaffMailCreateModalShowInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);

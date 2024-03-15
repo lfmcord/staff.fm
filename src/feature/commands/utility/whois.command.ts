@@ -128,25 +128,26 @@ export class WhoisCommand implements ICommand {
                         .setColor(EmbedHelper.blue)
                         .setDescription(`No Last.fm account currently in use.`)
                 );
-            let lastFmUser;
-            try {
-                lastFmUser = await this.lastFmClient.user.getInfo(currentLastFmUsername);
-            } catch (e) {
-                this.logger.warn(
-                    `Could not find last.fm user for username ${currentLastFmUsername} for user ${TextHelper.userDisplay(guildMember.user)} in whois command.`
-                );
+            else {
+                let lastFmUser;
+                try {
+                    lastFmUser = await this.lastFmClient.user.getInfo(currentLastFmUsername);
+                } catch (e) {
+                    this.logger.warn(
+                        `Could not find last.fm user for username ${currentLastFmUsername} for user ${TextHelper.userDisplay(guildMember.user)} in whois command.`
+                    );
+                }
+                if (lastFmUser) embeds.push(EmbedHelper.getLastFmUserEmbed(lastFmUser).setTitle(`Last.fm Account`));
+                else
+                    embeds.push(
+                        new EmbedBuilder()
+                            .setTitle(`Last.fm Account`)
+                            .setColor(EmbedHelper.orange)
+                            .setDescription(
+                                `⚠️ Could not find Last.fm user for username ${inlineCode(currentLastFmUsername)}.\nPerhaps they've changed their username on the website?`
+                            )
+                    );
             }
-
-            if (lastFmUser) embeds.push(EmbedHelper.getLastFmUserEmbed(lastFmUser).setTitle(`Last.fm Account`));
-            else
-                embeds.push(
-                    new EmbedBuilder()
-                        .setTitle(`Last.fm Account`)
-                        .setColor(EmbedHelper.orange)
-                        .setDescription(
-                            `⚠️ Could not find Last.fm user for username ${inlineCode(currentLastFmUsername)}.\nPerhaps they've changed their username on the website?`
-                        )
-                );
 
             // Past verifications
             let description = '';

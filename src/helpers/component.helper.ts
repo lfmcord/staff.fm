@@ -18,13 +18,13 @@ export class ComponentHelper {
 
     public static sendButton = (customId: string) =>
         new ButtonBuilder()
-            .setCustomId(customId)
+            .setCustomId(`defer-` + customId)
             .setLabel('Create Message')
             .setStyle(ButtonStyle.Success)
             .setEmoji({ name: '✉️' });
     public static sendAnonButton = (customId: string) =>
         new ButtonBuilder()
-            .setCustomId(customId)
+            .setCustomId(`defer-` + customId)
             .setLabel('Create Anonymous Message')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji({ name: '🕵️' });
@@ -88,7 +88,7 @@ export class ComponentHelper {
         );
 
     public static staffMailCreateModal = (sendButtonId: string) => {
-        const id = 'defer-' + sendButtonId + '-modal';
+        const id = `defer-` + sendButtonId + '-submit';
 
         const modal = new ModalBuilder();
         const modalComponents: TextInputBuilder[] = [];

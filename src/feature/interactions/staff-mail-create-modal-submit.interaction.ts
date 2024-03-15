@@ -16,18 +16,18 @@ import { WhoisCommand } from '@src/feature/commands/utility/whois.command';
 @injectable()
 export class StaffMailCreateModalSubmitInteraction implements IInteraction {
     customIds = [
-        'defer-' + StaffMailCustomIds.ReportSendButton + '-modal',
-        'defer-' + StaffMailCustomIds.ReportSendAnonButton + '-modal',
-        'defer-' + StaffMailCustomIds.CrownsReportSendButton + '-modal',
-        'defer-' + StaffMailCustomIds.CrownsFalseCrownSendButton + '-modal',
-        'defer-' + StaffMailCustomIds.CrownsBanInquirySendButton + '-modal',
-        'defer-' + StaffMailCustomIds.CrownsOtherSendButton + '-modal',
-        'defer-' + StaffMailCustomIds.ServerSendButton + '-modal',
-        'defer-' + StaffMailCustomIds.LastfmSendButton + '-modal',
-        'defer-' + StaffMailCustomIds.OtherSendButton + '-modal',
-        'defer-' + StaffMailCustomIds.OtherSendAnonButton + '-modal',
-        'defer-' + StaffMailCustomIds.UrgentReportSendButton + '-modal',
-        'defer-' + StaffMailCustomIds.UrgentReportSendAnonButton + '-modal',
+        'defer-' + StaffMailCustomIds.ReportSendButton + '-submit',
+        'defer-' + StaffMailCustomIds.ReportSendAnonButton + '-submit',
+        'defer-' + StaffMailCustomIds.CrownsReportSendButton + '-submit',
+        'defer-' + StaffMailCustomIds.CrownsFalseCrownSendButton + '-submit',
+        'defer-' + StaffMailCustomIds.CrownsBanInquirySendButton + '-submit',
+        'defer-' + StaffMailCustomIds.CrownsOtherSendButton + '-submit',
+        'defer-' + StaffMailCustomIds.ServerSendButton + '-submit',
+        'defer-' + StaffMailCustomIds.LastfmSendButton + '-submit',
+        'defer-' + StaffMailCustomIds.OtherSendButton + '-submit',
+        'defer-' + StaffMailCustomIds.OtherSendAnonButton + '-submit',
+        'defer-' + StaffMailCustomIds.UrgentReportSendButton + '-submit',
+        'defer-' + StaffMailCustomIds.UrgentReportSendAnonButton + '-submit',
     ];
     logger: Logger<StaffMailCreateModalSubmitInteraction>;
     loggingService: LoggingService;
@@ -68,8 +68,8 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
         this.logger.trace(`Summary: ${summary}`);
         const staffMailChannel = await this.staffMailRepository.createStaffMailChannel(interaction.user, mode);
 
-        let rolePings = '';
-        this.env.STAFFMAIL_PING_ROLE_IDS.forEach((id) => (rolePings += `<@&${id}> `));
+        const rolePings = '';
+        // this.env.STAFFMAIL_PING_ROLE_IDS.forEach((id) => (rolePings += `<@&${id}> `));
         const embeds: EmbedBuilder[] = [];
         embeds.push(
             EmbedHelper.getStaffMailStaffViewNewEmbed(

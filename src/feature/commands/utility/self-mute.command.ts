@@ -6,15 +6,16 @@ import { unitOfTime } from 'moment';
 import { SelfMutesRepository } from '@src/infrastructure/repositories/self-mutes.repository';
 import { TYPES } from '@src/types';
 import { MemberService } from '@src/infrastructure/services/member.service';
-import { SelfMute } from '@src/feature/commands/utility/models/self-mute.model';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { Logger } from 'tslog';
-import moment = require('moment');
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { TextHelper } from '@src/helpers/text.helper';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Environment } from '@models/environment';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import * as moment from 'moment';
+import DurationConstructor = moment.unitOfTime.DurationConstructor;
+import { SelfMute } from '@src/feature/commands/utility/models/self-mute.model';
 
 @injectable()
 export class SelfMuteCommand implements ICommand {
@@ -75,8 +76,12 @@ export class SelfMuteCommand implements ICommand {
         try {
             await this.memberService.muteGuildMember(
                 member,
-                `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>). You can prematurely end it by sending me ${inlineCode(this.env.PREFIX + 'unmute')} here.`,
-                `🔊 Your selfmute has ended and I've unmuted you. Welcome back!`
+                `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>). You can prematurely end it by sending me ${inlineCode(this.env.PREFIX + 'unmute')} here.`
+            );
+            this.scheduleService.scheduleJob(
+                `UNMUTE_${member.id}`,
+                selfMute.endsAt,
+                async () => await this.endSelfMute(selfMute)
             );
         } catch (e) {
             return {
@@ -85,12 +90,6 @@ export class SelfMuteCommand implements ICommand {
                 replyToUser: `I cannot mute you because you have more privileges than I do or because my role is lower than the muted role!`,
             };
         }
-
-        this.scheduleService.scheduleJob(
-            `SELFMUTE_${member.id}`,
-            selfMute.endsAt,
-            async () => await this.unmuteMember(selfMute)
-        );
 
         await this.loggingService.logSelfmute(selfMute, amount + unit);
 
@@ -115,27 +114,6 @@ export class SelfMuteCommand implements ICommand {
         }
     }
 
-    async unmuteMember(selfMute: SelfMute) {
-        this.logger.debug(
-            `Selfmute duration expired. Trying to unmute user ${selfMute.member.user.username} (ID: ${selfMute.member.user.id}). Roles to restore: ${selfMute.roles.map((r) => r.name)}`
-        );
-        try {
-            this.scheduleService.runJob(`UNMUTE_${selfMute.member.id}`);
-        } catch (e) {
-            this.logger.error(
-                `Cannot unmute user ${selfMute.member.user.username} (ID: ${selfMute.member.user.id}).`,
-                e
-            );
-            return;
-        }
-
-        await this.loggingService.logSelfmute(selfMute);
-
-        this.logger.info(
-            `Selfmute for user ${selfMute.member.user.username} (ID: ${selfMute.member.user.id}) has expired and user was unmuted.`
-        );
-    }
-
     public async restoreSelfMutes(): Promise<number> {
         const savedSelfMutes = await this.selfMutesRepository.getAllSelfMutes();
         let restored = 0;
@@ -145,20 +123,30 @@ export class SelfMuteCommand implements ICommand {
                     `Selfmute for user ${TextHelper.userLog(sm.member.user)} expired at ${sm.endsAt}. Trying to unmute.`
                 );
                 try {
-                    await this.unmuteMember(sm);
+                    await this.endSelfMute(sm);
                 } catch (e) {
                     this.logger.error(`Unable to unmute orphaned selfmute`, e);
                 }
                 await this.selfMutesRepository.deleteSelfMute(sm);
             } else {
                 this.scheduleService.scheduleJob(
-                    `SELFMUTE_${sm.member.id}`,
+                    `UNMUTE_${sm.member.id}`,
                     sm.endsAt,
-                    async () => await this.unmuteMember(sm)
+                    async () => await this.endSelfMute(sm)
                 );
                 restored++;
             }
         }
         return restored;
+    }
+
+    public async endSelfMute(selfMute: SelfMute) {
+        await this.memberService.unmuteGuildMember(
+            selfMute.member,
+            selfMute.roles,
+            `🔊 Your selfmute has ended and I've unmuted you. Welcome back!`
+        );
+        await this.selfMutesRepository.deleteSelfMute(selfMute);
+        await this.loggingService.logSelfmute(selfMute);
     }
 }

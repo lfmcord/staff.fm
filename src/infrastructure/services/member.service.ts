@@ -5,17 +5,21 @@ import { CommandPermissionLevel } from '@src/feature/commands/models/command-per
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import moment = require('moment');
 import { Environment } from '@models/environment';
+import { Logger } from 'tslog';
 
 @injectable()
 export class MemberService {
     private client: Client;
     scheduleService: ScheduleService;
+    logger: Logger<MemberService>;
     env: Environment;
     constructor(
         @inject(TYPES.Client) client: Client,
         @inject(TYPES.ENVIRONMENT) env: Environment,
-        @inject(TYPES.ScheduleService) scheduleService: ScheduleService
+        @inject(TYPES.ScheduleService) scheduleService: ScheduleService,
+        @inject(TYPES.InfrastructureLogger) logger: Logger<MemberService>
     ) {
+        this.logger = logger;
         this.env = env;
         this.scheduleService = scheduleService;
         this.client = client;
@@ -23,8 +27,13 @@ export class MemberService {
 
     // TODO: try catch for operations
     async getGuildMemberFromUserId(userId: string): Promise<GuildMember | null> {
-        const guild = await this.client.guilds.fetch(this.env.GUILD_ID);
-        return await guild.members.fetch(userId);
+        try {
+            const guild = await this.client.guilds.fetch(this.env.GUILD_ID);
+            return await guild.members.fetch(userId);
+        } catch (e) {
+            this.logger.warn(`${userId} is not an ID that belongs to a guild member. Cannot retrieve guild member.`);
+            return null;
+        }
     }
 
     async getHighestRoleFromGuildMember(guildMember: GuildMember): Promise<Role> {
@@ -42,12 +51,7 @@ export class MemberService {
         return await guild.roles.fetch(roleId);
     }
 
-    async muteGuildMember(
-        member: GuildMember,
-        muteMessage: string,
-        unmuteMessage: string,
-        durationInSeconds: number = 600
-    ): Promise<void> {
+    async muteGuildMember(member: GuildMember, muteMessage: string): Promise<void> {
         const highestUserRole = await this.getHighestRoleFromGuildMember(member);
         const botMember = await this.getGuildMemberFromUserId(this.client.user!.id);
         const highestBotRole = await this.getHighestRoleFromGuildMember(botMember!);
@@ -68,12 +72,6 @@ export class MemberService {
         await member.roles.remove(roles);
 
         await member.send({ content: muteMessage });
-
-        this.scheduleService.scheduleJob(
-            `UNMUTE_${member.id}`,
-            moment().add(durationInSeconds, 'seconds').toDate(),
-            async () => await this.unmuteGuildMember(member, roles, unmuteMessage)
-        );
     }
 
     async unmuteGuildMember(member: GuildMember, rolesToRestore: Role[], unmuteMessage: string) {

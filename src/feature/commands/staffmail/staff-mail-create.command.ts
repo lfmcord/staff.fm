@@ -11,7 +11,6 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
 import { EmbedHelper } from '@src/helpers/embed.helper';
-import { ComponentHelper } from '@src/helpers/component.helper';
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
@@ -127,11 +126,6 @@ export class StaffMailCreateCommand implements ICommand {
             await sendInteraction.update({});
             return;
         }
-
-        // Show the modal according to the chosen send button
-        this.logger.debug(`Menus finished, trying to show modal for report type: ${sendInteraction.customId}.`);
-        const modal = ComponentHelper.staffMailCreateModal(sendInteraction.customId);
-        await sendInteraction.showModal(modal);
     }
 
     private async createNewStaffMailEphemeral(interaction: ButtonInteraction) {
@@ -214,11 +208,6 @@ export class StaffMailCreateCommand implements ICommand {
             await sendInteraction.update({});
             return;
         }
-
-        // Show the modal according to the chosen send button
-        this.logger.debug(`Menus finished, trying to show modal for report type: ${sendInteraction.customId}.`);
-        const modal = ComponentHelper.staffMailCreateModal(sendInteraction.customId);
-        await sendInteraction.showModal(modal);
     }
 
     private async cancel(message: Message | ButtonInteraction) {

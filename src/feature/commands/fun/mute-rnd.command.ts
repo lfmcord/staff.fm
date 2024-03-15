@@ -11,6 +11,7 @@ import { ValidationError } from '@src/feature/commands/models/validation-error.m
 import { Logger } from 'tslog';
 import { TextHelper } from '@src/helpers/text.helper';
 import { Environment } from '@models/environment';
+import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 
 @injectable()
 export class MuteRndCommand implements ICommand {
@@ -26,6 +27,7 @@ export class MuteRndCommand implements ICommand {
     isUsableInServer = true;
 
     private logger: Logger<MuteRndCommand>;
+    scheduleService: ScheduleService;
     private env: Environment;
     private memberService: MemberService;
     private muteRndRepository: MuteRndRepository;
@@ -34,8 +36,10 @@ export class MuteRndCommand implements ICommand {
         @inject(TYPES.BotLogger) logger: Logger<MuteRndCommand>,
         @inject(TYPES.MuteRndRepository) muteRndRepository: MuteRndRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
-        @inject(TYPES.ENVIRONMENT) env: Environment
+        @inject(TYPES.ENVIRONMENT) env: Environment,
+        @inject(TYPES.ScheduleService) scheduleService: ScheduleService
     ) {
+        this.scheduleService = scheduleService;
         this.env = env;
         this.logger = logger;
         this.memberService = memberService;
@@ -112,9 +116,17 @@ export class MuteRndCommand implements ICommand {
         this.logger.trace(`Random player: ${JSON.stringify(randomPlayer)}`);
         await this.memberService.muteGuildMember(
             randomPlayer.member,
-            `🎉🎉 Congratulations! You've won this round of the mute game! You'll be able to celebrate in the server again in ${randomDurationInSeconds} seconds.`,
-            `🔊 Your mute game mute has ended and I've unmuted you. Welcome back, go celebrate!`,
-            randomDurationInSeconds
+            `🎉🎉 Congratulations! You've won this round of the mute game! You'll be able to celebrate in the server again in ${randomDurationInSeconds} seconds.`
+        );
+        this.scheduleService.scheduleJob(
+            `UNMUTE_${randomPlayer.member.id}`,
+            moment().add(randomDurationInSeconds, 'seconds').toDate(),
+            async () =>
+                await this.memberService.unmuteGuildMember(
+                    randomPlayer.member,
+                    randomPlayer.member.roles.cache.map((r) => r),
+                    `🔊 Your mute game mute has ended and I've unmuted you. Welcome back, go celebrate!`
+                )
         );
         await this.muteRndRepository.incrementWinCountForUser(randomPlayer.member.user);
         randomPlayer.winCount++;

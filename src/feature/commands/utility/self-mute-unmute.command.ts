@@ -31,18 +31,17 @@ export class SelfMuteUnmuteCommand implements ICommand {
 
     async run(message: Message | PartialMessage): Promise<CommandResult> {
         this.logger.info(`User ${TextHelper.userLog(message.author!)} is manually removing a selfmute via DMs.`);
-        if (!this.scheduleService.jobExists(`SELFMUTE_${message.author!.id}`)) {
+        if (!this.scheduleService.jobExists(`UNMUTE_${message.author!.id}`)) {
             return {
                 isSuccessful: false,
                 replyToUser: `You do not currently have an active selfmute!`,
                 reason: `User ${TextHelper.userLog(message.author!)} does not have an active selfmute.`,
             };
         }
-        this.scheduleService.runJob(`SELFMUTE_${message.author!.id}`);
+        this.scheduleService.runJob(`UNMUTE_${message.author!.id}`);
 
         return {
             isSuccessful: true,
-            replyToUser: "I've unmuted you. Welcome back!",
         };
     }
 

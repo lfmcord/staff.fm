@@ -341,7 +341,7 @@ export class EmbedHelper {
                     ],
                 };
                 break;
-            case StaffMailType.CrownsBanInquiry: // TODO: Add another submenu for crowns?
+            case StaffMailType.CrownsBanInquiry:
                 messageCreateOptions = {
                     embeds: [
                         embed
