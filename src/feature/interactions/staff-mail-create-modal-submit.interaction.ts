@@ -16,18 +16,18 @@ import { WhoisCommand } from '@src/feature/commands/utility/whois.command';
 @injectable()
 export class StaffMailCreateModalSubmitInteraction implements IInteraction {
     customIds = [
-        'defer-' + StaffMailCustomIds.ReportSendButton + '-submit',
-        'defer-' + StaffMailCustomIds.ReportSendAnonButton + '-submit',
-        'defer-' + StaffMailCustomIds.CrownsReportSendButton + '-submit',
-        'defer-' + StaffMailCustomIds.CrownsFalseCrownSendButton + '-submit',
-        'defer-' + StaffMailCustomIds.CrownsBanInquirySendButton + '-submit',
-        'defer-' + StaffMailCustomIds.CrownsOtherSendButton + '-submit',
-        'defer-' + StaffMailCustomIds.ServerSendButton + '-submit',
-        'defer-' + StaffMailCustomIds.LastfmSendButton + '-submit',
-        'defer-' + StaffMailCustomIds.OtherSendButton + '-submit',
-        'defer-' + StaffMailCustomIds.OtherSendAnonButton + '-submit',
-        'defer-' + StaffMailCustomIds.UrgentReportSendButton + '-submit',
-        'defer-' + StaffMailCustomIds.UrgentReportSendAnonButton + '-submit',
+        StaffMailCustomIds.ReportSendButton + '-submit',
+        StaffMailCustomIds.ReportSendAnonButton + '-submit',
+        StaffMailCustomIds.CrownsReportSendButton + '-submit',
+        StaffMailCustomIds.CrownsFalseCrownSendButton + '-submit',
+        StaffMailCustomIds.CrownsBanInquirySendButton + '-submit',
+        StaffMailCustomIds.CrownsOtherSendButton + '-submit',
+        StaffMailCustomIds.ServerSendButton + '-submit',
+        StaffMailCustomIds.LastfmSendButton + '-submit',
+        StaffMailCustomIds.OtherSendButton + '-submit',
+        StaffMailCustomIds.OtherSendAnonButton + '-submit',
+        StaffMailCustomIds.UrgentReportSendButton + '-submit',
+        StaffMailCustomIds.UrgentReportSendAnonButton + '-submit',
     ];
     logger: Logger<StaffMailCreateModalSubmitInteraction>;
     loggingService: LoggingService;
@@ -97,6 +97,7 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
             components: [],
             embeds: [
                 EmbedHelper.getStaffMailOpenEmbed(false),
+                EmbedHelper.getStaffMailLinkToLatestMessage(),
                 EmbedHelper.getStaffMailUserViewOutgoingEmbed(
                     interaction.user,
                     mode === StaffMailModeEnum.ANONYMOUS,
@@ -115,7 +116,7 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
             openedStaffMailMessage,
             staffMailChannel
         );
-        if (interaction.message?.deletable) await interaction.message.delete();
+        if (!interaction.message?.guild) await interaction.message?.delete();
         await interaction.reply({
             ephemeral: true,
             content: `I've successfully sent your report! Staff will get back to you as soon as possible. I've also pinned the message in our direct messages. Check the pins in our DM chanel to see all your open StaffMails!`,

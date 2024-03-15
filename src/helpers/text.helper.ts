@@ -41,6 +41,6 @@ export class TextHelper {
     }
 
     static getDiscordMessageLink(message: Message): string {
-        return `https://discord.com/channels/${message.guild?.id}/${message.channelId}/${message.id}`;
+        return `https://discord.com/channels/${message.guild ? message.guild.id : '@me'}/${message.channelId}/${message.id}`;
     }
 }

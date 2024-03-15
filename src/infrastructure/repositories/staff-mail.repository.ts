@@ -63,6 +63,7 @@ export class StaffMailRepository {
             createdAt: now,
             lastMessageAt: now,
             lastMessageId: lastMessage.id,
+            mainMessageId: lastMessage.id,
         });
         await staffMailInstance.save();
     }
@@ -131,6 +132,7 @@ export class StaffMailRepository {
             createdAt: model.createdAt,
             lastMessageAt: model.lastMessageAt,
             lastMessageId: model.lastMessageId,
+            mainMessageId: model.mainMessageId,
         };
     }
 }
@@ -145,6 +147,7 @@ export interface IStaffMailModel {
     createdAt: Date;
     lastMessageAt: Date;
     lastMessageId: string;
+    mainMessageId: string;
 }
 
 const staffMailSchema = new Schema<IStaffMailModel>(
@@ -157,6 +160,7 @@ const staffMailSchema = new Schema<IStaffMailModel>(
         createdAt: { type: Date, required: true },
         lastMessageAt: { type: Date, required: true },
         lastMessageId: { type: String, required: true },
+        mainMessageId: { type: String, required: true },
     },
     { collection: 'StaffMails' }
 );

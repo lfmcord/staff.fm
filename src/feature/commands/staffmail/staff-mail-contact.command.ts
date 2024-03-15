@@ -134,7 +134,6 @@ export class StaffMailContactCommand implements ICommand {
             newStaffMailChannel
         );
 
-        await this.channelService.pinNewStaffMailMessageInDmChannel(messageToUser, null, member.user);
         await newStaffMailChannel!.send({
             embeds: [
                 EmbedHelper.getStaffMailStaffViewNewEmbed(

@@ -39,7 +39,7 @@ export class StaffMailDmTrigger {
         if (staffMail == null) {
             await message.reply({
                 content:
-                    'In order to send a reply or follow-up message in a StaffMail, please always reply to the pinned message! Check the pins in this channel to see them.',
+                    'In order to send a reply or follow-up message in a StaffMail, please always reply to latest message you sent or received! Check the pins in this channel to see a link to it.',
             });
             return;
         }
@@ -68,25 +68,33 @@ export class StaffMailDmTrigger {
         });
 
         try {
-            const oldStaffMailMessage = await this.channelService.getMessageFromChannelByMessageId(
-                message.reference.messageId!,
-                message.channel
-            );
+            let mainMessage =
+                (await this.channelService.getMessageFromChannelByMessageId(
+                    staffMail.mainMessageId,
+                    newStaffMailMessage.channel
+                )) ?? undefined;
+            mainMessage = await mainMessage?.edit({
+                embeds: [
+                    mainMessage.embeds[0],
+                    EmbedHelper.getStaffMailLinkToLatestMessage(newStaffMailMessage),
+                    mainMessage.embeds[2],
+                ],
+            });
+            const oldStaffMailMessage =
+                staffMail.mainMessageId === message.reference.messageId
+                    ? mainMessage
+                    : await this.channelService.getMessageFromChannelByMessageId(
+                          message.reference.messageId!,
+                          message.channel
+                      );
             const newEmbeds: Embed[] =
                 oldStaffMailMessage?.embeds.map((e: Embed) => {
                     return { ...e.data, footer: undefined } as unknown as Embed;
                 }) ?? oldStaffMailMessage!.embeds;
             await oldStaffMailMessage?.edit({ embeds: newEmbeds });
-            await oldStaffMailMessage?.unpin();
         } catch (e) {
-            this.logger.warn(`Could not edit old staff mail embed.`, e);
+            this.logger.warn(`Could not edit old staff mail embeds.`, e);
         }
-
-        await this.channelService.pinNewStaffMailMessageInDmChannel(
-            newStaffMailMessage,
-            staffMail.lastMessageId,
-            staffMail.user!
-        );
 
         await this.staffMailRepository.updateStaffMailLastMessageId(staffMail.id, newStaffMailMessage.id);
         return Promise.resolve();

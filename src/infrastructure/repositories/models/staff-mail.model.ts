@@ -12,4 +12,5 @@ export interface StaffMail {
     createdAt: Date;
     lastMessageAt: Date;
     lastMessageId: string;
+    mainMessageId: string;
 }

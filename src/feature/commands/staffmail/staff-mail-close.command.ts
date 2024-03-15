@@ -81,7 +81,7 @@ export class StaffMailCloseCommand implements ICommand {
 
         try {
             const oldStaffMailEmbed = await this.channelService.getMessageFromChannelByMessageId(
-                deleted.lastMessageId,
+                deleted.mainMessageId,
                 deleted.user.dmChannel!
             );
             await oldStaffMailEmbed?.unpin();

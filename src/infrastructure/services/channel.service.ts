@@ -7,9 +7,7 @@ import {
     GuildTextBasedChannel,
     Message,
     MessageResolvable,
-    MessageType,
     TextBasedChannel,
-    User,
 } from 'discord.js';
 import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
@@ -74,23 +72,6 @@ export class ChannelService {
             type: ChannelType.GuildText,
             parent: category,
         });
-    }
-
-    async pinNewStaffMailMessageInDmChannel(message: Message, oldMessageId: string | null, recipient: User) {
-        try {
-            if (oldMessageId)
-                await (await recipient.dmChannel?.messages.fetch(oldMessageId as MessageResolvable))?.unpin();
-            await message.pin();
-            await recipient.dmChannel?.messages.cache
-                .filter((m: Message) => (m.type = MessageType.ChannelPinnedMessage))
-                .last()
-                ?.delete();
-        } catch (e) {
-            this.logger.warn(`Failed to manage pins for staffmail DM channel ${recipient.dmChannel?.id}`, e);
-            recipient.dmChannel?.send(
-                `😟 I couldn't update the pins with the newest message! But worry not, you can still reply as usual.`
-            );
-        }
     }
 
     async getMessageFromChannelByMessageId(messageId: string, channel: TextBasedChannel): Promise<Message | null> {

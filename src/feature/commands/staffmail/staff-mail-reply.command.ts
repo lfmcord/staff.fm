@@ -11,6 +11,7 @@ import { ValidationError } from '@src/feature/commands/models/validation-error.m
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
+import { StaffMail } from '@src/infrastructure/repositories/models/staff-mail.model';
 
 @injectable()
 export class StaffMailReplyCommand implements ICommand {
@@ -46,7 +47,7 @@ export class StaffMailReplyCommand implements ICommand {
         if (args.length === 0 && message.attachments.size === 0)
             throw new ValidationError(`Empty reply args and no attachment.`, `You have to provide a reply!`);
         const isAnonReply = message.content.match(this.aliases[0]) != null;
-        const staffMail = await this.staffMailRepository.getStaffMailByChannelId(message.channelId);
+        const staffMail: StaffMail | null = await this.staffMailRepository.getStaffMailByChannelId(message.channelId);
         if (!staffMail) {
             throw new ValidationError(
                 `No StaffMail in DB for channel ID ${message.channelId}.`,
@@ -78,25 +79,33 @@ export class StaffMailReplyCommand implements ICommand {
         });
 
         try {
-            const oldStaffMailMessage = await this.channelService.getMessageFromChannelByMessageId(
-                staffMail.lastMessageId,
-                staffMail.user.dmChannel!
-            );
+            let mainMessage =
+                (await this.channelService.getMessageFromChannelByMessageId(
+                    staffMail.mainMessageId,
+                    staffMail.user.dmChannel!
+                )) ?? undefined;
+            mainMessage = await mainMessage?.edit({
+                embeds: [
+                    mainMessage?.embeds[0],
+                    EmbedHelper.getStaffMailLinkToLatestMessage(messageToUser),
+                    mainMessage?.embeds[2],
+                ],
+            });
+            const oldStaffMailMessage =
+                staffMail.mainMessageId === staffMail.lastMessageId
+                    ? mainMessage
+                    : await this.channelService.getMessageFromChannelByMessageId(
+                          staffMail.lastMessageId,
+                          staffMail.user.dmChannel!
+                      );
             const newEmbeds: Embed[] =
                 oldStaffMailMessage?.embeds.map((e: Embed) => {
                     return { ...e.data, footer: undefined } as unknown as Embed;
                 }) ?? oldStaffMailMessage!.embeds;
             await oldStaffMailMessage?.edit({ embeds: newEmbeds });
-            await oldStaffMailMessage?.unpin();
         } catch (e) {
-            this.logger.warn(`Could not edit old staff mail embed.`, e);
+            this.logger.warn(`Could not edit old staff mail embeds.`, e);
         }
-
-        await this.channelService.pinNewStaffMailMessageInDmChannel(
-            messageToUser,
-            staffMail.lastMessageId,
-            staffMail.user
-        );
 
         this.logger.debug(`Updating staff mail in DB and staff mail channel...`);
         await this.staffMailRepository.updateStaffMailLastMessageId(staffMail.id, messageToUser.id);

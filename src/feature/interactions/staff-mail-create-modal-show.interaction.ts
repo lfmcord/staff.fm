@@ -9,18 +9,18 @@ import { ComponentHelper } from '@src/helpers/component.helper';
 @injectable()
 export class StaffMailCreateModalShowInteraction implements IInteraction {
     customIds = [
-        'defer-' + StaffMailCustomIds.ReportSendButton,
-        'defer-' + StaffMailCustomIds.ReportSendAnonButton,
-        'defer-' + StaffMailCustomIds.CrownsReportSendButton,
-        'defer-' + StaffMailCustomIds.CrownsFalseCrownSendButton,
-        'defer-' + StaffMailCustomIds.CrownsBanInquirySendButton,
-        'defer-' + StaffMailCustomIds.CrownsOtherSendButton,
-        'defer-' + StaffMailCustomIds.ServerSendButton,
-        'defer-' + StaffMailCustomIds.LastfmSendButton,
-        'defer-' + StaffMailCustomIds.OtherSendButton,
-        'defer-' + StaffMailCustomIds.OtherSendAnonButton,
-        'defer-' + StaffMailCustomIds.UrgentReportSendButton,
-        'defer-' + StaffMailCustomIds.UrgentReportSendAnonButton,
+        StaffMailCustomIds.ReportSendButton,
+        StaffMailCustomIds.ReportSendAnonButton,
+        StaffMailCustomIds.CrownsReportSendButton,
+        StaffMailCustomIds.CrownsFalseCrownSendButton,
+        StaffMailCustomIds.CrownsBanInquirySendButton,
+        StaffMailCustomIds.CrownsOtherSendButton,
+        StaffMailCustomIds.ServerSendButton,
+        StaffMailCustomIds.LastfmSendButton,
+        StaffMailCustomIds.OtherSendButton,
+        StaffMailCustomIds.OtherSendAnonButton,
+        StaffMailCustomIds.UrgentReportSendButton,
+        StaffMailCustomIds.UrgentReportSendAnonButton,
     ];
     logger: Logger<StaffMailCreateModalShowInteraction>;
 

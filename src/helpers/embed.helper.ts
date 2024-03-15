@@ -70,14 +70,19 @@ export class EmbedHelper {
         let description = isOpenedByStaff
             ? `The staff team has a concern that they want to discuss with you. Please get back to them after you've read the messages!\n\n`
             : `Thank you for using Lastcord's StaffMail! To make sure staff can see your request timely, please open a new StaffMail for matters that aren't directly related to this StaffMail.\n\n`;
-        description +=
-            `${bold('How to reply:')} In order to reply or send follow up messages, always reply to the last message you sent or received!\n\n` +
-            `In order to keep track of your open StaffMails, ${bold('check the pins in this channel')}. It always has the latest message from each of your open StaffMails.`;
+        description += `In order to keep track of your open StaffMails, ${bold('check the pins in this channel')}.\n\n`;
         return new EmbedBuilder()
             .setTitle(`🟢 StaffMail Opened`)
             .setColor(EmbedHelper.blue)
-            .setDescription(description)
-            .setTimestamp();
+            .setDescription(description);
+    };
+
+    static getStaffMailLinkToLatestMessage = (message?: Message) => {
+        return new EmbedBuilder()
+            .setColor(EmbedHelper.blue)
+            .setDescription(
+                `${bold('How to reply:')} In order to reply or send follow up messages, always reply to the last message you sent or received.\n\n${message ? `**Last message:** ${TextHelper.getDiscordMessageLink(message)}` : ''}`
+            );
     };
 
     static getStaffMailCloseEmbed(summary: string | null, type: string, reason: string | null): EmbedBuilder {
