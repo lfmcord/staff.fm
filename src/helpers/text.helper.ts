@@ -4,6 +4,7 @@ export class TextHelper {
     static success = '✅';
     static failure = '❌';
     static lastfm = '<:lastfmred:900551196023083048>';
+    static loading = '<a:loading:1221575003041173565>';
     static pascalCase(input: string): string {
         return input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
     }

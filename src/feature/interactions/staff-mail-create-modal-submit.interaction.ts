@@ -68,8 +68,8 @@ export class StaffMailCreateModalSubmitInteraction implements IInteraction {
         this.logger.trace(`Summary: ${summary}`);
         const staffMailChannel = await this.staffMailRepository.createStaffMailChannel(interaction.user, mode);
 
-        const rolePings = '';
-        // this.env.STAFFMAIL_PING_ROLE_IDS.forEach((id) => (rolePings += `<@&${id}> `));
+        let rolePings = '';
+        this.env.STAFFMAIL_PING_ROLE_IDS.forEach((id) => (rolePings += `<@&${id}> `));
         const embeds: EmbedBuilder[] = [];
         embeds.push(
             EmbedHelper.getStaffMailStaffViewNewEmbed(

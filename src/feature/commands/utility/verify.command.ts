@@ -172,6 +172,7 @@ export class VerifyCommand implements ICommand {
                     replyToUser: `The username '${lastfmUsername}' doesn't seem to be an existing Last.fm user.`,
                 };
             }
+            await message.react(TextHelper.loading);
             await this.assignScrobbleRoles(memberToVerify, lastfmUser.playcount);
         }
 
@@ -194,6 +195,8 @@ export class VerifyCommand implements ICommand {
         }
 
         await memberToVerify.roles.remove(this.env.UNVERIFIED_ROLE_ID as RoleResolvable);
+
+        await message.reactions.removeAll();
 
         await this.loggingService.logVerification(verification);
 
