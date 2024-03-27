@@ -4,6 +4,7 @@
   "tabWidth": 4,
   "semi": true,
   "printWidth": 120,
+  "endOfLine": "auto",
   "overrides": [
     {
       "files": "*.json",

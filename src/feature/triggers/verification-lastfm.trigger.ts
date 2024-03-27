@@ -81,6 +81,7 @@ export class VerificationLastFmTrigger {
             for (const user of usersWithSameLastFm) {
                 const member = await this.memberService.getGuildMemberFromUserId(user.userId);
                 if (member) members.push(member);
+                // TODO: In case of user that left, still log but with different output
             }
             await this.loggingService.logDuplicateLastFmUsername(message, members);
         }

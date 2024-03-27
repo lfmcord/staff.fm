@@ -1,6 +1,15 @@
 # staff.fm
 staff.fm is a custom moderation and server management bot for Lastcord.
 
+## Features
+
+- **Verification Management**
+  - verify command with automatic scrobble role assignment
+  - ability to flag malicious accounts and receive alerts if someone wants to verify with a flagged account
+  - receive alerts if someone is trying to verify with an already verified user account
+  - receive alerts if a last.fm account is especially new
+- 
+
 ## Development Setup
 ![node-shield]
 ![docker-shield]

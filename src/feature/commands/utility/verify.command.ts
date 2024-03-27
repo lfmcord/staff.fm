@@ -29,6 +29,7 @@ import { Environment } from '@models/environment';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { LastfmError } from '@models/lastfm-error.model';
+import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
 
 @injectable()
 export class VerifyCommand implements ICommand {
@@ -44,7 +45,8 @@ export class VerifyCommand implements ICommand {
     private loggingService: LoggingService;
     private lastFmClient: LastFM;
     private logger: Logger<VerifyCommand>;
-    usersRepository: UsersRepository;
+    private flagsRepository: FlagsRepository;
+    private usersRepository: UsersRepository;
     private env: Environment;
     private memberService: MemberService;
     private messageService: MessageService;
@@ -56,8 +58,10 @@ export class VerifyCommand implements ICommand {
         @inject(TYPES.LastFmClient) lastFmClient: LastFM,
         @inject(TYPES.LoggingService) loggingService: LoggingService,
         @inject(TYPES.ENVIRONMENT) env: Environment,
-        @inject(TYPES.UsersRepository) usersRepository: UsersRepository
+        @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
+        @inject(TYPES.FlagsRepository) flagsRepository: FlagsRepository
     ) {
+        this.flagsRepository = flagsRepository;
         this.usersRepository = usersRepository;
         this.env = env;
         this.loggingService = loggingService;
@@ -72,9 +76,9 @@ export class VerifyCommand implements ICommand {
     }
 
     async run(message: Message | PartialMessage, args: string[]): Promise<CommandResult> {
-        let lastfmUsername;
+        let lastfmUsername: string | null;
         let memberToVerify;
-        let verificationMessage;
+        let verificationMessage: Message | null = null;
         if (!message.reference) {
             if (args.length < 1)
                 throw new ValidationError(
@@ -102,6 +106,7 @@ export class VerifyCommand implements ICommand {
             return {
                 isSuccessful: false,
                 replyToUser: `I cannot find this user!.`,
+                shouldDelete: true,
             };
         }
 
@@ -110,7 +115,27 @@ export class VerifyCommand implements ICommand {
             return {
                 isSuccessful: false,
                 replyToUser: `This user is already verified!`,
+                shouldDelete: true,
             };
+        }
+
+        if ((await this.memberService.getMemberPermissionLevel(message.member!)) < CommandPermissionLevel.Moderator) {
+            this.logger.debug(`User is not privileged moderator, check for flagged account.`);
+            const flags = await this.flagsRepository.getAllFlags();
+            if (
+                flags.find(
+                    (flag) =>
+                        verificationMessage?.content?.match(flag.term) != null ||
+                        lastfmUsername?.match(flag.term) != null
+                )
+            ) {
+                this.logger.debug(`Verifier is trying to verify a flagged account.`);
+                return {
+                    isSuccessful: false,
+                    replyToUser: `A moderator or administrator needs to verify this user. Please let them know.`,
+                    shouldDelete: true,
+                };
+            }
         }
 
         let lastfmUser;
@@ -170,6 +195,7 @@ export class VerifyCommand implements ICommand {
                 return {
                     isSuccessful: false,
                     replyToUser: `The username '${lastfmUsername}' doesn't seem to be an existing Last.fm user.`,
+                    shouldDelete: true,
                 };
             }
             await message.react(TextHelper.loading);
