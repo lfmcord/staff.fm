@@ -16,5 +16,5 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
-            cd stafffm
+            cd staff.fm
             chmod +x deploy.sh && sh deploy.sh
