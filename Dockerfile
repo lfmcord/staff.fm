@@ -4,12 +4,12 @@ WORKDIR /usr/staff-fm/src
 
 COPY package.json /usr/staff-fm
 RUN yarn -v
-RUN yarn install
+RUN npm install
 
 ADD src /usr/staff-fm/src
 COPY tsconfig.json /usr/staff-fm
 COPY .env /usr/staff-fm
 
-RUN yarn build
+RUN npm run build
 
-CMD [ "yarn", "start" ]
+CMD [ "npm", "start" ]
