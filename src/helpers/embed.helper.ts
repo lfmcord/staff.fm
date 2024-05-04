@@ -4,6 +4,7 @@ import {
     ButtonBuilder,
     Client,
     EmbedBuilder,
+    inlineCode,
     Message,
     MessageCreateOptions,
     MessageEditOptions,
@@ -457,18 +458,19 @@ export class EmbedHelper {
     }
 
     static getLastFmUserEmbed(lastFmUser: getInfo, shouldAlert = false): EmbedBuilder {
+        console.log(JSON.stringify(lastFmUser));
         return new EmbedBuilder()
             .setTitle('Last.fm Account')
             .setURL(lastFmUser.url)
             .setFields([
                 {
                     name: 'Username',
-                    value: lastFmUser.name,
+                    value: inlineCode(lastFmUser.name),
                     inline: true,
                 },
                 {
                     name: 'Real name',
-                    value: lastFmUser.realname,
+                    value: lastFmUser.realname !== '' ? inlineCode(lastFmUser.realname) : `N/A`,
                     inline: true,
                 },
                 {
