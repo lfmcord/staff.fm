@@ -147,7 +147,7 @@ container.bind<LastFM>(TYPES.LastFmClient).toConstantValue(
         apiSecret: container.get<Environment>(TYPES.ENVIRONMENT).LASTFM_SHARED_SECRET,
     })
 );
-container.bind<Redis>(TYPES.Redis).toConstantValue(new Redis());
+container.bind<Redis>(TYPES.Redis).toConstantValue(new Redis(6380));
 container.bind<MongoDbConnector>(TYPES.MongoDbConnector).to(MongoDbConnector);
 container.bind<RedisConnector>(TYPES.RedisConnector).to(RedisConnector);
 
