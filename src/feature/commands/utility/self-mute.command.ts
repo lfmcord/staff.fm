@@ -14,7 +14,6 @@ import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Environment } from '@models/environment';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import * as moment from 'moment';
-import DurationConstructor = moment.unitOfTime.DurationConstructor;
 import { SelfMute } from '@src/feature/commands/utility/models/self-mute.model';
 
 @injectable()
@@ -76,7 +75,8 @@ export class SelfMuteCommand implements ICommand {
         try {
             await this.memberService.muteGuildMember(
                 member,
-                `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>). You can prematurely end it by sending me ${inlineCode(this.env.PREFIX + 'unmute')} here.`
+                `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>). You can prematurely end it by sending me ${inlineCode(this.env.PREFIX + 'unmute')} here.`,
+                true
             );
             this.scheduleService.scheduleJob(
                 `UNMUTE_${member.id}`,
@@ -141,12 +141,15 @@ export class SelfMuteCommand implements ICommand {
     }
 
     public async endSelfMute(selfMute: SelfMute) {
+        this.logger.info(`Ending self mute for ${TextHelper.userLog(selfMute.member.user)}...`);
         await this.memberService.unmuteGuildMember(
             selfMute.member,
             selfMute.roles,
-            `🔊 Your selfmute has ended and I've unmuted you. Welcome back!`
+            `🔊 Your selfmute has ended and I've unmuted you. Welcome back!`,
+            true
         );
         await this.selfMutesRepository.deleteSelfMute(selfMute);
         await this.loggingService.logSelfmute(selfMute);
+        this.logger.info(`Ended self mute for ${TextHelper.userLog(selfMute.member.user)}...`);
     }
 }

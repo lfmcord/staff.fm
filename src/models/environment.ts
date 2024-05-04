@@ -35,4 +35,5 @@ export interface Environment {
     MESSAGE_CACHING_DURATION_IN_SECONDS: number;
     REDIS_HOST: string;
     REDIS_PORT: number;
+    SELFMUTED_ROLE_ID: string;
 }

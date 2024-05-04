@@ -101,6 +101,7 @@ container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue({
         Number.parseInt(process.env.MESSAGE_CACHING_DURATION_IN_SECONDS ?? '86400') ?? 86400,
     REDIS_HOST: process.env.REDIS_HOST ?? 'localhost',
     REDIS_PORT: Number.parseInt(process.env.REDIS_PORT ?? '6380') ?? 6380,
+    SELFMUTED_ROLE_ID: process.env.SELFMUTED_ROLE_ID ?? '',
 });
 
 // CORE

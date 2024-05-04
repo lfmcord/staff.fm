@@ -38,6 +38,7 @@ export class ScheduleService {
         }
         this.logger.debug(`Running job (${name})...`);
         job.invoke();
+        job.cancel();
         return true;
     }
 

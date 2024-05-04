@@ -51,16 +51,17 @@ export class MemberService {
         return await guild.roles.fetch(roleId);
     }
 
-    async muteGuildMember(member: GuildMember, muteMessage: string): Promise<void> {
+    async muteGuildMember(member: GuildMember, muteMessage: string, isSelfmute = false): Promise<void> {
         const highestUserRole = await this.getHighestRoleFromGuildMember(member);
         const botMember = await this.getGuildMemberFromUserId(this.client.user!.id);
         const highestBotRole = await this.getHighestRoleFromGuildMember(botMember!);
-        const mutedRole = await (await this.client.guilds.fetch(this.env.GUILD_ID)).roles.fetch(this.env.MUTED_ROLE_ID);
+        const muteRoleId = isSelfmute ? this.env.SELFMUTED_ROLE_ID : this.env.MUTED_ROLE_ID;
+        const mutedRole = await (await this.client.guilds.fetch(this.env.GUILD_ID)).roles.fetch(muteRoleId);
         if (highestUserRole.comparePositionTo(highestBotRole) > 0) {
             throw Error(`Cannot mute a member with a role higher than the bot role.`);
         }
         if (!mutedRole) {
-            throw Error(`Cannot find muted role with role ID ${this.env.MUTED_ROLE_ID}`);
+            throw Error(`Cannot find muted role with role ID ${muteRoleId}`);
         }
         if (mutedRole!.comparePositionTo(highestBotRole) > 0) {
             throw Error(`Cannot assign the muted role because it is higher than the bot role.`);
@@ -68,14 +69,15 @@ export class MemberService {
 
         const roles = await this.getRolesFromGuildMember(member);
         roles.forEach((r) => r.comparePositionTo(botMember!.roles.highest));
-        await member.roles.add(this.env.MUTED_ROLE_ID);
+        await member.roles.add(mutedRole);
         await member.roles.remove(roles);
 
         await member.send({ content: muteMessage });
     }
 
-    async unmuteGuildMember(member: GuildMember, rolesToRestore: Role[], unmuteMessage: string) {
-        await member.roles.remove(this.env.MUTED_ROLE_ID);
+    async unmuteGuildMember(member: GuildMember, rolesToRestore: Role[], unmuteMessage: string, isSelfmute = false) {
+        const mutedRole = isSelfmute ? this.env.SELFMUTED_ROLE_ID : this.env.MUTED_ROLE_ID;
+        await member.roles.remove(mutedRole);
         rolesToRestore.forEach((r) => (r.name !== '@everyone' ? member.roles.add(r) : ''));
         await member.send(unmuteMessage);
     }
@@ -102,10 +104,17 @@ export class MemberService {
         ];
 
         let permissionLevel = CommandPermissionLevel.User;
+        let isSet = false;
         for (const permission of permissionLevelRoles) {
-            if (memberHighestRole.comparePositionTo(permission.roleIds[0]) >= 0) {
-                permissionLevel = permission.level;
-                break;
+            if (isSet) break;
+            for (const roleId of permission.roleIds) {
+                if (isSet) break;
+                if (memberHighestRole.comparePositionTo(roleId) >= 0) {
+                    this.logger.trace(`Role ID: ${roleId}: ${memberHighestRole.comparePositionTo(roleId)}`);
+                    permissionLevel = permission.level;
+                    isSet = true;
+                    break;
+                }
             }
         }
         return permissionLevel;

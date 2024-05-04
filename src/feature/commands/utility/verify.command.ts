@@ -34,9 +34,9 @@ import { FlagsRepository } from '@src/infrastructure/repositories/flags.reposito
 @injectable()
 export class VerifyCommand implements ICommand {
     name: string = 'verify';
-    description: string = 'Verifies a new user.';
+    description: string = 'Verifies a new user. Either reply to the user or use the optional parameters.';
     usageHint: string = '[user mention/ID] [last.fm username]';
-    examples: string[] = ['', 'haiyn'];
+    examples: string[] = ['', '@haiyn haiyn'];
     permissionLevel = CommandPermissionLevel.Backstager;
     aliases = ['v'];
     isUsableInDms = false;

@@ -13,6 +13,7 @@ import { ValidationError } from '@src/feature/commands/models/validation-error.m
 import { StaffMailDmTrigger } from '@src/feature/triggers/staff-mail-dm.trigger';
 import { Environment } from '@models/environment';
 import { VerificationLastFmTrigger } from '@src/feature/triggers/verification-lastfm.trigger';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 
 @injectable()
 export class MessageCreateHandler implements IHandler {
@@ -90,9 +91,13 @@ export class MessageCreateHandler implements IHandler {
 
         // Check permissions
         const member = await this.memberService.getGuildMemberFromUserId(message.author.id);
-        if ((await this.memberService.getMemberPermissionLevel(member!)) < command.permissionLevel) {
+        const permissionLevel = await this.memberService.getMemberPermissionLevel(member!);
+        if (
+            permissionLevel === CommandPermissionLevel.User /* TODO: Remove this for go-live */ ||
+            permissionLevel < command.permissionLevel
+        ) {
             this.logger.info(
-                `User ${TextHelper.userLog(message.author)} is trying to run a command that requires '${command.permissionLevel}' permissions, but has no privilege.`
+                `User ${TextHelper.userLog(message.author)} is trying to run a command that requires permission level '${command.permissionLevel}', but has permission level '${permissionLevel}'.`
             );
             await this.handleCommandError(message, `You do not have sufficient permissions to use this command.`);
             return;
@@ -129,7 +134,7 @@ export class MessageCreateHandler implements IHandler {
     }
 
     private async handleCommandError(message: Message, messageToUser: string = `Oops, something went wrong!`) {
-        await message.reply(TextHelper.failure + ' ' + messageToUser);
+        await message.reply({ content: messageToUser, allowedMentions: { repliedUser: false } });
         await message.react(TextHelper.failure);
     }
 

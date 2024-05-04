@@ -21,7 +21,7 @@ export class MuteRndCommand implements ICommand {
     usageHint: string = '[optin/optout/leaderboard]';
     examples: string[] = ['', 'optin', 'optout'];
     validArguments: (string | undefined)[] = [undefined, 'optin', 'optout', 'leaderboard'];
-    permissionLevel = CommandPermissionLevel.User;
+    permissionLevel = CommandPermissionLevel.Moderator;
     aliases = ['mutegame'];
     isUsableInDms = false;
     isUsableInServer = true;
