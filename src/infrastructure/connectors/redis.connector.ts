@@ -14,7 +14,7 @@ export class RedisConnector {
     public async connect() {
         this.logger.debug('Trying to connect to Redis...');
         try {
-            const redis = new Redis();
+            const redis = new Redis(6380);
             container.bind<Redis>(TYPES.Redis).toConstantValue(redis);
         } catch (error) {
             this.logger.fatal('Unable to connect to Redis.', error);
