@@ -5,6 +5,8 @@ services:
     container_name: staff-fm-db
     ports:
       - "27018:27018"
+    expose:
+      - "27018"
     volumes:
       - mongodb:/data/mongodb
       - ./database/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
