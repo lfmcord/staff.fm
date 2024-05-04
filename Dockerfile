@@ -3,7 +3,6 @@ FROM node:20-alpine
 WORKDIR /usr/staff-fm/src
 
 COPY package.json /usr/staff-fm
-rm -rf node_modules
 yarn cache clean
 RUN yarn -v
 RUN yarn install
