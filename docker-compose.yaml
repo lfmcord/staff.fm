@@ -1,7 +1,7 @@
 version: '3.9'
 services:
   staff-fm-db:
-    image: mongo
+    image: mongo:latest
     container_name: staff-fm-db
     ports:
       - "27018:27018"
@@ -21,9 +21,11 @@ services:
   staff-fm-cache:
     container_name: staff-fm-redis
     image: "redis:alpine"
-    command: redis-server
+    command: redis-server --port 6380
     ports:
       - "6380:6380"
+    expose:
+      - "6380"
     volumes:
       - $PWD/redis-data:/var/lib/redis
       - $PWD/redis.conf:/usr/local/etc/redis/redis.conf
