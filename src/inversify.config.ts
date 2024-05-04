@@ -99,6 +99,8 @@ container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue({
     LOG_LEVEL: Number.parseInt(process.env.LOG_LEVEL ?? '1') ?? 1,
     MESSAGE_CACHING_DURATION_IN_SECONDS:
         Number.parseInt(process.env.MESSAGE_CACHING_DURATION_IN_SECONDS ?? '86400') ?? 86400,
+    REDIS_HOST: process.env.REDIS_HOST ?? 'localhost',
+    REDIS_PORT: Number.parseInt(process.env.REDIS_PORT ?? '6380') ?? 6380,
 });
 
 // CORE
@@ -147,7 +149,12 @@ container.bind<LastFM>(TYPES.LastFmClient).toConstantValue(
         apiSecret: container.get<Environment>(TYPES.ENVIRONMENT).LASTFM_SHARED_SECRET,
     })
 );
-container.bind<Redis>(TYPES.Redis).toConstantValue(new Redis({ host: 'staff-fm-redis', port: 6380 }));
+container.bind<Redis>(TYPES.Redis).toConstantValue(
+    new Redis({
+        host: process.env.REDIS_HOST ?? 'localhost',
+        port: Number.parseInt(process.env.REDIS_PORT ?? '6380') ?? 6380,
+    })
+);
 container.bind<MongoDbConnector>(TYPES.MongoDbConnector).to(MongoDbConnector);
 container.bind<RedisConnector>(TYPES.RedisConnector).to(RedisConnector);
 

@@ -33,4 +33,6 @@ export interface Environment {
     LASTFM_AGE_ALERT_IN_DAYS: number;
     LOG_LEVEL: number;
     MESSAGE_CACHING_DURATION_IN_SECONDS: number;
+    REDIS_HOST: string;
+    REDIS_PORT: number;
 }
