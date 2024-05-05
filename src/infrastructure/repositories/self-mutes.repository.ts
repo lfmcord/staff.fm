@@ -27,6 +27,10 @@ export class SelfMutesRepository {
         await SelfMutesModelInstance.findOneAndDelete({ userId: selfMute.member.user.id });
     }
 
+    public async deleteSelfMuteByUserId(userId: string) {
+        await SelfMutesModelInstance.findOneAndDelete({ userId: userId });
+    }
+
     public async getAllSelfMutes(): Promise<SelfMute[]> {
         const savedSelfMutes = await SelfMutesModelInstance.find().exec();
         const selfMutes: SelfMute[] = [];

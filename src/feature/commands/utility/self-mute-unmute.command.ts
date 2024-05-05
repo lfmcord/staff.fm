@@ -7,6 +7,7 @@ import { CommandPermissionLevel } from '@src/feature/commands/models/command-per
 import { Logger } from 'tslog';
 import { TYPES } from '@src/types';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
+import { SelfMutesRepository } from '@src/infrastructure/repositories/self-mutes.repository';
 
 @injectable()
 export class SelfMuteUnmuteCommand implements ICommand {
@@ -20,11 +21,14 @@ export class SelfMuteUnmuteCommand implements ICommand {
     isUsableInServer = false;
     logger: Logger<SelfMuteUnmuteCommand>;
     scheduleService: ScheduleService;
+    selfMutesRepository: SelfMutesRepository;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<SelfMuteUnmuteCommand>,
-        @inject(TYPES.ScheduleService) scheduleService: ScheduleService
+        @inject(TYPES.ScheduleService) scheduleService: ScheduleService,
+        @inject(TYPES.SelfMutesRepository) selfMutesRepository: SelfMutesRepository
     ) {
+        this.selfMutesRepository = selfMutesRepository;
         this.scheduleService = scheduleService;
         this.logger = logger;
     }
@@ -39,6 +43,7 @@ export class SelfMuteUnmuteCommand implements ICommand {
             };
         }
         this.scheduleService.runJob(`UNMUTE_${message.author!.id}`);
+        await this.selfMutesRepository.deleteSelfMuteByUserId(message.author!.id);
 
         return {
             isSuccessful: true,
