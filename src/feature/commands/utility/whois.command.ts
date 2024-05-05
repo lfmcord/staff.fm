@@ -44,15 +44,20 @@ export class WhoisCommand implements ICommand {
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
         let indexedUsers: IUserModel[] = [];
-        if (TextHelper.getDiscordUserId(args[0])) {
-            const foundUser = await this.usersRepository.getUserByUserId(TextHelper.getDiscordUserId(args[0])!);
-            if (!foundUser)
+        const userId = TextHelper.getDiscordUserId(args[0]);
+        if (userId) {
+            // arg is a user ID
+            const foundUser = await this.usersRepository.getUserByUserId(userId);
+            if (!foundUser) {
+                this.logger.info(`Whois command for user ID ${userId} cannot run because user is not in DB.`);
                 return {
                     isSuccessful: false,
-                    replyToUser: `User is not indexed yet.`,
+                    replyToUser: `I have no information on this user.`,
                 };
+            }
             indexedUsers.push(foundUser);
         } else {
+            // arg is a last.fm username
             indexedUsers = (await this.usersRepository.getUsersByLastFmUsername(args[0])) as IUserModel[];
             if (indexedUsers.length === 0) {
                 return {
@@ -74,47 +79,46 @@ export class WhoisCommand implements ICommand {
 
     async getEmbedsByDiscordUserId(userId: string): Promise<EmbedBuilder[]> {
         const embeds: EmbedBuilder[] = [];
+        // Discord user
         let guildMember;
         try {
             guildMember = await this.memberService.getGuildMemberFromUserId(userId);
         } catch (e) {
             this.logger.warn(`User with user ID ${userId} is not in the server.`);
-            return [
+            embeds.push(
                 new EmbedBuilder()
                     .setTitle(`Unknown Discord User`)
                     .setColor(EmbedHelper.orange)
-                    .setDescription(
-                        `User with user ID ${userId} used the given username but is no longer in the server.`
-                    ),
-            ];
+                    .setDescription(`User with user ID '${userId}' is no longer in the server.`)
+            );
         }
-        if (!guildMember)
-            return [
+        if (!guildMember) {
+            embeds.push(
                 new EmbedBuilder()
                     .setTitle(`Unknown Discord User`)
                     .setColor(EmbedHelper.orange)
                     .setDescription(
                         `User with user ID ${userId} used the given username but is no longer in the server.`
-                    ),
-            ];
+                    )
+            );
+        } else {
+            embeds.push(
+                EmbedHelper.getLogEmbed(guildMember.user, guildMember.user, LogLevel.Info)
+                    .setTitle(`Discord Account`)
+                    .setFields([
+                        {
+                            name: 'Joined',
+                            value: `<t:${moment(guildMember.joinedAt).unix()}:f> (<t:${moment(guildMember.joinedAt).unix()}:R>)`,
+                        },
+                        {
+                            name: 'Account created',
+                            value: `<t:${moment(guildMember.user.createdAt).unix()}:f> (<t:${moment(guildMember.user.createdAt).unix()}:R>)`,
+                        },
+                    ])
+                    .setFooter({ text: `User ID: ${guildMember.id}` })
+            );
+        }
         const indexedUser = await this.usersRepository.getUserByUserId(userId);
-
-        // Discord user
-        embeds.push(
-            EmbedHelper.getLogEmbed(guildMember.user, guildMember.user, LogLevel.Info)
-                .setTitle(`Discord Account`)
-                .setFields([
-                    {
-                        name: 'Joined',
-                        value: `<t:${moment(guildMember.joinedAt).unix()}:f> (<t:${moment(guildMember.joinedAt).unix()}:R>)`,
-                    },
-                    {
-                        name: 'Account created',
-                        value: `<t:${moment(guildMember.user.createdAt).unix()}:f> (<t:${moment(guildMember.user.createdAt).unix()}:R>)`,
-                    },
-                ])
-                .setFooter({ text: `User ID: ${guildMember.id}` })
-        );
 
         if (indexedUser) {
             const verifications = indexedUser.verifications.sort((a, b) => (a.verifiedOn > b.verifiedOn ? 1 : -1));
@@ -134,7 +138,7 @@ export class WhoisCommand implements ICommand {
                     lastFmUser = await this.lastFmClient.user.getInfo(currentLastFmUsername);
                 } catch (e) {
                     this.logger.warn(
-                        `Could not find last.fm user for username ${currentLastFmUsername} for user ${TextHelper.userDisplay(guildMember.user)} in whois command.`
+                        `Could not find last.fm user for username ${currentLastFmUsername} for user ${TextHelper.userDisplay(guildMember?.user)} in whois command.`
                     );
                 }
                 if (lastFmUser) embeds.push(EmbedHelper.getLastFmUserEmbed(lastFmUser).setTitle(`Last.fm Account`));

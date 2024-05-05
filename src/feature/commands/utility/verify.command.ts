@@ -233,7 +233,7 @@ export class VerifyCommand implements ICommand {
     }
 
     private async assignScrobbleRoles(member: GuildMember, scrobbleCount: number) {
-        if (scrobbleCount < this.env.SCROBBLE_MILESTONE_NUMBERS[0]) {
+        if (scrobbleCount < this.env.SCROBBLE_MILESTONE_NUMBERS[1]) {
             await member.roles.add(this.env.SCROBBLE_MILESTONE_ROLE_IDS[0]);
             return;
         }

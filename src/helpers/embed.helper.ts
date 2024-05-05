@@ -459,7 +459,7 @@ export class EmbedHelper {
 
     static getLastFmUserEmbed(lastFmUser: getInfo, shouldAlert = false): EmbedBuilder {
         console.log(JSON.stringify(lastFmUser));
-        return new EmbedBuilder()
+        const embed = new EmbedBuilder()
             .setTitle('Last.fm Account')
             .setURL(lastFmUser.url)
             .setFields([
@@ -493,9 +493,11 @@ export class EmbedHelper {
                     inline: true,
                 },
             ])
-            .setThumbnail(lastFmUser.image.find((i) => i.size === 'extralarge')?.url ?? null)
             .setColor(shouldAlert ? EmbedHelper.orange : EmbedHelper.blue)
             .setTimestamp();
+        const lfmImageUrl = lastFmUser.image.find((i) => i.size === 'extralarge')?.url;
+        if (lfmImageUrl && lfmImageUrl !== '') embed.setThumbnail(lfmImageUrl);
+        return embed;
     }
 
     static getLogLevelColor(level: LogLevel): number {
