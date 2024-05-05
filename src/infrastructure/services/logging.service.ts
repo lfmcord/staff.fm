@@ -83,7 +83,7 @@ export class LoggingService {
     }
 
     public async logVerification(verification: Verification) {
-        const logChannel = await this.channelService.getGuildChannelById(this.env.USER_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.USER_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const embeds: EmbedBuilder[] = [];
@@ -128,7 +128,7 @@ export class LoggingService {
         reason: string | null,
         attachments: AttachmentBuilder[] = []
     ) {
-        const logChannel = await this.channelService.getGuildChannelById(this.env.STAFFMAIL_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.STAFFMAIL_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const humanReadableType = EmbedHelper.getHumanReadableStaffMailType(type);
@@ -156,7 +156,7 @@ export class LoggingService {
     }
 
     async logLastFmAgeAlert(message: Message, lastFmUser: getInfo) {
-        const logChannel = await this.channelService.getGuildChannelById(this.env.USER_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.USER_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const logEmbed = EmbedHelper.getLogEmbed(message.author, message.author, LogLevel.Warning).setDescription(
@@ -166,7 +166,7 @@ export class LoggingService {
     }
 
     async logLastFmFlagAlert(message: Message, flag: Flag) {
-        const logChannel = await this.channelService.getGuildChannelById(this.env.BACKSTAGE_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
         if (!logChannel) return;
 
         const lastFmUsername = TextHelper.getLastfmUsername(message.content);
@@ -188,7 +188,7 @@ export class LoggingService {
     }
 
     async logDuplicateLastFmUsername(message: Message, otherMembers: GuildMember[]) {
-        const logChannel = await this.channelService.getGuildChannelById(this.env.BACKSTAGE_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
         if (!logChannel) return;
 
         let description =
@@ -206,7 +206,7 @@ export class LoggingService {
     }
 
     private async getLogChannel(channelId: string): Promise<GuildTextBasedChannel | null> {
-        const logChannel = await this.channelService.getGuildChannelById(this.env.DELETED_MESSAGE_LOG_CHANNEL_ID);
+        const logChannel = await this.channelService.getGuildChannelById(channelId);
         if (!logChannel) {
             this.logger.error(`Unable to log message to channel with Channel ID ${channelId}`);
         }
