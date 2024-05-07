@@ -92,7 +92,7 @@ export class VerifyCommand implements ICommand {
                     `The first argument in the command has to be a valid Discord user!`
                 );
             memberToVerify = await this.memberService.getGuildMemberFromUserId(userId);
-            lastfmUsername = args.length > 1 ? args[1] : null;
+            lastfmUsername = args.length > 1 ? TextHelper.getLastfmUsername(args[1]) : null;
         } else {
             verificationMessage = await this.messageService.getChannelMessageByMessageId(
                 message.reference.messageId!,

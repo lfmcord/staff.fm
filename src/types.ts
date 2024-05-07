@@ -39,4 +39,5 @@ export const TYPES = {
     ChannelService: Symbol('ChannelService'),
     LoggingService: Symbol('LoggingService'),
     AuditService: Symbol('AuditService'),
+    CommandService: Symbol('CommandService'),
 };

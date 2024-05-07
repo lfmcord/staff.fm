@@ -9,6 +9,8 @@ import {
     InteractionType,
     Message,
     PartialMessage,
+    REST,
+    Routes,
 } from 'discord.js';
 import { TYPES } from '@src/types';
 import { IHandlerFactory } from '@src/handlers/models/handler-factory.interface';
@@ -16,6 +18,8 @@ import { MongoDbConnector } from '@src/infrastructure/connectors/mongo-db.connec
 import { TextHelper } from '@src/helpers/text.helper';
 import { RedisConnector } from '@src/infrastructure/connectors/redis.connector';
 import { Environment } from '@models/environment';
+import container from '@src/inversify.config';
+import { IMessageContextMenuInteraction } from '@src/feature/interactions/abstractions/message-context-menu-interaction.interface';
 
 @injectable()
 export class Bot {
@@ -52,6 +56,7 @@ export class Bot {
         await this.redisConnector.connect();
         this.listen();
         await this.client.login(this.env.TOKEN);
+        await this.registerInteractions();
     }
 
     private listen(): void {
@@ -128,5 +133,28 @@ export class Bot {
                 this.logger.fatal(`Unhandled exception while trying to handle Ready`, e);
             }
         });
+    }
+
+    private async registerInteractions() {
+        const messageContextMenuInteractions = container.getAll<IMessageContextMenuInteraction>(
+            'MessageContextMenuInteraction'
+        );
+        /* eslint-disable @typescript-eslint/no-explicit-any */
+        const jsonObjects: any[] = []; // discord.js does not expose this fuckass type
+        for (const messageContextMenuInteraction of messageContextMenuInteractions) {
+            jsonObjects.push(messageContextMenuInteraction.data.toJSON());
+        }
+
+        const rest = new REST().setToken(this.env.TOKEN);
+        this.logger.info(`Registering ${jsonObjects.length} interaction commands...`);
+        try {
+            await rest.put(Routes.applicationGuildCommands(this.client.user!.id, this.env.GUILD_ID), {
+                body: jsonObjects,
+            });
+        } catch (e) {
+            this.logger.error(`Failed to register interaction commands`, e);
+            return;
+        }
+        this.logger.info(`Registered ${jsonObjects.length} interaction commands.`);
     }
 }

@@ -1,5 +1,4 @@
 import { inject, injectable } from 'inversify';
-import { IInteraction } from '@src/feature/interactions/abstractions/IInteraction.interface';
 import { EmbedBuilder, ModalSubmitInteraction } from 'discord.js';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
@@ -9,12 +8,13 @@ import { Logger } from 'tslog';
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Environment } from '@models/environment';
-import container from '../../inversify.config';
+import container from '../../../inversify.config';
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { WhoisCommand } from '@src/feature/commands/utility/whois.command';
+import { IModalSubmitInteraction } from '@src/feature/interactions/abstractions/modal-submit-interaction.interface';
 
 @injectable()
-export class StaffMailCreateModalSubmitInteraction implements IInteraction {
+export class StaffMailCreateModalSubmitInteraction implements IModalSubmitInteraction {
     customIds = [
         StaffMailCustomIds.ReportSendButton + '-submit',
         StaffMailCustomIds.ReportSendAnonButton + '-submit',

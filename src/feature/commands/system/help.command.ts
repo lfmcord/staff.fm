@@ -107,7 +107,7 @@ export class HelpCommand implements ICommand {
             description += '\n';
         }
 
-        description += `${bold('Aliases:')} ${command.aliases.join(', ')}`;
+        if (command.aliases.length > 0) description += `${bold('Aliases:')} ${command.aliases.join(', ')}`;
 
         return {
             embeds: [

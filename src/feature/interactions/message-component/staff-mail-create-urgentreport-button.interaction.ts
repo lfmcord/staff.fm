@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { IInteraction } from '@src/feature/interactions/abstractions/IInteraction.interface';
+import { IMessageComponentInteraction } from '@src/feature/interactions/abstractions/message-component-interaction.interface';
 import { ButtonInteraction } from 'discord.js';
 import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
@@ -8,7 +8,7 @@ import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-
 import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
 
 @injectable()
-export class StaffMailCreateUrgentReportButtonInteraction implements IInteraction {
+export class StaffMailCreateUrgentReportButtonInteraction implements IMessageComponentInteraction {
     customIds = [
         `defer-staff-mail-create-${StaffMailType.UrgentReport}-button`,
         `defer-staff-mail-create-${StaffMailType.UrgentReport}-button-anon`,

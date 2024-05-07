@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 import { TYPES } from '@src/types';
 import LastFM from 'lastfm-typed';
-import { GuildMember, Message } from 'discord.js';
+import { inlineCode, italic, Message } from 'discord.js';
 import { TextHelper } from '@src/helpers/text.helper';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import * as moment from 'moment';
@@ -77,13 +77,14 @@ export class VerificationLastFmTrigger {
             this.logger.info(
                 `There are ${usersWithSameLastFm.length} other users with this lastfm username (${lastFmUsername}).`
             );
-            const members: GuildMember[] = [];
+            const memberStrings: string[] = [];
             for (const user of usersWithSameLastFm) {
+                // TODO: In case of returning user (same user + same lfm), log a "returning user" message
                 const member = await this.memberService.getGuildMemberFromUserId(user.userId);
-                if (member) members.push(member);
-                // TODO: In case of user that left, still log but with different output
+                if (member) memberStrings.push(`${inlineCode(member.user.username)} ${italic(`(ID ${user.userId})`)}`);
+                else memberStrings.push(`${inlineCode('unknown')} ${italic(`(ID ${user.userId}) - not in server`)}`);
             }
-            await this.loggingService.logDuplicateLastFmUsername(message, members);
+            await this.loggingService.logDuplicateLastFmUsername(message, memberStrings);
         }
 
         // check for account age

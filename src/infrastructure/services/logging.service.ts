@@ -113,7 +113,7 @@ export class LoggingService {
         if (verification.lastfmUser) {
             embeds.push(EmbedHelper.getLastFmUserEmbed(verification.lastfmUser));
         } else {
-            embeds.push(new EmbedBuilder().setTitle('No Last.fm Account'));
+            embeds.push(new EmbedBuilder().setTitle('No Last.fm Account').setColor(EmbedHelper.blue));
         }
 
         await logChannel.send({ embeds: embeds });
@@ -187,7 +187,7 @@ export class LoggingService {
         logChannel.send({ embeds: [logEmbed] });
     }
 
-    async logDuplicateLastFmUsername(message: Message, otherMembers: GuildMember[]) {
+    async logDuplicateLastFmUsername(message: Message, otherMembers: string[]) {
         const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
         if (!logChannel) return;
 
@@ -196,7 +196,7 @@ export class LoggingService {
             `${bold(`Last.fm Link: `)} https://last.fm/user/${TextHelper.getLastfmUsername(message.content)}\n` +
             `${bold(`Other users using this last.fm username:`)}\n`;
 
-        otherMembers.forEach((member) => (description += `- ${TextHelper.userDisplay(member.user)}\n`));
+        otherMembers.forEach((memberString) => (description += `- ${memberString}\n`));
 
         const logEmbed = EmbedHelper.getLogEmbed(this.client.user, message.author, LogLevel.Warning)
             .setTitle(`⚠️ Last.fm Account Duplicate`)

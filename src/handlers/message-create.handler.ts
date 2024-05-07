@@ -6,20 +6,20 @@ import { ICommand } from '@src/feature/commands/models/command.interface';
 import container from '../inversify.config';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { IHandler } from '@src/handlers/models/handler.interface';
-import { TextHelper } from '@src/helpers/text.helper';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { StaffMailDmTrigger } from '@src/feature/triggers/staff-mail-dm.trigger';
 import { Environment } from '@models/environment';
 import { VerificationLastFmTrigger } from '@src/feature/triggers/verification-lastfm.trigger';
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CommandService } from '@src/infrastructure/services/command.service';
 
 @injectable()
 export class MessageCreateHandler implements IHandler {
     eventType: string = 'messageCreate';
 
     private logger: Logger<MessageCreateHandler>;
+    commandService: CommandService;
     verificationLastFmTrigger: VerificationLastFmTrigger;
     env: Environment;
     private readonly staffMailDmReply: StaffMailDmTrigger;
@@ -32,8 +32,10 @@ export class MessageCreateHandler implements IHandler {
         @inject(TYPES.CachingRepository) cachingRepository: CachingRepository,
         @inject(TYPES.StaffMailDmTrigger) staffMailDmReply: StaffMailDmTrigger,
         @inject(TYPES.ENVIRONMENT) env: Environment,
-        @inject(TYPES.VerificationLastFmTrigger) verificationLastFmTrigger: VerificationLastFmTrigger
+        @inject(TYPES.VerificationLastFmTrigger) verificationLastFmTrigger: VerificationLastFmTrigger,
+        @inject(TYPES.CommandService) commandService: CommandService
     ) {
+        this.commandService = commandService;
         this.verificationLastFmTrigger = verificationLastFmTrigger;
         this.env = env;
         this.staffMailDmReply = staffMailDmReply;
@@ -43,7 +45,7 @@ export class MessageCreateHandler implements IHandler {
     }
 
     public async handle(message: Message) {
-        const isCommand = message.content.startsWith(this.env.PREFIX);
+        const isCommand = message.content.match(`^${this.env.PREFIX}[A-z]+.*`)?.length != null;
         const isBot = message.author.bot;
         const isDms = message.channel.isDMBased();
         const isVerification = message.channelId === this.env.VERIFICATION_CHANNEL_ID;
@@ -76,13 +78,13 @@ export class MessageCreateHandler implements IHandler {
         // Check if running in correct place
         const isDms = message.channel.isDMBased();
         if (isDms && !command.isUsableInDms) {
-            await this.handleCommandError(
+            await this.commandService.handleCommandErrorForMessage(
                 message,
                 `This command is not usable in direct messages! You can only run it in the server.`
             );
             return;
         } else if (!isDms && !command.isUsableInServer) {
-            await this.handleCommandError(
+            await this.commandService.handleCommandErrorForMessage(
                 message,
                 `This command is not usable in the server! You can only run it by DMing me.`
             );
@@ -91,17 +93,11 @@ export class MessageCreateHandler implements IHandler {
 
         // Check permissions
         const member = await this.memberService.getGuildMemberFromUserId(message.author.id);
-        const permissionLevel = await this.memberService.getMemberPermissionLevel(member!);
-        if (
-            permissionLevel === CommandPermissionLevel.User /* TODO: Remove this for go-live */ ||
-            permissionLevel < command.permissionLevel
-        ) {
-            this.logger.info(
-                `User ${TextHelper.userLog(message.author)} is trying to run a command that requires permission level '${command.permissionLevel}', but has permission level '${permissionLevel}'.`
+        if (!(await this.commandService.isPermittedToRun(member!, command)))
+            await this.commandService.handleCommandErrorForMessage(
+                message,
+                `You do not have sufficient permissions to use this command.`
             );
-            await this.handleCommandError(message, `You do not have sufficient permissions to use this command.`);
-            return;
-        }
 
         // Run command
         const args = message.content!.split(' ').splice(1);
@@ -116,7 +112,7 @@ export class MessageCreateHandler implements IHandler {
         } catch (error) {
             if (error instanceof ValidationError) {
                 this.logger.info(`Command validation failed: ${error.internalMessage}`);
-                await this.handleCommandError(
+                await this.commandService.handleCommandErrorForMessage(
                     message,
                     error.messageToUser +
                         ` For more details, use ${inlineCode(this.env.PREFIX + 'help ' + command.name.toLowerCase())}.`
@@ -124,49 +120,13 @@ export class MessageCreateHandler implements IHandler {
                 return;
             }
             this.logger.error(`Failed to run command '${command?.name}'`, error);
-            await this.handleCommandError(message); // TODO: Log with correlation ID (bubble down from BotLogger?) and add ID here. https://tslog.js.org/#/?id=settings
+            await this.commandService.handleCommandErrorForMessage(message); // TODO: Log with correlation ID (bubble down from BotLogger?) and add ID here. https://tslog.js.org/#/?id=settings
             return;
         }
         const end = new Date().getTime();
 
         // Handle result
-        await this.handleCommandResult(message, result, command.name, end - start);
-    }
-
-    private async handleCommandError(message: Message, messageToUser: string = `Oops, something went wrong!`) {
-        await message.reply({ content: messageToUser, allowedMentions: { repliedUser: false } });
-        await message.react(TextHelper.failure);
-    }
-
-    private async handleCommandResult(
-        message: Message,
-        result: CommandResult,
-        commandName: string,
-        executionTime: number
-    ) {
-        if (result.isSuccessful == null) {
-            this.logger.info(`Command '${commandName}' finished silently.`);
-            return;
-        }
-        let log = result.isSuccessful
-            ? `Successfully finished command '${commandName}'.`
-            : `Failed to finish command '${commandName}'${result.reason ? ` (Reason: '${result.reason}')` : ''}.`;
-        log += ` Execution took ${executionTime}ms.`;
-        this.logger.info(log);
-        const emoji = result.isSuccessful ? TextHelper.success : TextHelper.failure;
-        await message.react(emoji);
-
-        let reply: Message;
-        if (result.replyToUser) {
-            reply = await message.channel.send(`${result.replyToUser}`);
-        }
-
-        if (result.shouldDelete) {
-            setTimeout(async () => {
-                await message.delete();
-                if (reply) await reply.delete();
-            }, 10000);
-        }
+        await this.commandService.handleCommandResultForMessage(message, result, command.name, end - start);
     }
 
     private async resolveCommand(message: Message): Promise<ICommand | null> {
@@ -184,7 +144,7 @@ export class MessageCreateHandler implements IHandler {
 
         if (!command) {
             this.logger.debug(`Could not find a command for name ${commandName}`);
-            await this.handleCommandError(
+            await this.commandService.handleCommandErrorForMessage(
                 message,
                 `I could not find a command called '${commandName}'. ` +
                     `Use \`${this.env.PREFIX}help\` to see a list of all commands.`

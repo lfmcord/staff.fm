@@ -35,6 +35,7 @@ export class MessageDeleteHandler implements IHandler {
         this.logger = logger;
     }
     async handle(message: Message | PartialMessage) {
+        if (message.guild?.id !== this.env.GUILD_ID) return;
         this.logger.info(`Message with message ID ${message.id} was deleted. Trying to fetch contents...`);
         const cachedMessage = await this.cachingRepository.getCachedMessage(message.id);
         if (!cachedMessage) {

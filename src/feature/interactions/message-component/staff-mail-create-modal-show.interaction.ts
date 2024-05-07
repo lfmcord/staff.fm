@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { IInteraction } from '@src/feature/interactions/abstractions/IInteraction.interface';
+import { IMessageComponentInteraction } from '@src/feature/interactions/abstractions/message-component-interaction.interface';
 import { ButtonInteraction } from 'discord.js';
 import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
@@ -7,7 +7,7 @@ import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-
 import { ComponentHelper } from '@src/helpers/component.helper';
 
 @injectable()
-export class StaffMailCreateModalShowInteraction implements IInteraction {
+export class StaffMailCreateModalShowInteraction implements IMessageComponentInteraction {
     customIds = [
         StaffMailCustomIds.ReportSendButton,
         StaffMailCustomIds.ReportSendAnonButton,

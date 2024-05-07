@@ -1,14 +1,14 @@
 import { inject, injectable } from 'inversify';
-import { IInteraction } from '@src/feature/interactions/abstractions/IInteraction.interface';
+import { IMessageComponentInteraction } from '@src/feature/interactions/abstractions/message-component-interaction.interface';
 import { ButtonInteraction } from 'discord.js';
 import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
-import container from '../../inversify.config';
+import container from '../../../inversify.config';
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { StaffMailCreateCommand } from '@src/feature/commands/staffmail/staff-mail-create.command';
 
 @injectable()
-export class StaffMailCreateButtonInteraction implements IInteraction {
+export class StaffMailCreateButtonInteraction implements IMessageComponentInteraction {
     customIds = ['defer-staff-mail-create-button'];
     logger: Logger<StaffMailCreateButtonInteraction>;
 

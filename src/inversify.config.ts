@@ -34,12 +34,12 @@ import Redis from 'ioredis';
 import { MessageDeleteHandler } from '@src/handlers/message-delete.handler';
 import { MuteRndRepository } from '@src/infrastructure/repositories/mute-rnd.repository';
 import { MuteRndCommand } from '@src/feature/commands/fun/mute-rnd.command';
-import { IInteraction } from '@src/feature/interactions/abstractions/IInteraction.interface';
+import { IMessageComponentInteraction } from '@src/feature/interactions/abstractions/message-component-interaction.interface';
 import { InteractionCreateHandler } from '@src/handlers/interaction-create.handler';
 import { StaffMailManagementCommand } from '@src/feature/commands/staffmail/staff-mail-management.command';
 import { StaffMailContactCommand } from '@src/feature/commands/staffmail/staff-mail-contact.command';
 import { StaffMailCloseCommand } from '@src/feature/commands/staffmail/staff-mail-close.command';
-import { StaffMailCreateModalSubmitInteraction } from '@src/feature/interactions/staff-mail-create-modal-submit.interaction';
+import { StaffMailCreateModalSubmitInteraction } from '@src/feature/interactions/modal-submit/staff-mail-create-modal-submit.interaction';
 import { SelfMuteUnmuteCommand } from '@src/feature/commands/utility/self-mute-unmute.command';
 import { StaffMailDmTrigger } from '@src/feature/triggers/staff-mail-dm.trigger';
 import { StaffMailReplyCommand } from '@src/feature/commands/staffmail/staff-mail-reply.command';
@@ -55,9 +55,13 @@ import { UsersRepository } from '@src/infrastructure/repositories/users.reposito
 import { GuildBanAddHandler } from '@src/handlers/guild-ban-add.handler';
 import { GuildBanRemoveHandler } from '@src/handlers/guild-ban-remove.handler';
 import { WhoisCommand } from '@src/feature/commands/utility/whois.command';
-import { StaffMailCreateButtonInteraction } from '@src/feature/interactions/staff-mail-create-button.interaction';
-import { StaffMailCreateUrgentReportButtonInteraction } from '@src/feature/interactions/staff-mail-create-urgentreport-button.interaction';
-import { StaffMailCreateModalShowInteraction } from '@src/feature/interactions/staff-mail-create-modal-show.interaction';
+import { StaffMailCreateButtonInteraction } from '@src/feature/interactions/message-component/staff-mail-create-button.interaction';
+import { StaffMailCreateUrgentReportButtonInteraction } from '@src/feature/interactions/message-component/staff-mail-create-urgentreport-button.interaction';
+import { StaffMailCreateModalShowInteraction } from '@src/feature/interactions/message-component/staff-mail-create-modal-show.interaction';
+import { IModalSubmitInteraction } from '@src/feature/interactions/abstractions/modal-submit-interaction.interface';
+import { IMessageContextMenuInteraction } from '@src/feature/interactions/abstractions/message-context-menu-interaction.interface';
+import { VerifyContextMenuInteraction } from '@src/feature/interactions/message-context-menu/verify-context-menu.interaction';
+import { CommandService } from '@src/infrastructure/services/command.service';
 
 const container = new Container();
 
@@ -192,10 +196,13 @@ container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigg
 container.bind<VerificationLastFmTrigger>(TYPES.VerificationLastFmTrigger).to(VerificationLastFmTrigger);
 
 // INTERACTIONS
-container.bind<IInteraction>('Interaction').to(StaffMailCreateModalSubmitInteraction);
-container.bind<IInteraction>('Interaction').to(StaffMailCreateButtonInteraction);
-container.bind<IInteraction>('Interaction').to(StaffMailCreateUrgentReportButtonInteraction);
-container.bind<IInteraction>('Interaction').to(StaffMailCreateModalShowInteraction);
+container.bind<IModalSubmitInteraction>('ModalSubmitInteraction').to(StaffMailCreateModalSubmitInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateButtonInteraction);
+container
+    .bind<IMessageComponentInteraction>('MessageComponentInteraction')
+    .to(StaffMailCreateUrgentReportButtonInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateModalShowInteraction);
+container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(VerifyContextMenuInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);
@@ -212,5 +219,6 @@ container.bind<ScheduleService>(TYPES.ScheduleService).to(ScheduleService);
 container.bind<ChannelService>(TYPES.ChannelService).to(ChannelService);
 container.bind<LoggingService>(TYPES.LoggingService).to(LoggingService);
 container.bind<AuditService>(TYPES.AuditService).to(AuditService);
+container.bind<CommandService>(TYPES.CommandService).to(CommandService);
 
 export default container;
