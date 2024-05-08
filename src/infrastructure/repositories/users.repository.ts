@@ -41,6 +41,12 @@ export class UsersRepository {
             }
         );
     }
+
+    async getLatestVerificationOfUser(userId: string): Promise<IVerificationModel | null> {
+        const user = await UsersModelInstance.findOne({ userId: userId }).exec();
+        if (!user || user.verifications.length == 0) return null;
+        return user.verifications.sort((a, b) => (a.verifiedOn > b.verifiedOn ? 0 : -1))[0];
+    }
 }
 
 export interface IVerificationModel {

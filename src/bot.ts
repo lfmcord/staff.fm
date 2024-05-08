@@ -20,10 +20,12 @@ import { RedisConnector } from '@src/infrastructure/connectors/redis.connector';
 import { Environment } from '@models/environment';
 import container from '@src/inversify.config';
 import { IMessageContextMenuInteraction } from '@src/feature/interactions/abstractions/message-context-menu-interaction.interface';
+import { ApiRouter } from '@src/api/api-router';
 
 @injectable()
 export class Bot {
     private logger: Logger<Bot>;
+    apiRouter: ApiRouter;
     redisConnector: RedisConnector;
     private mongoDbConnector: MongoDbConnector;
     private handlerFactory: IHandlerFactory;
@@ -36,8 +38,10 @@ export class Bot {
         @inject(TYPES.Client) client: Client,
         @inject(TYPES.HandlerFactory) handlerFactory: IHandlerFactory,
         @inject(TYPES.MongoDbConnector) mongoDbConnector: MongoDbConnector,
-        @inject(TYPES.RedisConnector) redisConnector: RedisConnector
+        @inject(TYPES.RedisConnector) redisConnector: RedisConnector,
+        @inject(TYPES.ApiRouter) apiRouter: ApiRouter
     ) {
+        this.apiRouter = apiRouter;
         this.redisConnector = redisConnector;
         this.mongoDbConnector = mongoDbConnector;
         this.handlerFactory = handlerFactory;
@@ -55,6 +59,7 @@ export class Bot {
         await this.mongoDbConnector.connect();
         await this.redisConnector.connect();
         this.listen();
+        this.apiListen();
         await this.client.login(this.env.TOKEN);
         await this.registerInteractions();
     }
@@ -133,6 +138,10 @@ export class Bot {
                 this.logger.fatal(`Unhandled exception while trying to handle Ready`, e);
             }
         });
+    }
+
+    private apiListen(): void {
+        this.apiRouter.listen();
     }
 
     private async registerInteractions() {

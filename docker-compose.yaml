@@ -42,6 +42,10 @@ services:
     build: .
     env_file:
       - .env
+    ports:
+      - "8083:8083"
+    expose:
+      - "6380"
     restart: on-failure:8
     networks:
       staff-fm-network:

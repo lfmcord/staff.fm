@@ -93,11 +93,13 @@ export class MessageCreateHandler implements IHandler {
 
         // Check permissions
         const member = await this.memberService.getGuildMemberFromUserId(message.author.id);
-        if (!(await this.commandService.isPermittedToRun(member!, command)))
+        if (!(await this.commandService.isPermittedToRun(member!, command))) {
             await this.commandService.handleCommandErrorForMessage(
                 message,
                 `You do not have sufficient permissions to use this command.`
             );
+            return;
+        }
 
         // Run command
         const args = message.content!.split(' ').splice(1);

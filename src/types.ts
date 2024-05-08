@@ -12,6 +12,8 @@ export const TYPES = {
     BotLogger: Symbol('BotLogger'),
     JobLogger: Symbol('JobLogger'),
     InfrastructureLogger: Symbol('InfrastructureLogger'),
+    ApiLogger: Symbol('ApiLogger'),
+    ApiRouter: Symbol('ApiRouter'),
 
     // HANDLERS
     HandlerFactory: Symbol('HandlerFactory'),
@@ -40,4 +42,7 @@ export const TYPES = {
     LoggingService: Symbol('LoggingService'),
     AuditService: Symbol('AuditService'),
     CommandService: Symbol('CommandService'),
+
+    // CONTROLLERS
+    UserController: Symbol('UserController'),
 };

@@ -36,4 +36,5 @@ export interface Environment {
     REDIS_HOST: string;
     REDIS_PORT: number;
     SELFMUTED_ROLE_ID: string;
+    WHOKNOWS_USER_ID: string;
 }

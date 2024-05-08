@@ -62,6 +62,9 @@ import { IModalSubmitInteraction } from '@src/feature/interactions/abstractions/
 import { IMessageContextMenuInteraction } from '@src/feature/interactions/abstractions/message-context-menu-interaction.interface';
 import { VerifyContextMenuInteraction } from '@src/feature/interactions/message-context-menu/verify-context-menu.interaction';
 import { CommandService } from '@src/infrastructure/services/command.service';
+import { ApiRouter } from '@src/api/api-router';
+import { UserController } from '@src/api/user.controller';
+import { IApiRouter } from '@src/api/abstraction/api-router.interface';
 
 const container = new Container();
 
@@ -106,6 +109,7 @@ container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue({
     REDIS_HOST: process.env.REDIS_HOST ?? 'localhost',
     REDIS_PORT: Number.parseInt(process.env.REDIS_PORT ?? '6380') ?? 6380,
     SELFMUTED_ROLE_ID: process.env.SELFMUTED_ROLE_ID ?? '',
+    WHOKNOWS_USER_ID: process.env.WHOKNOWS_USER_ID ?? '',
 });
 
 // CORE
@@ -126,6 +130,13 @@ container.bind<Logger<ILogObj>>(TYPES.JobLogger).toConstantValue(
 container.bind<Logger<ILogObj>>(TYPES.InfrastructureLogger).toConstantValue(
     new Logger({
         name: 'Infrastructure Runtime',
+        minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOG_LEVEL,
+        type: 'pretty',
+    })
+);
+container.bind<Logger<ILogObj>>(TYPES.ApiLogger).toConstantValue(
+    new Logger({
+        name: 'API',
         minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOG_LEVEL,
         type: 'pretty',
     })
@@ -162,6 +173,7 @@ container.bind<Redis>(TYPES.Redis).toConstantValue(
 );
 container.bind<MongoDbConnector>(TYPES.MongoDbConnector).to(MongoDbConnector);
 container.bind<RedisConnector>(TYPES.RedisConnector).to(RedisConnector);
+container.bind<IApiRouter>(TYPES.ApiRouter).to(ApiRouter).inSingletonScope();
 
 // HANDLERS
 container.bind<IHandlerFactory>(TYPES.HandlerFactory).to(HandlerFactory);
@@ -220,5 +232,8 @@ container.bind<ChannelService>(TYPES.ChannelService).to(ChannelService);
 container.bind<LoggingService>(TYPES.LoggingService).to(LoggingService);
 container.bind<AuditService>(TYPES.AuditService).to(AuditService);
 container.bind<CommandService>(TYPES.CommandService).to(CommandService);
+
+// CONTROLLERS
+container.bind<UserController>(TYPES.UserController).to(UserController);
 
 export default container;
