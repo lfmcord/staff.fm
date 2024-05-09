@@ -38,7 +38,7 @@ export class TextHelper {
         return stringToCheck.match(/<@!*[0-9]{17,19}>|[0-9]{17,19}/g)?.length == 1;
     }
     static getDiscordUserId(stringToCheck: string): string | null {
-        return stringToCheck.match(/[0-9]{17}/g)?.pop() ?? null;
+        return stringToCheck.match(/[0-9]{17,}/g)?.pop() ?? null;
     }
 
     static getDiscordMessageLink(message: Message): string {
