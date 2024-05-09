@@ -39,7 +39,6 @@ export class StaffMailReplyCommand implements ICommand {
         this.staffMailRepository = staffMailRepository;
     }
 
-    // TODO: Support anonymous reply
     async run(message: Message, args: string[]): Promise<CommandResult> {
         this.logger.info(
             `New staffmail reply by user ${TextHelper.userLog(message.author)} for channel ID ${message.channelId}.`
@@ -76,6 +75,7 @@ export class StaffMailReplyCommand implements ICommand {
                     staffMail.type
                 ),
             ],
+            files: message.attachments.map((a) => a.url),
         });
 
         try {
