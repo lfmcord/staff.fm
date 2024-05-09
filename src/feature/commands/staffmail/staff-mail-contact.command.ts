@@ -118,9 +118,10 @@ export class StaffMailContactCommand implements ICommand {
             StaffMailType.Staff
         );
         const messageToUser = await member.send({
-            content: `📫 You've received a new message from staff! I've pinned it for you so you can easily reply.`,
-            embeds: [EmbedHelper.getStaffMailOpenEmbed(true), embed],
+            content: `📫 You've received a new message from staff!`,
+            embeds: [EmbedHelper.getStaffMailOpenEmbed(true), EmbedHelper.getStaffMailLinkToLatestMessage(), embed],
         });
+        await messageToUser.pin();
         const newStaffMailChannel = await this.staffMailRepository.createStaffMailChannel(
             member.user,
             StaffMailModeEnum.NAMED
@@ -160,7 +161,7 @@ export class StaffMailContactCommand implements ICommand {
             null
         );
         await response.edit({
-            content: `I've sent the message to the user and created channel ${newStaffMailChannel.name}.`,
+            content: `I've sent the message to the user and created channel <#${newStaffMailChannel.id}>.`,
             embeds: [],
             components: [],
         });
