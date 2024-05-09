@@ -20,7 +20,7 @@ export class StaffMailReplyCommand implements ICommand {
         'Replies to the StaffMail. Must be used in StaffMail channel. Use areply to reply anonymously.';
     usageHint: string = '<message to user>';
     examples: string[] = ['Hi, thank you for reaching out!'];
-    permissionLevel = CommandPermissionLevel.Administrator;
+    permissionLevel = CommandPermissionLevel.Moderator;
     aliases = ['areply'];
     isUsableInDms = false;
     isUsableInServer = true;

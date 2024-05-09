@@ -31,7 +31,7 @@ export class StaffMailContactCommand implements ICommand {
     description: string = 'Messages a user and opens a new triggers channel with them.';
     usageHint: string = '<user/id> <message to user>';
     examples: string[] = ['356178941913858049 Hello, we would like to speak to you!'];
-    permissionLevel = CommandPermissionLevel.Administrator;
+    permissionLevel = CommandPermissionLevel.Moderator;
     aliases = [];
     isUsableInDms = false;
     isUsableInServer = true;

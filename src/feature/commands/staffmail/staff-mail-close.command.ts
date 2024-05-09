@@ -20,7 +20,7 @@ export class StaffMailCloseCommand implements ICommand {
         'Closes a staff mail channel. Reasons are not disclosed to the user. Use `silentclose` to close it without sending a message to the user.';
     usageHint: string = '<reason>';
     examples: string[] = ['Closing because of inactivity.', 'Crowns unban request, granted.'];
-    permissionLevel = CommandPermissionLevel.Administrator;
+    permissionLevel = CommandPermissionLevel.Moderator;
     aliases = ['silentclose'];
     isUsableInDms = false;
     isUsableInServer = true;
