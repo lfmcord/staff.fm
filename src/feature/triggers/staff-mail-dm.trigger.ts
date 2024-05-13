@@ -30,7 +30,7 @@ export class StaffMailDmTrigger {
     public async run(message: Message): Promise<void> {
         if (!message.reference) {
             await message.reply(
-                `It looks like you are trying to chat with me. If you want to reply to an existing StaffMail, please reply to a pinned message. If you do not have any open StaffMails, you can create a new one with ${inlineCode(this.env.PREFIX + 'staffmail')}!`
+                `It looks like you are trying to chat with me. If you want to reply to an existing StaffMail, please check your pinned messages for instructions. If you do not have any open StaffMails, you can create a new one with ${inlineCode(this.env.PREFIX + 'staffmail')}!`
             );
             return;
         }

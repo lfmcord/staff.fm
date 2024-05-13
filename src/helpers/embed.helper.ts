@@ -107,6 +107,7 @@ export class EmbedHelper {
         category: string,
         summary: string | null
     ): EmbedBuilder {
+        const description = `\`reply\` to reply to the user with your name\n\`areply\` to reply to the user anonymously\n\`close [reason]\` to close the staff mail with an optional reason sent to the user.\n`;
         const fields = [{ name: 'Category', value: EmbedHelper.getHumanReadableStaffMailType(category), inline: true }];
         if (summary) fields.push({ name: 'Summary', value: summary, inline: true });
         fields.push(
@@ -120,6 +121,7 @@ export class EmbedHelper {
         return new EmbedBuilder()
             .setTitle(summary ?? 'New StaffMail')
             .setColor(EmbedHelper.blue)
+            .setDescription(description)
             .setFields(fields)
             .setFooter({
                 text: user ? `${user.username} | ${user.id}` : 'Anonymous User',

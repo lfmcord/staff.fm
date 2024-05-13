@@ -126,7 +126,8 @@ export class LoggingService {
         author: User | null,
         actor: User | null,
         reason: string | null,
-        attachments: AttachmentBuilder[] = []
+        attachments: AttachmentBuilder[] = [],
+        logNote: string
     ) {
         const logChannel = await this.getLogChannel(this.env.STAFFMAIL_LOG_CHANNEL_ID);
         if (!logChannel) return;
@@ -147,8 +148,8 @@ export class LoggingService {
             .setTitle(isOpen ? `New StaffMail` : `Closed StaffMail`)
             .setFields(fields)
             .setTimestamp();
-        if (reason) embed.setDescription(`${bold('Reason:')} ${reason}`);
-        else if (!isOpen) embed.setDescription(`No reason provided.`);
+        if (reason) embed.setDescription(`${bold('Reason:')} ${reason}\n\n${logNote}`);
+        else if (!isOpen) embed.setDescription(`No reason provided.\n\n${logNote}`);
         await logChannel.send({
             embeds: [embed],
             files: attachments,

@@ -56,37 +56,40 @@ export class StaffMailCloseCommand implements ICommand {
                 replyToUser: `You are not in a staff mail channel! Please run this command in a staff mail channel.`,
             };
         }
-        if (deleted.user == null) {
-            this.logger.debug(
-                `User with ID ${deleted.userId} has left the server. StaffMail channel was closed regardless.`
-            );
-            return {};
-        }
 
+        let logNote = '';
         if (!isSilentClose) {
-            try {
-                await deleted.user.send({
-                    embeds: [EmbedHelper.getStaffMailCloseEmbed(deleted.summary, deleted.type, args.join(' '))],
-                });
-            } catch (e) {
-                this.logger.warn(`Could not send closing message to user.`, e);
-                return {
-                    isSuccessful: false,
-                    replyToUser: `I could not send the closing message to the user. Perhaps they have their DMs closed (or have blocked me 😭). `,
-                };
+            if (deleted.user != null) {
+                try {
+                    await deleted.user.send({
+                        embeds: [EmbedHelper.getStaffMailCloseEmbed(deleted.summary, deleted.type, args.join(' '))],
+                    });
+                } catch (e) {
+                    this.logger.warn(`Could not send closing message to user.`, e);
+                    return {
+                        isSuccessful: false,
+                        replyToUser: `I could not send the closing message to the user. Perhaps they have their DMs closed (or have blocked me 😭). `,
+                    };
+                }
+
+                try {
+                    const oldStaffMailEmbed = await this.channelService.getMessageFromChannelByMessageId(
+                        deleted.mainMessageId,
+                        deleted.user.dmChannel!
+                    );
+                    await oldStaffMailEmbed?.unpin();
+                } catch (e) {
+                    this.logger.warn(`Could not unpin old staffmail message.`, e);
+                }
+            } else {
+                this.logger.info(
+                    `User with ID ${deleted.userId} has left the server. StaffMail channel was closed regardless.`
+                );
+                logNote = `User left, user was not notified of closing.`;
             }
         } else {
             this.logger.info(`Close command is silent, so I've skipped sending a message to the user.`);
-        }
-
-        try {
-            const oldStaffMailEmbed = await this.channelService.getMessageFromChannelByMessageId(
-                deleted.mainMessageId,
-                deleted.user.dmChannel!
-            );
-            await oldStaffMailEmbed?.unpin();
-        } catch (e) {
-            this.logger.warn(`Could not unpin old staffmail message.`, e);
+            logNote = `Silent close, user was not notified of closing.`;
         }
 
         this.logger.debug(`Staffmail channel was closed.`);
@@ -103,7 +106,8 @@ export class StaffMailCloseCommand implements ICommand {
             isAnonymous ? null : deleted.user,
             message.author,
             args.join(' '),
-            [protocol]
+            [protocol],
+            logNote
         );
 
         await this.staffmailRepository.deleteStaffMailChannel(message.channelId);
