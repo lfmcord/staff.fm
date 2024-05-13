@@ -25,7 +25,9 @@ export class TextHelper {
     }
 
     static getLastfmUsername(link: string): string | null {
-        const matches = link.match(/(?<=(http:\/\/|https:\/\/)?(?:www.)?last\.fm\/user\/)([A-z0-9])+/g);
+        const matches = link.match(
+            /(?<=(http:\/\/|https:\/\/)?(?:www.)?last\.fm\/([A-z]{2}\/)*user\/)([A-z0-9]{3,})+/g
+        );
         if (matches != null && matches?.length > 0) return matches[0];
         else return null;
     }
