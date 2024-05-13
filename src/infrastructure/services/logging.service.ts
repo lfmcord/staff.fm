@@ -127,7 +127,7 @@ export class LoggingService {
         actor: User | null,
         reason: string | null,
         attachments: AttachmentBuilder[] = [],
-        logNote: string
+        logNote: string = ''
     ) {
         const logChannel = await this.getLogChannel(this.env.STAFFMAIL_LOG_CHANNEL_ID);
         if (!logChannel) return;
