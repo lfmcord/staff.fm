@@ -460,7 +460,6 @@ export class EmbedHelper {
     }
 
     static getLastFmUserEmbed(lastFmUser: getInfo, shouldAlert = false): EmbedBuilder {
-        console.log(JSON.stringify(lastFmUser));
         const embed = new EmbedBuilder()
             .setTitle('Last.fm Account')
             .setURL(lastFmUser.url)

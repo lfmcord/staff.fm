@@ -18,6 +18,7 @@ export class CommandService {
         this.memberService = memberService;
         this.logger = logger;
     }
+
     public async isPermittedToRun(member: GuildMember, commandToRun: ICommand): Promise<boolean> {
         const permissionLevel = await this.memberService.getMemberPermissionLevel(member!);
         if (

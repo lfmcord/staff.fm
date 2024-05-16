@@ -3,7 +3,6 @@ import { TYPES } from '@src/types';
 import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
-import moment = require('moment');
 import { Environment } from '@models/environment';
 import { Logger } from 'tslog';
 
@@ -97,10 +96,6 @@ export class MemberService {
                 level: CommandPermissionLevel.Helper,
                 roleIds: this.env.HELPER_ROLE_IDS,
             },
-            {
-                level: CommandPermissionLevel.Backstager,
-                roleIds: this.env.BACKSTAGER_ROLE_IDS,
-            },
         ];
 
         let permissionLevel = CommandPermissionLevel.User;
@@ -115,6 +110,14 @@ export class MemberService {
                     isSet = true;
                     break;
                 }
+            }
+        }
+
+        // backstage roles dont work with position but only with exact hasRole
+        if (permissionLevel <= CommandPermissionLevel.Backstager) {
+            const roles = await this.getRolesFromGuildMember(member);
+            for (const roleId of this.env.BACKSTAGER_ROLE_IDS) {
+                if (roles.find((r) => r.id === roleId)) return CommandPermissionLevel.Backstager;
             }
         }
         return permissionLevel;
