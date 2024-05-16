@@ -1,7 +1,6 @@
 import { inject, injectable } from 'inversify';
 import { GuildMember, Interaction, Message } from 'discord.js';
 import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { TextHelper } from '@src/helpers/text.helper';
 import { Logger } from 'tslog';
 import { TYPES } from '@src/types';
@@ -22,7 +21,7 @@ export class CommandService {
     public async isPermittedToRun(member: GuildMember, commandToRun: ICommand): Promise<boolean> {
         const permissionLevel = await this.memberService.getMemberPermissionLevel(member!);
         if (
-            permissionLevel === CommandPermissionLevel.User /* TODO: Remove this for go-live */ ||
+            /* permissionLevel === CommandPermissionLevel.User */
             permissionLevel < commandToRun.permissionLevel
         ) {
             this.logger.info(
