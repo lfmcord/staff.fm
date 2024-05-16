@@ -11,7 +11,6 @@ import {
     GuildTextBasedChannel,
     Interaction,
     Message,
-    PartialMessage,
     RoleResolvable,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
@@ -75,10 +74,10 @@ export class VerifyCommand implements ICommand {
         return Promise.resolve();
     }
 
-    async run(message: Message | PartialMessage, args: string[]): Promise<CommandResult> {
+    async run(message: Message, args: string[]): Promise<CommandResult> {
         let lastfmUsername: string | null;
         let memberToVerify;
-        let verificationMessage: Message | null = null;
+        let verificationMessage: Message | null = message;
         if (!message.reference) {
             if (args.length < 1)
                 throw new ValidationError(

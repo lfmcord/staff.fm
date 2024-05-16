@@ -112,12 +112,15 @@ export class VerificationLastFmTrigger {
             const memberStrings: string[] = [];
             for (const memberOrId of usersWithSameLastFm) {
                 if (memberOrId instanceof String) {
+                    this.logger.debug(`${memberOrId} is not in guild.`);
                     memberStrings.push(`${inlineCode('unknown')} ${italic(`(ID ${memberOrId}) - not in server`)}`);
-                    continue;
+                } else if (memberOrId instanceof GuildMember) {
+                    this.logger.debug(`${memberOrId?.user?.id} is in guild.`);
+                    if (memberOrId.user.id === message.member?.user.id) continue;
+                    memberStrings.push(
+                        `${inlineCode(memberOrId.user.username)} ${italic(`(ID ${memberOrId.user.id})`)}`
+                    );
                 }
-                const member = memberOrId as GuildMember;
-                if (member.user.id === message.member?.user.id) continue;
-                memberStrings.push(`${inlineCode(member.user.username)} ${italic(`(ID ${member.user.id})`)}`);
             }
             await this.loggingService.logDuplicateLastFmUsername(message, memberStrings);
         }

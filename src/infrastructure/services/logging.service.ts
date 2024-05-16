@@ -219,7 +219,7 @@ export class LoggingService {
         let description =
             `${TextHelper.userDisplay(user, false)} is a returning member.\n\n` +
             `${bold(`Last.fm Link:`)} https://last.fm/user/${lastFmUsername}`;
-        if (isUsingDifferentLastfm) description += `(⚠️ verifying with different account)`;
+        if (isUsingDifferentLastfm) description += ` (⚠️ verifying with different account)`;
 
         const logEmbed = EmbedHelper.getLogEmbed(this.client.user, user, LogLevel.Info)
             .setTitle(`ℹ️ Returning member`)
