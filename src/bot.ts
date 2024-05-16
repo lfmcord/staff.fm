@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 import {
+    ActivityType,
     Client,
     Events,
     GuildBan,
@@ -134,6 +135,10 @@ export class Bot {
         this.client.on('ready', async () => {
             try {
                 await this.handlerFactory.createHandler('ready').handle(null);
+                this.client.user?.setActivity({
+                    name: `DM ${this.env.PREFIX}staffmail to contact staff!`,
+                    type: ActivityType.Playing,
+                });
             } catch (e) {
                 this.logger.fatal(`Unhandled exception while trying to handle Ready`, e);
             }
