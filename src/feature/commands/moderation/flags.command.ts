@@ -35,23 +35,22 @@ export class FlagsCommand implements ICommand {
             };
         }
 
-        const embeds: EmbedBuilder[] = [];
-
         let content = '';
         let i = 1;
-        flags.forEach((flag) => {
+        for (const flag of flags) {
             const newLine = `${i}. ${inlineCode(flag.term)}: ${flag.reason} (created <t:${moment(flag.createdAt).unix()}:D> by <@!${flag.createdById}>)\n`;
             if (content.length + newLine.length >= 4096) {
-                embeds.push(new EmbedBuilder().setDescription(content).setColor(EmbedHelper.blue));
+                await message.channel.send({
+                    embeds: [new EmbedBuilder().setDescription(content).setColor(EmbedHelper.blue)],
+                });
                 content = '';
             }
             content += newLine;
             i++;
+        }
+        await message.channel.send({
+            embeds: [new EmbedBuilder().setDescription(content).setColor(EmbedHelper.blue)],
         });
-        embeds.push(new EmbedBuilder().setDescription(content).setColor(EmbedHelper.blue));
-        embeds[0].setTitle(`List of flagged terms`);
-
-        await message.channel.send({ embeds: embeds });
 
         return {
             isSuccessful: true,
