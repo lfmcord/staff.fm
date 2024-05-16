@@ -71,14 +71,23 @@ export class MemberService {
         await member.roles.add(mutedRole);
         await member.roles.remove(roles);
 
-        await member.send({ content: muteMessage });
+        try {
+            await member.send({ content: muteMessage });
+        } catch (e) {
+            this.logger.warn(`Could not send mute message to user.`, e);
+        }
     }
 
     async unmuteGuildMember(member: GuildMember, rolesToRestore: Role[], unmuteMessage: string, isSelfmute = false) {
         const mutedRole = isSelfmute ? this.env.SELFMUTED_ROLE_ID : this.env.MUTED_ROLE_ID;
         await member.roles.remove(mutedRole);
         rolesToRestore.forEach((r) => (r.name !== '@everyone' ? member.roles.add(r) : ''));
-        await member.send(unmuteMessage);
+
+        try {
+            await member.send(unmuteMessage);
+        } catch (e) {
+            this.logger.warn(`Could not send unmute message to user.`, e);
+        }
     }
 
     async getMemberPermissionLevel(member: GuildMember): Promise<CommandPermissionLevel> {
