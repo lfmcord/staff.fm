@@ -97,7 +97,7 @@ export class VerificationLastFmTrigger {
                 membersWithSameLastFm[0].user.id
             );
             this.logger.debug(
-                `Member ${TextHelper.userLog(membersWithSameLastFm[0].user)} is using last.fm account '${latestVerification?.username}'`
+                `Member ${TextHelper.userLog(membersWithSameLastFm[0].user)} is using last.fm account '${lastFmUsername}' vs lastfm username in database '${latestVerification?.username}'`
             );
             await this.loggingService.logReturningUserNote(
                 message.author,
