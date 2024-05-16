@@ -11,7 +11,9 @@ import {
     GuildTextBasedChannel,
     Interaction,
     Message,
+    MessageContextMenuCommandInteraction,
     RoleResolvable,
+    User,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { MessageService } from '@src/infrastructure/services/message.service';
@@ -75,6 +77,18 @@ export class VerifyCommand implements ICommand {
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
+        return await this.verifyUser(message, args, message.author);
+    }
+
+    async runInteraction(interaction: MessageContextMenuCommandInteraction): Promise<CommandResult> {
+        return await this.verifyUser(
+            interaction.targetMessage,
+            [interaction.targetMessage.author.id, interaction.targetMessage.content],
+            interaction.member!.user as User
+        );
+    }
+
+    private async verifyUser(message: Message, args: string[], verifier: User): Promise<CommandResult> {
         let lastfmUsername: string | null;
         let memberToVerify;
         let verificationMessage: Message | null = message;
@@ -204,7 +218,7 @@ export class VerifyCommand implements ICommand {
 
         const verification: Verification = {
             verificationMessage: verificationMessage ?? null,
-            verifyingUser: message.author!,
+            verifyingUser: verifier,
             verifiedMember: memberToVerify,
             lastfmUser: lastfmUser ?? null,
             discordAccountCreated: memberToVerify.user.createdTimestamp,

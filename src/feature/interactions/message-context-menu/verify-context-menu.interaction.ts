@@ -45,10 +45,7 @@ export class VerifyContextMenuInteraction implements IMessageContextMenuInteract
             return;
         }
         try {
-            result = await verifyCommand.run(interaction.targetMessage, [
-                interaction.targetMessage.author.id,
-                interaction.targetMessage.content,
-            ]);
+            result = await verifyCommand.runInteraction(interaction);
         } catch (e: unknown) {
             this.logger.error(`Failed to run interaction command '${verifyCommand?.name}'`, e);
             await this.commandService.handleCommandErrorForInteraction(
