@@ -111,7 +111,13 @@ export class LoggingService {
         );
 
         if (verification.lastfmUser) {
-            embeds.push(EmbedHelper.getLastFmUserEmbed(verification.lastfmUser));
+            embeds.push(
+                EmbedHelper.getLastFmUserEmbed(
+                    verification.lastfmUser,
+                    moment().diff(moment.unix(verification.lastfmUser.registered), 'days') <
+                        this.env.LASTFM_AGE_ALERT_IN_DAYS
+                )
+            );
         } else {
             embeds.push(new EmbedBuilder().setTitle('No Last.fm Account').setColor(EmbedHelper.blue));
         }
@@ -203,6 +209,22 @@ export class LoggingService {
             .setTitle(`⚠️ Last.fm Account Duplicate`)
             .setDescription(description)
             .setFooter({ text: `Please make sure they are not an alt account. When in doubt, ask staff!` });
+        logChannel.send({ embeds: [logEmbed] });
+    }
+
+    async logReturningUserNote(user: User, lastFmUsername: string, isUsingDifferentLastfm: boolean): Promise<void> {
+        const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
+        if (!logChannel) return;
+
+        let description =
+            `${TextHelper.userDisplay(user, false)} is a returning member.\n\n` +
+            `${bold(`Last.fm Link:`)} https://last.fm/user/${lastFmUsername}`;
+        if (isUsingDifferentLastfm) description += `(⚠️ verifying with different account)`;
+
+        const logEmbed = EmbedHelper.getLogEmbed(this.client.user, user, LogLevel.Info)
+            .setTitle(`ℹ️ Returning member`)
+            .setDescription(description)
+            .setFooter({ text: `Welcome back! 🎉` });
         logChannel.send({ embeds: [logEmbed] });
     }
 

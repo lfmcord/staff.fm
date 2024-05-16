@@ -199,6 +199,7 @@ export class VerifyCommand implements ICommand {
                 };
             }
             await message.react(TextHelper.loading);
+            this.logger.debug(`User has a playcount of ${lastfmUser.playcount}`);
             await this.assignScrobbleRoles(memberToVerify, lastfmUser.playcount);
         }
 

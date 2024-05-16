@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 import { TYPES } from '@src/types';
 import LastFM from 'lastfm-typed';
-import { inlineCode, italic, Message } from 'discord.js';
+import { GuildMember, inlineCode, italic, Message } from 'discord.js';
 import { TextHelper } from '@src/helpers/text.helper';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import * as moment from 'moment';
@@ -40,6 +40,7 @@ export class VerificationLastFmTrigger {
     }
 
     async run(message: Message) {
+        if (message.content.startsWith(this.env.PREFIX)) return;
         const lastFmUsername = TextHelper.getLastfmUsername(message.content);
 
         // check if username is flagged
@@ -71,22 +72,6 @@ export class VerificationLastFmTrigger {
         if (!lastFmUsername) return;
         this.logger.trace(lastFmUser.country);
 
-        // check for other members using this username
-        const usersWithSameLastFm = await this.usersRepository.getUsersByLastFmUsername(lastFmUsername);
-        if (usersWithSameLastFm.length > 0) {
-            this.logger.info(
-                `There are ${usersWithSameLastFm.length} other users with this lastfm username (${lastFmUsername}).`
-            );
-            const memberStrings: string[] = [];
-            for (const user of usersWithSameLastFm) {
-                // TODO: In case of returning user (same user + same lfm), log a "returning user" message
-                const member = await this.memberService.getGuildMemberFromUserId(user.userId);
-                if (member) memberStrings.push(`${inlineCode(member.user.username)} ${italic(`(ID ${user.userId})`)}`);
-                else memberStrings.push(`${inlineCode('unknown')} ${italic(`(ID ${user.userId}) - not in server`)}`);
-            }
-            await this.loggingService.logDuplicateLastFmUsername(message, memberStrings);
-        }
-
         // check for account age
         const accountAgeInDays = moment().diff(moment.unix(lastFmUser.registered), 'days');
         if (accountAgeInDays <= this.env.LASTFM_AGE_ALERT_IN_DAYS) {
@@ -98,5 +83,43 @@ export class VerificationLastFmTrigger {
         this.logger.debug(
             `Last.fm link in verification channel is not a new account (Age: ${accountAgeInDays}d, alert threshold: ${this.env.LASTFM_AGE_ALERT_IN_DAYS}d)`
         );
+
+        const usersWithSameLastFm = await Promise.all(
+            (await this.usersRepository.getUsersByLastFmUsername(lastFmUsername)).map(
+                async (user) => (await this.memberService.getGuildMemberFromUserId(user.userId)) ?? user.userId
+            )
+        );
+        const membersWithSameLastFm: GuildMember[] = usersWithSameLastFm.filter((m): m is GuildMember => m !== null);
+
+        // check if it's a returning user
+        if (membersWithSameLastFm.length === 1 && membersWithSameLastFm[0].user.id === message.author.id) {
+            const latestVerification = await this.usersRepository.getLatestVerificationOfUser(
+                membersWithSameLastFm[0].user.id
+            );
+            await this.loggingService.logReturningUserNote(
+                message.author,
+                lastFmUsername,
+                latestVerification?.username.toLowerCase() === lastFmUsername.toLowerCase()
+            );
+            return;
+        }
+
+        // log a warning if there's more than 1 other member that isn't a returning user
+        if (membersWithSameLastFm.length > 1 || membersWithSameLastFm[0].user.id != message.author.id) {
+            this.logger.info(
+                `There are ${usersWithSameLastFm.length} other users with this lastfm username (${lastFmUsername}).`
+            );
+            const memberStrings: string[] = [];
+            for (const memberOrId of usersWithSameLastFm) {
+                if (memberOrId instanceof String) {
+                    memberStrings.push(`${inlineCode('unknown')} ${italic(`(ID ${memberOrId}) - not in server`)}`);
+                    continue;
+                }
+                const member = memberOrId as GuildMember;
+                if (member.user.id === message.member?.user.id) continue;
+                memberStrings.push(`${inlineCode(member.user.username)} ${italic(`(ID ${member.user.id})`)}`);
+            }
+            await this.loggingService.logDuplicateLastFmUsername(message, memberStrings);
+        }
     }
 }
