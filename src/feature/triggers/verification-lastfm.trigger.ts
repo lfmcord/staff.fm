@@ -96,6 +96,9 @@ export class VerificationLastFmTrigger {
             const latestVerification = await this.usersRepository.getLatestVerificationOfUser(
                 membersWithSameLastFm[0].user.id
             );
+            this.logger.debug(
+                `Member ${TextHelper.userLog(membersWithSameLastFm[0].user)} is using last.fm account '${latestVerification?.username}'`
+            );
             await this.loggingService.logReturningUserNote(
                 message.author,
                 lastFmUsername,
