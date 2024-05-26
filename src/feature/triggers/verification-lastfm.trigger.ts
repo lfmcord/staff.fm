@@ -92,12 +92,11 @@ export class VerificationLastFmTrigger {
         const membersWithSameLastFm: GuildMember[] = usersWithSameLastFm.filter((m): m is GuildMember => m !== null);
 
         // check if it's a returning user
-        if (membersWithSameLastFm.length === 1 && membersWithSameLastFm[0].user.id === message.author.id) {
-            const latestVerification = await this.usersRepository.getLatestVerificationOfUser(
-                membersWithSameLastFm[0].user.id
-            );
+        const returningUser = membersWithSameLastFm.find((m) => m.user.id === message.author.id);
+        if (returningUser) {
+            const latestVerification = await this.usersRepository.getLatestVerificationOfUser(returningUser.user.id);
             this.logger.debug(
-                `Member ${TextHelper.userLog(membersWithSameLastFm[0].user)} is using last.fm account '${lastFmUsername}' vs lastfm username in database '${latestVerification?.username}'`
+                `Member ${TextHelper.userLog(returningUser.user)} is using last.fm account '${lastFmUsername}' vs lastfm username in database '${latestVerification?.username}'`
             );
             await this.loggingService.logReturningUserNote(
                 message.author,
