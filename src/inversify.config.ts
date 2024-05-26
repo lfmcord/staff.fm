@@ -66,6 +66,7 @@ import { ApiRouter } from '@src/api/api-router';
 import { UserController } from '@src/api/user.controller';
 import { IApiRouter } from '@src/api/abstraction/api-router.interface';
 import { MessageUpdateHandler } from '@src/handlers/message-update.handler';
+import { MessageBulkDeleteHandler } from '@src/handlers/message-bulk-delete.handler';
 
 const container = new Container();
 
@@ -186,6 +187,7 @@ container.bind<IHandler>('Handler').to(InteractionCreateHandler);
 container.bind<IHandler>('Handler').to(GuildBanAddHandler);
 container.bind<IHandler>('Handler').to(GuildBanRemoveHandler);
 container.bind<IHandler>('Handler').to(MessageUpdateHandler);
+container.bind<IHandler>('Handler').to(MessageBulkDeleteHandler);
 
 // COMMANDS
 container.bind<ICommand>('Command').to(PingCommand);

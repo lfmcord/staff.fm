@@ -124,7 +124,7 @@ export class StaffMailCloseCommand implements ICommand {
         messages.sort((a, b) => (a.createdTimestamp > b.createdTimestamp ? 0 : -1));
         let protocol = '';
         messages.forEach((message) => {
-            let sender = `${message.author.username} | ${message.author.id}`;
+            let sender = `${message.author.username} (ID ${message.author.id})`;
             let recipient = '';
             if (message.author.bot && message.embeds.length > 0) {
                 if (message.embeds[message.embeds.length - 1].title?.startsWith('📥')) {
@@ -132,7 +132,7 @@ export class StaffMailCloseCommand implements ICommand {
                     recipient = 'Staff';
                 } else {
                     sender = message.embeds[message.embeds.length - 1].footer?.text ?? '???';
-                    recipient = user ? `${user.username} | (${user.id})` : `Anonymous User`;
+                    recipient = user ? `${user.username} (ID ${user.id})` : `Anonymous User`;
                 }
             }
             let content = message.content;

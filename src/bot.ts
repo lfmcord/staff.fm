@@ -3,9 +3,11 @@ import { Logger } from 'tslog';
 import {
     ActivityType,
     Client,
+    Collection,
     Events,
     GuildBan,
     GuildMember,
+    GuildTextBasedChannel,
     Interaction,
     InteractionType,
     Message,
@@ -96,6 +98,17 @@ export class Bot {
                 this.logger.fatal(`Unhandled exception while trying to handle Message Delete`, e);
             }
         });
+
+        this.client.on(
+            Events.MessageBulkDelete,
+            async (messages: Collection<string, Message | PartialMessage>, channel: GuildTextBasedChannel) => {
+                try {
+                    await this.handlerFactory.createHandler(Events.MessageBulkDelete).handle({ messages, channel });
+                } catch (e) {
+                    this.logger.fatal(`Unhandled exception while trying to handle Message Bulk Delete`, e);
+                }
+            }
+        );
 
         this.client.on('guildMemberAdd', async (member: GuildMember) => {
             this.logger.info(`Guild Member ${TextHelper.userLog(member.user)} joined.`);

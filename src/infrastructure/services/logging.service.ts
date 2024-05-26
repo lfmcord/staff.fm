@@ -68,6 +68,29 @@ export class LoggingService {
         await logChannel.send({ embeds: [logEmbed], files: deletedMessage.attachments });
     }
 
+    public async logBulkDelete(
+        deletedMessageCount: number,
+        channelId: string,
+        actor: GuildMember | null,
+        attachment: AttachmentBuilder
+    ) {
+        const logChannel = await this.getLogChannel(this.env.DELETED_MESSAGE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const logEmbed = new EmbedBuilder()
+            .setColor(EmbedHelper.red)
+            .setFooter({ text: `Channel ID: ${channelId}` })
+            .setTimestamp();
+
+        let description = `🗑️ Bulk deleted ${deletedMessageCount} messages `;
+        if (actor) description += `by ${TextHelper.userDisplay(actor?.user, false)} `;
+        description += `in <#${channelId}>`;
+
+        logEmbed.setDescription(description);
+
+        await logChannel.send({ embeds: [logEmbed], files: [attachment] });
+    }
+
     public async logSelfmute(selfMute: SelfMute, muteDuration?: string) {
         const logChannel = await this.getLogChannel(this.env.SELFMUTE_LOG_CHANNEL_ID);
         if (!logChannel) return;
