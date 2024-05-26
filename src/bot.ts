@@ -132,6 +132,18 @@ export class Bot {
             }
         });
 
+        this.client.on(
+            Events.MessageUpdate,
+            async (oldMessage: Message | PartialMessage, newMessage: Message | PartialMessage) => {
+                this.logger.debug(`New edited message with ID ${newMessage.id}.`);
+                try {
+                    await this.handlerFactory.createHandler(Events.MessageUpdate).handle({ oldMessage, newMessage });
+                } catch (e) {
+                    this.logger.fatal(`Unhandled exception while trying to handle Message Update`, e);
+                }
+            }
+        );
+
         this.client.on('ready', async () => {
             try {
                 await this.handlerFactory.createHandler('ready').handle(null);

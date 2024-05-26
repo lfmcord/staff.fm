@@ -133,3 +133,6 @@ dist
 
 # JetBrains
 .idea
+
+*.sqlite
+*.env
