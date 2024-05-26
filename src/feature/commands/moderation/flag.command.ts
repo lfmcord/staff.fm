@@ -7,6 +7,8 @@ import { ValidationError } from '@src/feature/commands/models/validation-error.m
 import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
 import { TYPES } from '@src/types';
 import * as moment from 'moment';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { Flag } from '@src/feature/commands/moderation/models/flag.model';
 
 @injectable()
 export class FlagCommand implements ICommand {
@@ -19,31 +21,42 @@ export class FlagCommand implements ICommand {
     aliases = [];
     isUsableInDms = false;
     isUsableInServer = true;
+    loggingService: LoggingService;
 
     private flagsRepository: FlagsRepository;
 
-    constructor(@inject(TYPES.FlagsRepository) flagsRepository: FlagsRepository) {
+    constructor(
+        @inject(TYPES.FlagsRepository) flagsRepository: FlagsRepository,
+        @inject(TYPES.LoggingService) loggingService: LoggingService
+    ) {
+        this.loggingService = loggingService;
         this.flagsRepository = flagsRepository;
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
-        const term = args[0].toLowerCase();
-        const reason = args.slice(1).join(' ');
+        const flag: Flag = {
+            term: args[0].toLowerCase(),
+            reason: args.slice(1).join(' '),
+            createdById: message.author.id,
+            createdAt: moment.utc().toDate(),
+        };
 
-        const flag = await this.flagsRepository.getFlagByTerm(term);
-        if (flag) {
+        const existingFlag = await this.flagsRepository.getFlagByTerm(flag.term);
+        if (existingFlag) {
             return {
                 isSuccessful: false,
-                reason: `Flag for term ${term} already exists in database.`,
-                replyToUser: `${inlineCode(term)} is already on the list of flagged terms!\nReason: '${flag.reason}' (created <t:${moment(flag.createdAt).unix()}:D> by <@!${flag.createdById}>)`,
+                reason: `Flag for term ${flag.term} already exists in database.`,
+                replyToUser: `${inlineCode(flag.term)} is already on the list of flagged terms!\nReason: '${flag.reason}' (created <t:${moment(flag.createdAt).unix()}:D> by <@!${flag.createdById}>)`,
             };
         }
 
-        await this.flagsRepository.addFlag(term, reason, message.author!);
+        await this.flagsRepository.addFlag(flag);
+
+        await this.loggingService.logFlag(flag);
 
         return {
             isSuccessful: true,
-            replyToUser: `I've successfully added ${inlineCode(term)} to the list of flagged terms.`,
+            replyToUser: `I've successfully added ${inlineCode(flag.term)} to the list of flagged terms.`,
         };
     }
 

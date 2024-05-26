@@ -65,6 +65,7 @@ import { CommandService } from '@src/infrastructure/services/command.service';
 import { ApiRouter } from '@src/api/api-router';
 import { UserController } from '@src/api/user.controller';
 import { IApiRouter } from '@src/api/abstraction/api-router.interface';
+import { MessageUpdateHandler } from '@src/handlers/message-update.handler';
 
 const container = new Container();
 
@@ -184,6 +185,7 @@ container.bind<IHandler>('Handler').to(MessageDeleteHandler);
 container.bind<IHandler>('Handler').to(InteractionCreateHandler);
 container.bind<IHandler>('Handler').to(GuildBanAddHandler);
 container.bind<IHandler>('Handler').to(GuildBanRemoveHandler);
+container.bind<IHandler>('Handler').to(MessageUpdateHandler);
 
 // COMMANDS
 container.bind<ICommand>('Command').to(PingCommand);

@@ -23,8 +23,8 @@ import { Verification } from '@src/feature/commands/utility/models/verification.
 import { TextHelper } from '@src/helpers/text.helper';
 import { Environment } from '@models/environment';
 import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
-import moment = require('moment');
 import { Flag } from '@src/feature/commands/moderation/models/flag.model';
+import moment = require('moment');
 
 @injectable()
 export class LoggingService {
@@ -225,6 +225,18 @@ export class LoggingService {
             .setTitle(`ℹ️ Returning member`)
             .setDescription(description)
             .setFooter({ text: `Welcome back! 🎉` });
+        logChannel.send({ embeds: [logEmbed] });
+    }
+
+    async logFlag(flag: Flag, isUnflag: boolean = false) {
+        const logChannel = await this.getLogChannel(this.env.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const logEmbed = EmbedHelper.getLogEmbed(null, null, isUnflag ? LogLevel.Info : LogLevel.Warning)
+            .setTitle(`🚩 Flag ${isUnflag ? `removed` : `added`}`)
+            .setDescription(
+                `${bold(`Term:`)} ${inlineCode(flag.term)}\n${bold(`Reason:`)} ${flag.reason}\n${bold(`${isUnflag ? `Unflagged` : `Flagged`} by:`)} <@${flag.createdById}>`
+            );
         logChannel.send({ embeds: [logEmbed] });
     }
 

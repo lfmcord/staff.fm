@@ -1,9 +1,7 @@
 import { model, Schema } from 'mongoose';
-import { User } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { MemberService } from '@src/infrastructure/services/member.service';
-import * as moment from 'moment';
 import { Flag } from '@src/feature/commands/moderation/models/flag.model';
 
 @injectable()
@@ -12,12 +10,12 @@ export class FlagsRepository {
     constructor(@inject(TYPES.MemberService) memberService: MemberService) {
         this.memberService = memberService;
     }
-    public async addFlag(term: string, reason: string, author: User) {
+    public async addFlag(flag: Flag) {
         const flagsInstance = new FlagsModelInstance({
-            term: term,
-            reason: reason,
-            createdAt: moment.utc().toDate(),
-            createdById: author.id,
+            term: flag.term,
+            reason: flag.reason,
+            createdAt: flag.createdAt,
+            createdById: flag.createdById,
         });
         await flagsInstance.save();
     }
@@ -39,6 +37,10 @@ export class FlagsRepository {
 
     public async getAllFlags() {
         return await FlagsModelInstance.find().exec();
+    }
+
+    public async getFlagsByTerms(terms: string[]) {
+        return await FlagsModelInstance.find({ term: { $in: terms } }).exec();
     }
 }
 

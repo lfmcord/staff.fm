@@ -7,30 +7,49 @@ import { FlagsRepository } from '@src/infrastructure/repositories/flags.reposito
 import { TYPES } from '@src/types';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { TextHelper } from '@src/helpers/text.helper';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
 
 @injectable()
 export class UnflagCommand implements ICommand {
     name: string = 'unflag';
-    description: string = 'Deletes a flagged term.';
+    description: string = 'Deletes one or multiple flagged terms. Separate flags to delete with a space.';
     usageHint: string = '';
     examples: string[] = [];
     permissionLevel = CommandPermissionLevel.Moderator;
     aliases = ['deleteflag', 'removeflag'];
     isUsableInDms = false;
     isUsableInServer = true;
+    loggingService: LoggingService;
 
     private flagsRepository: FlagsRepository;
 
-    constructor(@inject(TYPES.FlagsRepository) flagsRepository: FlagsRepository) {
+    constructor(
+        @inject(TYPES.FlagsRepository) flagsRepository: FlagsRepository,
+        @inject(TYPES.LoggingService) loggingService: LoggingService
+    ) {
+        this.loggingService = loggingService;
         this.flagsRepository = flagsRepository;
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
-        const deletedCount = await this.flagsRepository.deleteFlagsByTerms(args);
+        const entriesToDelete = await this.flagsRepository.getFlagsByTerms(args);
+
+        if (entriesToDelete.length === 0) {
+            return {
+                isSuccessful: false,
+                replyToUser: `None of the terms you gave me are flagged.`,
+            };
+        }
+
+        await this.flagsRepository.deleteFlagsByTerms(args);
+
+        for (const entry of entriesToDelete) {
+            await this.loggingService.logFlag(entry, true);
+        }
 
         return {
             isSuccessful: true,
-            replyToUser: `I've removed ${deletedCount} ${TextHelper.pluralize('flag', deletedCount)}.`,
+            replyToUser: `I've removed the following ${TextHelper.pluralize('flag', entriesToDelete.length)}: ${entriesToDelete.toString()}.`,
         };
     }
 

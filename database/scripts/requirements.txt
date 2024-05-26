@@ -1,2 +1,2 @@
-sqlite3
-pymongo[srv]
+dateutil==2.9.0
+pymongo==4.7.1

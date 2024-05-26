@@ -83,6 +83,8 @@ export class OkBuddyCommand implements ICommand {
         context.textBaseline = 'middle';
         text = TextHelper.wordWrap(text);
 
+        // TODO: Text is currently not rendered
+
         const lines = text.split('\n');
         for (let i = 0; i < lines.length; i++) {
             if (i >= 12) break;

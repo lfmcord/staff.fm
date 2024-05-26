@@ -7,11 +7,15 @@ import { Environment } from '@models/environment';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
 import { TextHelper } from '@src/helpers/text.helper';
+import moment = require('moment');
+import { Flag } from '@src/feature/commands/moderation/models/flag.model';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
 
 @injectable()
 export class GuildBanAddHandler implements IHandler {
     eventType = Events.GuildBanAdd;
     private readonly logger: Logger<GuildBanAddHandler>;
+    loggingService: LoggingService;
     client: Client;
     flagsRepository: FlagsRepository;
     usersRepository: UsersRepository;
@@ -22,8 +26,10 @@ export class GuildBanAddHandler implements IHandler {
         @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
         @inject(TYPES.FlagsRepository) flagsRepository: FlagsRepository,
+        @inject(TYPES.LoggingService) loggingService: LoggingService,
         @inject(TYPES.Client) client: Client
     ) {
+        this.loggingService = loggingService;
         this.client = client;
         this.flagsRepository = flagsRepository;
         this.usersRepository = usersRepository;
@@ -39,8 +45,8 @@ export class GuildBanAddHandler implements IHandler {
         }
 
         for (const verification of user.verifications) {
-            const flag = await this.flagsRepository.getFlagByTerm(verification.username);
-            if (flag) {
+            const existingFlag = await this.flagsRepository.getFlagByTerm(verification.username);
+            if (existingFlag) {
                 this.logger.info(`Last.fm username ${verification.username} is already flagged.`);
                 continue;
             }
@@ -49,7 +55,16 @@ export class GuildBanAddHandler implements IHandler {
                 `Flagging username '${verification.username}' of banned user ${TextHelper.userLog(ban.user)}`
             );
 
-            await this.flagsRepository.addFlag(verification.username, 'Ban evasion', this.client.user!);
+            const flag: Flag = {
+                term: verification.username.toLowerCase(),
+                reason: 'Ban evasion',
+                createdAt: moment.utc().toDate(),
+                createdById: this.client.user!.id,
+            };
+
+            await this.flagsRepository.addFlag(flag);
+
+            await this.loggingService.logFlag(flag);
         }
     }
 }
