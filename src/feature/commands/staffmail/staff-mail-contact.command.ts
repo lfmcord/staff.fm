@@ -24,6 +24,7 @@ import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-
 import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { Environment } from '@models/environment';
 
 @injectable()
 export class StaffMailContactCommand implements ICommand {
@@ -37,6 +38,7 @@ export class StaffMailContactCommand implements ICommand {
     isUsableInServer = true;
 
     private logger: Logger<StaffMailContactCommand>;
+    environment: Environment;
     loggingService: LoggingService;
     channelService: ChannelService;
     staffMailRepository: StaffMailRepository;
@@ -47,8 +49,10 @@ export class StaffMailContactCommand implements ICommand {
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository,
         @inject(TYPES.ChannelService) channelService: ChannelService,
-        @inject(TYPES.LoggingService) loggingService: LoggingService
+        @inject(TYPES.LoggingService) loggingService: LoggingService,
+        @inject(TYPES.ENVIRONMENT) environment: Environment
     ) {
+        this.environment = environment;
         this.loggingService = loggingService;
         this.channelService = channelService;
         this.staffMailRepository = staffMailRepository;
@@ -141,7 +145,8 @@ export class StaffMailContactCommand implements ICommand {
                     member.user,
                     message.author,
                     StaffMailType.Staff,
-                    'Manually contacted member'
+                    'Manually contacted member',
+                    this.environment.PREFIX
                 ),
                 EmbedHelper.getStaffMailStaffViewOutgoingEmbed(
                     message.author,

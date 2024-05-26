@@ -76,7 +76,8 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
                 isAnonymous ? null : interaction.user,
                 isAnonymous ? null : interaction.user,
                 category,
-                summary
+                summary,
+                this.env.PREFIX
             )
         );
         if (!isAnonymous)

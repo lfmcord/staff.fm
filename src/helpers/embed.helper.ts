@@ -105,9 +105,14 @@ export class EmbedHelper {
         user: User | null,
         createdBy: User | null,
         category: string,
-        summary: string | null
+        summary: string | null,
+        prefix: string = '>>'
     ): EmbedBuilder {
-        const description = `\`reply\` to reply to the user with your name\n\`areply\` to reply to the user anonymously\n\`close [reason]\` to close the staff mail with an optional reason sent to the user.\n`;
+        const description =
+            `${inlineCode(prefix + 'reply [message]')} to reply to the user with your name\n` +
+            `${inlineCode(prefix + 'areply [message]')} to reply to the user anonymously\n` +
+            `${inlineCode(prefix + 'close [reason]')} to close the staff mail with an optional reason sent to the user.\n` +
+            `${inlineCode(prefix + 'silentclose [reason]')} to close the staff mail with an optional reason without notifying the user of the closing.`;
         const fields = [{ name: 'Category', value: EmbedHelper.getHumanReadableStaffMailType(category), inline: true }];
         if (summary) fields.push({ name: 'Summary', value: summary, inline: true });
         fields.push(
