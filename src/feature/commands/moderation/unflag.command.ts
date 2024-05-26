@@ -1,6 +1,6 @@
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { Message } from 'discord.js';
+import { inlineCode, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
@@ -49,7 +49,7 @@ export class UnflagCommand implements ICommand {
 
         return {
             isSuccessful: true,
-            replyToUser: `I've removed the following ${TextHelper.pluralize('flag', entriesToDelete.length)}: ${entriesToDelete.toString()}.`,
+            replyToUser: `I've removed the following ${TextHelper.pluralize('flag', entriesToDelete.length)}: ${entriesToDelete.map((s) => inlineCode(s.term)).join(', ')}.`,
         };
     }
 

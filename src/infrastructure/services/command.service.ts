@@ -95,6 +95,8 @@ export class CommandService {
             if (interaction.deferred)
                 interaction.editReply({
                     content: result.replyToUser ? result.replyToUser : `Done! 🫡`,
+                    embeds: [],
+                    components: [],
                 });
             else
                 interaction.reply({

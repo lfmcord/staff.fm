@@ -118,7 +118,7 @@ export class VerificationLastFmTrigger {
                     memberStrings.push(`${inlineCode('unknown')} ${italic(`(ID ${memberOrId}) - not in server`)}`);
                 } else if (memberOrId instanceof GuildMember) {
                     this.logger.debug(`${memberOrId?.user?.id} is in guild.`);
-                    if (memberOrId.user.id === message.member?.user.id) continue;
+                    if (memberOrId && memberOrId.user.id === message.member?.user.id) continue;
                     memberStrings.push(
                         `${inlineCode(memberOrId.user.username)} ${italic(`(ID ${memberOrId.user.id})`)}`
                     );

@@ -75,7 +75,10 @@ export class Bot {
             try {
                 await this.handlerFactory.createHandler('messageCreate').handle(message);
             } catch (e) {
-                this.logger.fatal(`Unhandled exception while trying to handle Message Create`, e);
+                this.logger.fatal(
+                    `Unhandled exception while trying to handle Message Create on message with ID ${message.id} ("${message.content.substring(0, 50)}") by author ${message.author?.username}`,
+                    e
+                );
             }
         });
 
