@@ -91,6 +91,10 @@ export class VerificationLastFmTrigger {
         );
         const membersWithSameLastFm: GuildMember[] = usersWithSameLastFm.filter((m): m is GuildMember => m !== null);
         this.logger.debug(`${membersWithSameLastFm.length} other guild members with this account.`);
+        if (membersWithSameLastFm.length === 0) {
+            this.logger.info(`No other members for username '${lastFmUsername}'`);
+            return;
+        }
 
         // check if it's a returning user
         const returningUser = membersWithSameLastFm.find((m) => m.user.id === message.author.id);
