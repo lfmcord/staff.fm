@@ -9,6 +9,7 @@ import { TYPES } from '@src/types';
 import * as moment from 'moment';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Flag } from '@src/feature/commands/moderation/models/flag.model';
+import { TextHelper } from '@src/helpers/text.helper';
 
 @injectable()
 export class FlagCommand implements ICommand {
@@ -37,7 +38,7 @@ export class FlagCommand implements ICommand {
         const flag: Flag = {
             term: args[0].toLowerCase(),
             reason: args.slice(1).join(' '),
-            createdById: message.author.id,
+            createdBy: message.author,
             createdAt: moment.utc().toDate(),
         };
 
@@ -46,7 +47,7 @@ export class FlagCommand implements ICommand {
             return {
                 isSuccessful: false,
                 reason: `Flag for term ${flag.term} already exists in database.`,
-                replyToUser: `${inlineCode(flag.term)} is already on the list of flagged terms!\nReason: '${flag.reason}' (created <t:${moment(flag.createdAt).unix()}:D> by <@!${flag.createdById}>)`,
+                replyToUser: `${inlineCode(flag.term)} is already on the list of flagged terms!\nReason: '${flag.reason}' (created <t:${moment(flag.createdAt).unix()}:D> by ${TextHelper.userDisplay(flag.createdBy)})`,
             };
         }
 

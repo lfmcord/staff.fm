@@ -152,6 +152,7 @@ export class Bot {
             Events.MessageUpdate,
             async (oldMessage: Message | PartialMessage, newMessage: Message | PartialMessage) => {
                 this.logger.debug(`New edited message with ID ${newMessage.id}.`);
+                if (oldMessage == newMessage) return;
                 try {
                     await this.handlerFactory.createHandler(Events.MessageUpdate).handle({ oldMessage, newMessage });
                 } catch (e) {

@@ -90,10 +90,11 @@ export class VerificationLastFmTrigger {
             )
         );
         const membersWithSameLastFm: GuildMember[] = usersWithSameLastFm.filter((m): m is GuildMember => m !== null);
+        this.logger.debug(`${membersWithSameLastFm.length} other guild members with this account.`);
 
         // check if it's a returning user
         const returningUser = membersWithSameLastFm.find((m) => m.user.id === message.author.id);
-        if (returningUser) {
+        if (returningUser && membersWithSameLastFm.length === 1) {
             const latestVerification = await this.usersRepository.getLatestVerificationOfUser(returningUser.user.id);
             this.logger.debug(
                 `Member ${TextHelper.userLog(returningUser.user)} is using last.fm account '${lastFmUsername}' vs lastfm username in database '${latestVerification?.username}'`
@@ -107,24 +108,20 @@ export class VerificationLastFmTrigger {
         }
 
         // log a warning if there's more than 1 other member that isn't a returning user
-        if (membersWithSameLastFm.length > 1 || membersWithSameLastFm[0].user.id != message.author.id) {
-            this.logger.info(
-                `There are ${usersWithSameLastFm.length} other users with this lastfm username (${lastFmUsername}).`
-            );
-            const memberStrings: string[] = [];
-            for (const memberOrId of usersWithSameLastFm) {
-                if (memberOrId instanceof String) {
-                    this.logger.debug(`${memberOrId} is not in guild.`);
-                    memberStrings.push(`${inlineCode('unknown')} ${italic(`(ID ${memberOrId}) - not in server`)}`);
-                } else if (memberOrId instanceof GuildMember) {
-                    this.logger.debug(`${memberOrId?.user?.id} is in guild.`);
-                    if (memberOrId && memberOrId.user.id === message.member?.user.id) continue;
-                    memberStrings.push(
-                        `${inlineCode(memberOrId.user.username)} ${italic(`(ID ${memberOrId.user.id})`)}`
-                    );
-                }
+        this.logger.info(
+            `There are ${usersWithSameLastFm.length} other users with this lastfm username (${lastFmUsername}).`
+        );
+        const memberStrings: string[] = [];
+        for (const memberOrId of usersWithSameLastFm) {
+            if (memberOrId instanceof String) {
+                this.logger.debug(`${memberOrId} is not in guild.`);
+                memberStrings.push(`${inlineCode('unknown')} ${italic(`(ID ${memberOrId}) - not in server`)}`);
+            } else if (memberOrId instanceof GuildMember) {
+                this.logger.debug(`${memberOrId?.user?.id} is in guild.`);
+                if (memberOrId && memberOrId.user.id === message.member?.user.id) continue;
+                memberStrings.push(`${TextHelper.userDisplay(memberOrId.user)}`);
             }
-            await this.loggingService.logDuplicateLastFmUsername(message, memberStrings);
         }
+        await this.loggingService.logDuplicateLastFmUsername(message, memberStrings);
     }
 }

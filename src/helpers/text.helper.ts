@@ -13,11 +13,13 @@ export class TextHelper {
         return `${user.username} (ID ${user.id})`;
     }
 
-    static userDisplay(user: User | null | undefined, useMention = true): string {
+    static userDisplay(user: User | string | null | undefined, useMention = true): string {
         if (!user) return `${inlineCode('unknown')} ${italic(`(ID Not Found)`)}`;
-        return useMention
-            ? `<@!${user.id}> (ID ${user.id})`
-            : `${inlineCode(user.username)} ${italic(`(ID ${user.id})`)}`;
+        if (user instanceof User)
+            return useMention
+                ? `<@!${user.id}> ${inlineCode(user.username)} (ID ${user.id})`
+                : `${inlineCode(user.username)} ${italic(`(ID ${user.id})`)}`;
+        return `${inlineCode('unknown')} ${italic(`(ID ${user})`)}`;
     }
 
     static wordWrap(text: string): string {

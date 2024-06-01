@@ -23,8 +23,12 @@ export class MessageUpdateHandler implements IHandler {
         this.verificationLastFmTrigger = verificationLastFmTrigger;
     }
     async handle(message: { oldMessage: Message | PartialMessage; newMessage: Message | PartialMessage }) {
+        if (message.oldMessage.author?.bot) return;
         const isVerification = message.newMessage.channelId === this.env.VERIFICATION_CHANNEL_ID;
         if (isVerification) await this.verificationLastFmTrigger.run(message.newMessage as Message);
-        this.logger.debug(`Edited message with ID ${message.newMessage.id} was not in verification channel. Ignoring.`);
+        else
+            this.logger.debug(
+                `Edited message with ID ${message.newMessage.id} was not in verification channel. Ignoring.`
+            );
     }
 }

@@ -3,6 +3,7 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { Flag } from '@src/feature/commands/moderation/models/flag.model';
+import { User } from 'discord.js';
 
 @injectable()
 export class FlagsRepository {
@@ -15,7 +16,7 @@ export class FlagsRepository {
             term: flag.term,
             reason: flag.reason,
             createdAt: flag.createdAt,
-            createdById: flag.createdById,
+            createdById: flag.createdBy instanceof User ? flag.createdBy.id : flag.createdBy,
         });
         await flagsInstance.save();
     }
@@ -31,16 +32,38 @@ export class FlagsRepository {
             term: flag.term,
             reason: flag.reason,
             createdAt: flag.createdAt,
-            createdById: flag.createdById,
+            createdBy: (await this.memberService.getGuildMemberFromUserId(flag.createdById))?.user ?? flag.createdById,
         };
     }
 
-    public async getAllFlags() {
-        return await FlagsModelInstance.find().exec();
+    public async getAllFlags(): Promise<Flag[]> {
+        const flags = await FlagsModelInstance.find().exec();
+        return await Promise.all(
+            flags.map(async (flag) => {
+                return {
+                    term: flag.term,
+                    reason: flag.reason,
+                    createdAt: flag.createdAt,
+                    createdBy:
+                        (await this.memberService.getGuildMemberFromUserId(flag.createdById))?.user ?? flag.createdById,
+                };
+            })
+        );
     }
 
-    public async getFlagsByTerms(terms: string[]) {
-        return await FlagsModelInstance.find({ term: { $in: terms } }).exec();
+    public async getFlagsByTerms(terms: string[]): Promise<Flag[]> {
+        const entries = await FlagsModelInstance.find({ term: { $in: terms } }).exec();
+        return await Promise.all(
+            entries.map(async (e) => {
+                return {
+                    term: e.term,
+                    reason: e.reason,
+                    createdAt: e.createdAt,
+                    createdBy:
+                        (await this.memberService.getGuildMemberFromUserId(e.createdById))?.user ?? e.createdById,
+                };
+            })
+        );
     }
 }
 

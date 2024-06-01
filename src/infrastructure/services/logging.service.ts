@@ -222,7 +222,7 @@ export class LoggingService {
         if (!logChannel) return;
 
         let description =
-            `${TextHelper.userDisplay(message.author, false)} is trying to verify with a Last.fm account that is already verified and tied to a different account.\n\n` +
+            `${TextHelper.userDisplay(message.author, true)} is trying to verify with a Last.fm account that is already verified and tied to a different account.\n\n` +
             `${bold(`Last.fm Link: `)} https://last.fm/user/${TextHelper.getLastfmUsername(message.content)}\n` +
             `${bold(`Other users using this last.fm username:`)}\n`;
 
@@ -240,7 +240,7 @@ export class LoggingService {
         if (!logChannel) return;
 
         let description =
-            `${TextHelper.userDisplay(user, false)} is a returning member.\n\n` +
+            `${TextHelper.userDisplay(user, true)} is a returning member.\n\n` +
             `${bold(`Last.fm Link:`)} https://last.fm/user/${lastFmUsername}`;
         if (isUsingDifferentLastfm) description += ` (⚠️ verifying with different account)`;
 
@@ -255,12 +255,16 @@ export class LoggingService {
         const logChannel = await this.getLogChannel(this.env.SELFMUTE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
-        const logEmbed = EmbedHelper.getLogEmbed(null, null, isUnflag ? LogLevel.Info : LogLevel.Warning)
-            .setTitle(`🚩 Flag ${isUnflag ? `removed` : `added`}`)
-            .setDescription(
-                `${bold(`Term:`)} ${inlineCode(flag.term)}\n${bold(`Reason:`)} ${flag.reason}\n${bold(`${isUnflag ? `Unflagged` : `Flagged`} by:`)} <@${flag.createdById}>`
-            );
-        logChannel.send({ embeds: [logEmbed] });
+        let description = isUnflag
+            ? `🚩 ${bold('Removed flag')} ${inlineCode(flag.term)}\n`
+            : `🚩 ${bold('Added flag')} ${inlineCode(flag.term)}\n`;
+        if (!isUnflag) description += `📝 ${bold('Reason:')} ${flag.reason}`;
+        const embed = EmbedHelper.getLogEmbed(
+            flag.createdBy instanceof User ? flag.createdBy : null,
+            null,
+            isUnflag ? LogLevel.Info : LogLevel.Warning
+        ).setDescription(description);
+        await logChannel.send({ embeds: [embed] });
     }
 
     private async getLogChannel(channelId: string): Promise<GuildTextBasedChannel | null> {

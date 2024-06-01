@@ -7,6 +7,7 @@ import { FlagsRepository } from '@src/infrastructure/repositories/flags.reposito
 import { TYPES } from '@src/types';
 import * as moment from 'moment';
 import { EmbedHelper } from '@src/helpers/embed.helper';
+import { TextHelper } from '@src/helpers/text.helper';
 
 @injectable()
 export class FlagsCommand implements ICommand {
@@ -38,7 +39,7 @@ export class FlagsCommand implements ICommand {
         let content = '';
         let i = 1;
         for (const flag of flags) {
-            const newLine = `${i}. ${inlineCode(flag.term)}: ${flag.reason} (created <t:${moment(flag.createdAt).unix()}:D> by <@!${flag.createdById}>)\n`;
+            const newLine = `${i}. ${inlineCode(flag.term)}: ${flag.reason} (created <t:${moment(flag.createdAt).unix()}:D> by ${TextHelper.userDisplay(flag.createdBy)}\n`;
             if (content.length + newLine.length >= 4096) {
                 await message.channel.send({
                     embeds: [new EmbedBuilder().setDescription(content).setColor(EmbedHelper.blue)],

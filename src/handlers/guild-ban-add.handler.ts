@@ -59,7 +59,7 @@ export class GuildBanAddHandler implements IHandler {
                 term: verification.username.toLowerCase(),
                 reason: 'Ban evasion',
                 createdAt: moment.utc().toDate(),
-                createdById: this.client.user!.id,
+                createdBy: this.client.user!,
             };
 
             await this.flagsRepository.addFlag(flag);
