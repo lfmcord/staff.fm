@@ -67,6 +67,8 @@ import { UserController } from '@src/api/user.controller';
 import { IApiRouter } from '@src/api/abstraction/api-router.interface';
 import { MessageUpdateHandler } from '@src/handlers/message-update.handler';
 import { MessageBulkDeleteHandler } from '@src/handlers/message-bulk-delete.handler';
+import { StaffMailReportCommand } from '@src/feature/commands/staffmail/staff-mail-report.command';
+import { StaffMailReportInteraction } from '@src/feature/interactions/message-context-menu/staff-mail-report.interaction';
 
 const container = new Container();
 
@@ -206,6 +208,7 @@ container.bind<ICommand>('Command').to(FlagCommand);
 container.bind<ICommand>('Command').to(FlagsCommand);
 container.bind<ICommand>('Command').to(UnflagCommand);
 container.bind<ICommand>('Command').to(WhoisCommand);
+container.bind<ICommand>('Command').to(StaffMailReportCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
@@ -219,6 +222,7 @@ container
     .to(StaffMailCreateUrgentReportButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateModalShowInteraction);
 container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(VerifyContextMenuInteraction);
+container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(StaffMailReportInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);

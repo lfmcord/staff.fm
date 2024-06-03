@@ -26,8 +26,8 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
         StaffMailCustomIds.LastfmSendButton + '-submit',
         StaffMailCustomIds.OtherSendButton + '-submit',
         StaffMailCustomIds.OtherSendAnonButton + '-submit',
-        StaffMailCustomIds.UrgentReportSendButton + '-submit',
-        StaffMailCustomIds.UrgentReportSendAnonButton + '-submit',
+        StaffMailCustomIds.InServerReportSendAnonButton + '-submit',
+        StaffMailCustomIds.InServerReportSendButton + '-submit',
     ];
     logger: Logger<StaffMailCreateModalSubmitInteraction>;
     loggingService: LoggingService;
@@ -47,6 +47,10 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
     }
 
     async manage(interaction: ModalSubmitInteraction) {
+        if (!interaction.deferred)
+            await interaction.deferReply({
+                ephemeral: true,
+            });
         this.logger.debug(`Compiling information to create staff mail from customId ${interaction.customId}`);
         const isCrownsModal = interaction.customId.includes('crowns');
         const isUrgent = interaction.customId.includes('urgent');
@@ -87,26 +91,34 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
                 ).getEmbedsByDiscordUserId(interaction.user.id)
             ).forEach((e) => embeds.push(e));
 
-        embeds.push(EmbedHelper.getStaffMailStaffViewIncomingEmbed(isAnonymous ? null : interaction.user, text));
+        embeds.push();
         await staffMailChannel!.send({
-            content: `${rolePings}New StaffMail: ${humanReadableCategory}`,
+            content: `${rolePings} New StaffMail: ${humanReadableCategory}`,
             embeds: embeds,
+        });
+
+        await staffMailChannel!.send({
+            embeds: [EmbedHelper.getStaffMailStaffViewIncomingEmbed(isAnonymous ? null : interaction.user, text)],
         });
 
         this.logger.debug(`StaffMail channel is set up. Sending response to user...`);
         const openedStaffMailMessage = await interaction.user.send({
             components: [],
+            embeds: [EmbedHelper.getStaffMailOpenEmbed(false), EmbedHelper.getStaffMailLinkToLatestMessage()],
+        });
+        const outgoingMessage = await interaction.user.send({
             embeds: [
-                EmbedHelper.getStaffMailOpenEmbed(false),
-                EmbedHelper.getStaffMailLinkToLatestMessage(),
                 EmbedHelper.getStaffMailUserViewOutgoingEmbed(
                     interaction.user,
                     mode === StaffMailModeEnum.ANONYMOUS,
                     text,
-                    isCrownsModal ? null : summary,
+                    null,
                     category
                 ),
             ],
+        });
+        await openedStaffMailMessage?.edit({
+            embeds: [openedStaffMailMessage?.embeds[0], EmbedHelper.getStaffMailLinkToLatestMessage(outgoingMessage)],
         });
         openedStaffMailMessage?.pin();
         await this.staffMailRepository.createStaffMail(
@@ -115,12 +127,12 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
             mode,
             summary,
             openedStaffMailMessage,
+            outgoingMessage,
             staffMailChannel
         );
         if (!interaction.message?.guild) await interaction.message?.delete();
-        await interaction.reply({
-            ephemeral: true,
-            content: `I've successfully sent your report! Staff will get back to you as soon as possible. I've also pinned the message in our direct messages. Check the pins in our DM chanel to see all your open StaffMails!`,
+        await interaction.editReply({
+            content: `I've successfully sent your report! Staff will get back to you as soon as possible. I've also pinned the message in our direct messages. Check the pins in our DM channel to see all your open StaffMails!`,
         });
 
         await this.loggingService.logStaffMailEvent(

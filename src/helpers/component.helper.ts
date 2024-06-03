@@ -29,6 +29,19 @@ export class ComponentHelper {
             .setStyle(ButtonStyle.Secondary)
             .setEmoji({ name: '🕵️' });
 
+    public static reportButton = (customId: string) =>
+        new ButtonBuilder()
+            .setCustomId(customId)
+            .setLabel('Send Report')
+            .setStyle(ButtonStyle.Success)
+            .setEmoji({ name: '✉️' });
+    public static reportAnonButton = (customId: string) =>
+        new ButtonBuilder()
+            .setCustomId(customId)
+            .setLabel('Send Anonymous Report')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji({ name: '🕵️' });
+
     public static staffMailCreateMenu = new StringSelectMenuBuilder()
         .setCustomId(StaffMailCustomIds.Category)
         .setPlaceholder(`What can staff help you with?`)

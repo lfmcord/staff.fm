@@ -49,6 +49,7 @@ export class StaffMailRepository {
         type: string,
         mode: StaffMailModeEnum,
         summary: string | null,
+        mainMessage: Message,
         lastMessage: Message,
         channel: Channel
     ) {
@@ -63,7 +64,7 @@ export class StaffMailRepository {
             createdAt: now,
             lastMessageAt: now,
             lastMessageId: lastMessage.id,
-            mainMessageId: lastMessage.id,
+            mainMessageId: mainMessage.id,
         });
         await staffMailInstance.save();
     }

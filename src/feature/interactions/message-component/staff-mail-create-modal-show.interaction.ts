@@ -19,8 +19,6 @@ export class StaffMailCreateModalShowInteraction implements IMessageComponentInt
         StaffMailCustomIds.LastfmSendButton,
         StaffMailCustomIds.OtherSendButton,
         StaffMailCustomIds.OtherSendAnonButton,
-        StaffMailCustomIds.UrgentReportSendButton,
-        StaffMailCustomIds.UrgentReportSendAnonButton,
     ];
     logger: Logger<StaffMailCreateModalShowInteraction>;
 

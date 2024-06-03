@@ -75,7 +75,7 @@ export class StaffMailReplyCommand implements ICommand {
                     staffMail.type
                 ),
             ],
-            files: message.attachments.map((a) => a.url),
+            files: message.attachments.map((a) => a.proxyURL),
         });
 
         try {
@@ -85,11 +85,7 @@ export class StaffMailReplyCommand implements ICommand {
                     staffMail.user.dmChannel!
                 )) ?? undefined;
             mainMessage = await mainMessage?.edit({
-                embeds: [
-                    mainMessage?.embeds[0],
-                    EmbedHelper.getStaffMailLinkToLatestMessage(messageToUser),
-                    mainMessage?.embeds[2],
-                ],
+                embeds: [mainMessage?.embeds[0], EmbedHelper.getStaffMailLinkToLatestMessage(messageToUser)],
             });
             const oldStaffMailMessage =
                 staffMail.mainMessageId === staffMail.lastMessageId

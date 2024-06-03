@@ -30,7 +30,7 @@ export class StaffMailDmTrigger {
     public async run(message: Message): Promise<void> {
         if (!message.reference) {
             await message.reply(
-                `It looks like you are trying to chat with me. If you want to reply to an existing StaffMail, please check your pinned messages for instructions. If you do not have any open StaffMails, you can create a new one with ${inlineCode(this.env.PREFIX + 'staffmail')}!`
+                `It looks like you are trying to chat with me.\n- If you want to reply to an existing StaffMail, please check your pinned messages for instructions.\n- If you want to report a message, you can report it with ${inlineCode(this.env.PREFIX + 'report')}. You can also right-click/tap-and-hold the message in the server you want to report and select Apps -> Report Message.\n- If you do not have any open StaffMails, you can create a new one with ${inlineCode(this.env.PREFIX + 'staffmail')}!`
             );
             return;
         }
@@ -74,11 +74,7 @@ export class StaffMailDmTrigger {
                     newStaffMailMessage.channel
                 )) ?? undefined;
             mainMessage = await mainMessage?.edit({
-                embeds: [
-                    mainMessage.embeds[0],
-                    EmbedHelper.getStaffMailLinkToLatestMessage(newStaffMailMessage),
-                    mainMessage.embeds[2],
-                ],
+                embeds: [mainMessage.embeds[0], EmbedHelper.getStaffMailLinkToLatestMessage(newStaffMailMessage)],
             });
             const oldStaffMailMessage =
                 staffMail.mainMessageId === message.reference.messageId

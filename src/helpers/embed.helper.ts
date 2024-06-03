@@ -1,8 +1,10 @@
 import {
     ActionRowBuilder,
+    Attachment,
     bold,
     ButtonBuilder,
     Client,
+    codeBlock,
     EmbedBuilder,
     inlineCode,
     Message,
@@ -60,6 +62,47 @@ export class EmbedHelper {
             embeds: [embed],
             components: [
                 new ActionRowBuilder<StringSelectMenuBuilder>().setComponents(ComponentHelper.staffMailCreateMenu),
+                new ActionRowBuilder<ButtonBuilder>().setComponents(
+                    ComponentHelper.cancelButton(StaffMailCustomIds.CancelButton)
+                ),
+            ],
+        };
+    }
+
+    static getStaffMailUrgentReportEmbed(
+        isContextMenuInteraction: boolean,
+        attachments: Attachment[],
+        content?: string
+    ): MessageCreateOptions {
+        let description = isContextMenuInteraction
+            ? `${bold('Are you sure you want to report this message to staff?')}`
+            : `${bold('Are you sure you want to send your report like this to staff?')}`;
+        if (content && content !== '') {
+            description = description += `\n${codeBlock(content)}`;
+        }
+        if (!isContextMenuInteraction && attachments.length === 0) {
+            description += `\n\n💡 ${bold('Hint:')} Including message links, screenshots or user names/IDs helps staff to resolve the issue faster.`;
+        }
+
+        if (attachments.length > 0) {
+            let attachmentCount = 1;
+            attachments.forEach((attachment) => {
+                description += `\n${bold('Attachment ' + attachmentCount + ':')} ${attachment.proxyURL}`;
+            });
+            attachmentCount++;
+        }
+        const embed = new EmbedBuilder()
+            .setDescription(description)
+            .setTitle('✉️ Send report?')
+            .setColor(EmbedHelper.blue)
+            .setTimestamp();
+        return {
+            embeds: [embed],
+            components: [
+                new ActionRowBuilder<ButtonBuilder>().setComponents([
+                    ComponentHelper.reportButton(StaffMailCustomIds.UrgentReportSendButton),
+                    ComponentHelper.reportAnonButton(StaffMailCustomIds.UrgentReportSendAnonButton),
+                ]),
                 new ActionRowBuilder<ButtonBuilder>().setComponents(
                     ComponentHelper.cancelButton(StaffMailCustomIds.CancelButton)
                 ),
@@ -224,7 +267,6 @@ export class EmbedHelper {
             })
             .setTitle(`📤 Message sent`)
             .setColor(12059152)
-            .setDescription(content)
             .setFooter({ text: `${staffMember.username} | ${staffMember.id}` })
             .setTimestamp();
         if (content !== '') embed.setDescription(content);
@@ -446,6 +488,9 @@ export class EmbedHelper {
                 break;
             case StaffMailType.UrgentReport:
                 humanReadableType = 'Report - Urgent';
+                break;
+            case StaffMailType.InServerReport:
+                humanReadableType = 'Report';
         }
         return humanReadableType;
     }

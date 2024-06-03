@@ -6,6 +6,7 @@ export class StaffMailType {
     public static Other = 'other';
     public static Staff = 'staff';
     public static UrgentReport = 'urgentreport';
+    public static InServerReport = 'inserverreport';
 
     public static CrownsReport = `${StaffMailType.Crowns}-report`;
     public static CrownsBanInquiry = `${StaffMailType.Crowns}-baninquiry`;

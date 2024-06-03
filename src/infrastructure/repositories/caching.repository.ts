@@ -37,7 +37,7 @@ export class CachingRepository {
             authorId: message.author.id,
             channelId: message.channel.id,
             contents: message.content,
-            attachments: message.attachments.map((a) => a.url),
+            attachments: message.attachments.map((a) => a.proxyURL),
         };
         const value = JSON.stringify(cache);
         await this.redis.set(key, value);

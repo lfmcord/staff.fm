@@ -81,11 +81,17 @@ export class StaffMailContactCommand implements ICommand {
         const sendButton = ComponentHelper.sendButton(StaffMailCustomIds.ContactMemberSend);
         const sendAnonButton = ComponentHelper.sendAnonButton(StaffMailCustomIds.ContactMemberSendAnon);
         const cancelButton = ComponentHelper.cancelButton(StaffMailCustomIds.ContactMemberCancel);
+        let description = `${bold('Recipient:')}\n<@${userId}>\n\n${bold('Content:')}\n${content}`;
+        if (message.attachments.size > 0) {
+            let attachmentCount = 1;
+            message.attachments.forEach((attachment) => {
+                description += `\n${bold('Attachment ' + attachmentCount + ':')} ${attachment.proxyURL}\n`;
+            });
+            attachmentCount++;
+        }
         const response = await message.reply({
             embeds: [
-                new EmbedBuilder()
-                    .setTitle(`Are you sure you want to send this message?`)
-                    .setDescription(`${bold('Recipient:')}\n<@${userId}>\n\n${bold('Content:')}\n${content}`),
+                new EmbedBuilder().setTitle(`Are you sure you want to send this message?`).setDescription(description),
             ],
             components: [
                 new ActionRowBuilder<ButtonBuilder>().addComponents([sendButton, sendAnonButton, cancelButton]),
@@ -123,19 +129,24 @@ export class StaffMailContactCommand implements ICommand {
         );
         const messageToUser = await member.send({
             content: `📫 You've received a new message from staff!`,
-            embeds: [EmbedHelper.getStaffMailOpenEmbed(true), EmbedHelper.getStaffMailLinkToLatestMessage(), embed],
+            embeds: [EmbedHelper.getStaffMailOpenEmbed(true), EmbedHelper.getStaffMailLinkToLatestMessage()],
         });
         await messageToUser.pin();
+        const incomingMessage = await member.send({ embeds: [embed], files: Array.from(message.attachments.values()) });
         const newStaffMailChannel = await this.staffMailRepository.createStaffMailChannel(
             member.user,
             StaffMailModeEnum.NAMED
         );
+        await messageToUser.edit({
+            embeds: [messageToUser.embeds[0], EmbedHelper.getStaffMailLinkToLatestMessage(incomingMessage)],
+        });
         const newStaffMail = await this.staffMailRepository.createStaffMail(
             member.user,
             StaffMailType.Staff,
             StaffMailModeEnum.NAMED,
             summary,
             messageToUser,
+            incomingMessage,
             newStaffMailChannel
         );
 
@@ -148,6 +159,10 @@ export class StaffMailContactCommand implements ICommand {
                     'Manually contacted member',
                     this.environment.PREFIX
                 ),
+            ],
+        });
+        await newStaffMailChannel!.send({
+            embeds: [
                 EmbedHelper.getStaffMailStaffViewOutgoingEmbed(
                     message.author,
                     isAnonymousStaffMember,
@@ -155,6 +170,7 @@ export class StaffMailContactCommand implements ICommand {
                     content
                 ),
             ],
+            files: Array.from(message.attachments.values()),
         });
 
         await this.loggingService.logStaffMailEvent(

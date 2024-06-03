@@ -7,7 +7,6 @@ import {
     ButtonStyle,
     EmbedBuilder,
     inlineCode,
-    italic,
     Message,
     PartialMessage,
 } from 'discord.js';
@@ -16,7 +15,8 @@ import { CommandPermissionLevel } from '@src/feature/commands/models/command-per
 import { TYPES } from '@src/types';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { Environment } from '@models/environment';
-import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
+import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
+import { ComponentHelper } from '@src/helpers/component.helper';
 
 @injectable()
 export class StaffMailManagementCommand implements ICommand {
@@ -55,26 +55,23 @@ export class StaffMailManagementCommand implements ICommand {
             ],
             components: [new ActionRowBuilder<ButtonBuilder>().addComponents(createButton)],
         });
-        const quickReportButton = new ButtonBuilder()
-            .setCustomId(`defer-staff-mail-create-${StaffMailType.UrgentReport}-button`)
-            .setLabel('Urgent Report')
-            .setStyle(ButtonStyle.Danger)
-            .setEmoji({ name: '⚠️' });
-        const quickReportButtonAnon = new ButtonBuilder()
-            .setCustomId(`defer-staff-mail-create-${StaffMailType.UrgentReport}-button-anon`)
-            .setLabel('Anonymous Urgent Report')
-            .setStyle(ButtonStyle.Secondary)
-            .setEmoji({ name: '🕵️' });
         message.channel.send({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle('Urgent Report')
+                    .setTitle('Sending Reports')
                     .setColor(EmbedHelper.red)
                     .setDescription(
-                        `If you have a report of someone breaking rules or another situation that requires ${bold("Staff's immediate attention")}, click the button below.\n\n${italic(`Note: Including message links makes it easy for us to react quickly!`)}`
+                        `If you have a report of someone breaking rules or another situation that requires ${bold("Staff's immediate attention")}, click the button below.\n\n
+                        You can also report it by DMing me ${inlineCode(this.env.PREFIX + 'report')} along with your report. You can also right-click/tap-and-hold the message in the server you want to report and select Apps -> Report Message.\n\n
+                        💡 ${bold('Hint:')} Including message links, screenshots or user names/IDs helps staff to resolve the issue faster.`
                     ),
             ],
-            components: [new ActionRowBuilder<ButtonBuilder>().addComponents(quickReportButton, quickReportButtonAnon)],
+            components: [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                    ComponentHelper.reportButton(StaffMailCustomIds.InServerReportSendButton),
+                    ComponentHelper.reportAnonButton(StaffMailCustomIds.InServerReportSendAnonButton)
+                ),
+            ],
         });
         return {
             isSuccessful: true,

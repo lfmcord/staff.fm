@@ -13,8 +13,12 @@ export class StaffMailCustomIds {
     public static ServerSendButton = 'defer-staff-mail-create-' + StaffMailType.Server;
     public static OtherSendButton = 'defer-staff-mail-create-' + StaffMailType.Other;
     public static OtherSendAnonButton = 'defer-staff-mail-create-' + StaffMailType.Other + '-anon';
-    public static UrgentReportSendButton = 'defer-staff-mail-create-' + StaffMailType.UrgentReport;
-    public static UrgentReportSendAnonButton = 'defer-staff-mail-create-' + StaffMailType.UrgentReport + '-anon';
+
+    public static InServerReportSendButton = 'defer-staff-mail-create-' + StaffMailType.InServerReport;
+    public static InServerReportSendAnonButton = 'defer-staff-mail-create-' + StaffMailType.InServerReport + '-anon';
+
+    public static UrgentReportSendButton = 'staff-mail-create-' + StaffMailType.UrgentReport;
+    public static UrgentReportSendAnonButton = 'staff-mail-create-' + StaffMailType.UrgentReport + '-anon';
 
     public static ContactMemberSend = 'contact-member-send';
     public static ContactMemberSendAnon = 'contact-member-send-anon';

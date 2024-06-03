@@ -165,7 +165,7 @@ export class Bot {
             try {
                 await this.handlerFactory.createHandler('ready').handle(null);
                 this.client.user?.setActivity({
-                    name: `DM ${this.env.PREFIX}staffmail to contact staff!`,
+                    name: `DM ${this.env.PREFIX}staffmail or ${this.env.PREFIX}report to contact staff!`,
                     type: ActivityType.Playing,
                 });
             } catch (e) {

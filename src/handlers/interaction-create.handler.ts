@@ -49,6 +49,14 @@ export class InteractionCreateHandler implements IHandler {
 
     private async handleMessageComponentInteraction(interaction: MessageComponentInteraction) {
         if (!interaction.customId || !interaction.customId.startsWith('defer')) {
+            if (
+                interaction.customId === 'cancel' &&
+                !interaction.deferred &&
+                !interaction.replied &&
+                interaction.isRepliable()
+            ) {
+                await interaction.update({ content: `Cancelled.`, embeds: [], components: [] });
+            }
             this.logger.debug(
                 `Interaction with customId '${interaction.customId}' is not a deferred interaction and will be handled elsewhere.`
             );

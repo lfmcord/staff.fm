@@ -143,7 +143,7 @@ export class StaffMailCloseCommand implements ICommand {
             if (message.attachments.size > 0) {
                 content += ` (Attachments: `;
                 const attachmentUrls: string[] = [];
-                message.attachments.forEach((a) => attachmentUrls.push(a.url));
+                message.attachments.forEach((a) => attachmentUrls.push(a.proxyURL));
                 content += attachmentUrls.join(' ; ');
                 content += `)`;
             }

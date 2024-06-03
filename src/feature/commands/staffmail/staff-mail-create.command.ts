@@ -15,7 +15,6 @@ import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
-import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
 import { Environment } from '@models/environment';
 
 @injectable()
@@ -74,12 +73,8 @@ export class StaffMailCreateCommand implements ICommand {
             return;
         }
 
-        if (categorySelection instanceof ButtonInteraction) {
-            await this.cancel(createMessage);
-            return;
-        }
-
         // Setting the detail view for the chosen category
+        if (categorySelection instanceof ButtonInteraction) return;
         await categorySelection.update({});
         const category: string = (categorySelection as StringSelectMenuInteraction).values[0];
         this.logger.debug(`User has selected a category (${category}). Proceeding to next menu.`);
@@ -98,11 +93,7 @@ export class StaffMailCreateCommand implements ICommand {
                 return;
             }
 
-            if (crownsSubmenuSelection instanceof ButtonInteraction) {
-                await this.cancel(createMessage);
-                return;
-            }
-
+            if (crownsSubmenuSelection instanceof ButtonInteraction) return;
             await crownsSubmenuSelection.update({});
             const crownsSubcategory: string = (crownsSubmenuSelection as StringSelectMenuInteraction).values[0];
             this.logger.debug(`User has selected a crowns sub-category (${crownsSubcategory}). Showing send button.`);
@@ -118,12 +109,6 @@ export class StaffMailCreateCommand implements ICommand {
             })) as ButtonInteraction;
         } catch (e) {
             await this.timeout(createMessage);
-            return;
-        }
-
-        if (sendInteraction.customId === StaffMailCustomIds.CancelButton) {
-            await this.cancel(createMessage);
-            await sendInteraction.update({});
             return;
         }
     }
@@ -148,12 +133,8 @@ export class StaffMailCreateCommand implements ICommand {
             return;
         }
 
-        if (categorySelection instanceof ButtonInteraction) {
-            await this.cancel(interaction);
-            return;
-        }
-
         // Setting the detail view for the chosen category
+        if (categorySelection instanceof ButtonInteraction) return;
         await categorySelection.update({});
         const category: string = (categorySelection as StringSelectMenuInteraction).values[0];
         this.logger.debug(`User has selected a category (${category}). Proceeding to next menu.`);
@@ -175,10 +156,7 @@ export class StaffMailCreateCommand implements ICommand {
                 return;
             }
 
-            if (crownsSubmenuSelection instanceof ButtonInteraction) {
-                await this.cancel(interaction);
-                return;
-            }
+            if (crownsSubmenuSelection instanceof ButtonInteraction) return;
 
             await crownsSubmenuSelection.update({});
             const crownsSubcategory: string = (crownsSubmenuSelection as StringSelectMenuInteraction).values[0];
@@ -202,23 +180,6 @@ export class StaffMailCreateCommand implements ICommand {
             await this.timeout(interaction);
             return;
         }
-
-        if (sendInteraction.customId === StaffMailCustomIds.CancelButton) {
-            await this.cancel(interaction);
-            await sendInteraction.update({});
-            return;
-        }
-    }
-
-    private async cancel(message: Message | ButtonInteraction) {
-        this.logger.info(`User has cancelled sending a staff mail.`);
-        const content = {
-            content: `You've cancelled the process of messaging staff. If you'd like to message after all, simply type ${inlineCode(`${this.env.PREFIX}${this.name}`)} here.`,
-            components: [],
-            embeds: [],
-        };
-        if (message instanceof Message) await message.edit(content);
-        else await message.editReply(content);
     }
 
     private async timeout(message: Message | ButtonInteraction) {
