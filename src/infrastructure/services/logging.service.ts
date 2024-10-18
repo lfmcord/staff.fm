@@ -281,6 +281,17 @@ export class LoggingService {
         await logChannel.send({ embeds: [embed] });
     }
 
+    async logImports(actor: User, subject: User, isDeletion: boolean = false) {
+        const logChannel = await this.getLogChannel(this.env.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description = isDeletion
+            ? `📈 ${bold('Added Imports')} to user ${TextHelper.userDisplay(subject)}`
+            : `📉 ${bold('Removed Imports')} from user ${TextHelper.userDisplay(subject)}`;
+        const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
+        await logChannel.send({ embeds: [embed] });
+    }
+
     private async getLogChannel(channelId: string): Promise<GuildTextBasedChannel | null> {
         const logChannel = await this.channelService.getGuildChannelById(channelId);
         if (!logChannel) {

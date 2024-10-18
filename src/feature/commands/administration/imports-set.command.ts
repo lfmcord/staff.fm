@@ -9,6 +9,8 @@ import { CommandResult } from '@src/feature/commands/models/command-result.model
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { TextHelper } from '@src/helpers/text.helper';
 import moment = require('moment');
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
 
 @injectable()
 export class ImportsSetCommand implements ICommand {
@@ -23,13 +25,19 @@ export class ImportsSetCommand implements ICommand {
 
     private logger: Logger<ImportsSetCommand>;
     private usersRepository: UsersRepository;
+    private loggingService: LoggingService;
+    private memberService: MemberService;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<ImportsSetCommand>,
-        @inject(TYPES.UsersRepository) usersRepository: UsersRepository
+        @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
+        @inject(TYPES.LoggingService) loggingService: LoggingService,
+        @inject(TYPES.MemberService) memberService: MemberService
     ) {
         this.usersRepository = usersRepository;
         this.logger = logger;
+        this.loggingService = loggingService;
+        this.memberService = memberService;
     }
 
     validateArgs(args: string[]): Promise<void> {
@@ -61,6 +69,12 @@ export class ImportsSetCommand implements ICommand {
             replyToUser = `This user was already flagged for imports on <t:${moment(foundUser.importsFlagDate).unix()}:f>.`;
         } else {
             await this.usersRepository.addImportsFlagDateToUser(foundUser.userId);
+            const member = await this.memberService.getGuildMemberFromUserId(foundUser.userId);
+            if (!member) {
+                replyToUser += ` It seems like this user has left the server.`;
+            } else {
+                await this.loggingService.logImports(message.author, member?.user);
+            }
         }
 
         return {
