@@ -29,7 +29,7 @@ staff.fm is a custom moderation and server management bot for Lastcord.
 3. Run the databases
 
     ```shell
-    docker-compose up -d staff-fm-mongodb
+    docker-compose up -d staff-fm-db staff-fm-redis
     ```
 
 4. Run the bot

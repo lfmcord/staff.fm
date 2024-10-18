@@ -242,12 +242,26 @@ export class LoggingService {
         let description =
             `${TextHelper.userDisplay(user, true)} is a returning member.\n\n` +
             `${bold(`Last.fm Link:`)} https://last.fm/user/${lastFmUsername}`;
-        if (isUsingDifferentLastfm) description += ` (⚠️ verifying with different account)`;
+        if (!isUsingDifferentLastfm) description += ` (⚠️ verifying with different account)`;
 
         const logEmbed = EmbedHelper.getLogEmbed(this.client.user, user, LogLevel.Info)
             .setTitle(`ℹ️ Returning member`)
             .setDescription(description)
             .setFooter({ text: `Welcome back! 🎉` });
+        logChannel.send({ embeds: [logEmbed] });
+    }
+
+    async logZeroPlaycountVerification(user: User, lastFmUsername: string) {
+        const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description =
+            `Last.fm returned a playcount of 0 for ${TextHelper.userDisplay(user, true)}. If this is incorrect, please rerun the verify command or ask a Helper to fix the scrobble roles.\n\n` +
+            `${bold(`Last.fm Link: `)} https://last.fm/user/${lastFmUsername}\n`;
+
+        const logEmbed = EmbedHelper.getLogEmbed(this.client.user, user, LogLevel.Warning)
+            .setTitle(`⚠️ Last.fm returned 0 playcount`)
+            .setDescription(description);
         logChannel.send({ embeds: [logEmbed] });
     }
 

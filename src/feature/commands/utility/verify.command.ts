@@ -191,6 +191,11 @@ export class VerifyCommand implements ICommand {
                 }
             }
             if (!lastfmUser) {
+                try {
+                    await verificationMessage.reactions.removeAll();
+                } catch (e) {
+                    this.logger.debug(`Reactions already removed.`);
+                }
                 return {
                     isSuccessful: false,
                     replyToUser: `The username '${lastfmUsername}' doesn't seem to be an existing Last.fm user.`,
@@ -198,6 +203,9 @@ export class VerifyCommand implements ICommand {
                 };
             }
             this.logger.debug(`User has a playcount of ${lastfmUser.playcount}`);
+            if (lastfmUser.playcount == 0) {
+                await this.loggingService.logZeroPlaycountVerification(memberToVerify.user, lastfmUser.name);
+            }
             await this.assignScrobbleRoles(memberToVerify, lastfmUser.playcount);
         }
 
@@ -231,7 +239,7 @@ export class VerifyCommand implements ICommand {
 
         return {
             isSuccessful: true,
-            shouldDelete: true,
+            shouldDelete: trigger.channel?.id == this.env.VERIFICATION_CHANNEL_ID,
         };
     }
 

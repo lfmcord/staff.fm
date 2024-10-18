@@ -52,7 +52,7 @@ export class WhoisCommand implements ICommand {
                 this.logger.info(`Whois command for user ID ${userId} cannot run because user is not in DB.`);
                 return {
                     isSuccessful: false,
-                    replyToUser: `I have no information on this user.`,
+                    replyToUser: `I have no information on this user. If you know their last.fm username, please verify them manually with \`>>verify ${userId} [last.fm username]\``,
                 };
             }
             indexedUsers.push(foundUser);
@@ -167,12 +167,12 @@ export class WhoisCommand implements ICommand {
                 new EmbedBuilder().setTitle(`Crowns Game`).setColor(EmbedHelper.blue).setFields(
                     {
                         name: 'Status',
-                        value: 'Not banned',
+                        value: '[unknown]',
                         inline: true,
                     },
                     {
                         name: 'Imported?',
-                        value: 'No',
+                        value: '[unknown]',
                         inline: true,
                     }
                 )
@@ -183,7 +183,7 @@ export class WhoisCommand implements ICommand {
                     .setTitle(`User not indexed`)
                     .setColor(EmbedHelper.orange)
                     .setDescription(
-                        `This user is not yet indexed (hasn't been manually imported or verified yet), so I don't have any more info to show you.`
+                        `This user is not yet indexed (hasn't been manually imported or verified yet), so I don't have any more info to show you. If you know their last.fm username, please verify them manually with \`>>verify ${userId} [last.fm username]\``
                     )
             );
         }
