@@ -1,10 +1,24 @@
 import { model, Schema } from 'mongoose';
 import { injectable } from 'inversify';
 import * as moment from 'moment';
-import { Verification } from '@src/feature/commands/utility/models/verification.model';
+import { Verification } from '@src/feature/commands/administration/models/verification.model';
 
 @injectable()
 export class UsersRepository {
+    async getUserByUserId(userId: string) {
+        return await UsersModelInstance.findOne({ userId: userId }).exec();
+    }
+
+    async getUsersByLastFmUsername(username: string) {
+        return await UsersModelInstance.find({ 'verifications.username': username.toLowerCase() }).exec();
+    }
+
+    async getLatestVerificationOfUser(userId: string): Promise<IVerificationModel | null> {
+        const user = await UsersModelInstance.findOne({ userId: userId }).exec();
+        if (!user || user.verifications.length == 0) return null;
+        return user.verifications.sort((a, b) => (a.verifiedOn > b.verifiedOn ? 0 : -1))[0];
+    }
+
     async addUser(verification: Verification) {
         const userInstance = new UsersModelInstance({
             userId: verification.verifiedMember.id,
@@ -17,14 +31,6 @@ export class UsersRepository {
             ],
         });
         await userInstance.save();
-    }
-
-    async getUserByUserId(userId: string) {
-        return await UsersModelInstance.findOne({ userId: userId }).exec();
-    }
-
-    async getUsersByLastFmUsername(username: string) {
-        return await UsersModelInstance.find({ 'verifications.username': username.toLowerCase() }).exec();
     }
 
     async addVerificationToUser(verification: Verification) {
@@ -42,10 +48,23 @@ export class UsersRepository {
         );
     }
 
-    async getLatestVerificationOfUser(userId: string): Promise<IVerificationModel | null> {
-        const user = await UsersModelInstance.findOne({ userId: userId }).exec();
-        if (!user || user.verifications.length == 0) return null;
-        return user.verifications.sort((a, b) => (a.verifiedOn > b.verifiedOn ? 0 : -1))[0];
+    async addImportsFlagDateToUser(userId: string): Promise<void> {
+        const now = moment.utc().toDate();
+        await UsersModelInstance.updateOne(
+            { userId: userId },
+            {
+                importsFlagDate: now,
+            }
+        );
+    }
+
+    async removeImportsFlagDateFromUser(userId: string): Promise<void> {
+        await UsersModelInstance.updateOne(
+            { userId: userId },
+            {
+                importsFlagDate: null,
+            }
+        );
     }
 }
 
@@ -64,12 +83,14 @@ const verificationSchema = new Schema<IVerificationModel>({
 export interface IUserModel {
     userId: string;
     verifications: IVerificationModel[];
+    importsFlagDate: Date;
 }
 
 const usersSchema = new Schema<IUserModel>(
     {
         userId: { type: String, required: true },
         verifications: { type: [verificationSchema], required: true },
+        importsFlagDate: { type: Date, required: false },
     },
     { collection: 'Users' }
 );

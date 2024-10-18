@@ -24,7 +24,7 @@ import { SelfMuteCommand } from '@src/feature/commands/utility/self-mute.command
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { ReadyHandler } from '@src/handlers/ready.handler';
 import { OkBuddyCommand } from '@src/feature/commands/fun/ok-buddy.command';
-import { VerifyCommand } from '@src/feature/commands/utility/verify.command';
+import { VerifyCommand } from '@src/feature/commands/administration/verify.command';
 import LastFM from 'lastfm-typed';
 import { GuildMemberAddHandler } from '@src/handlers/guild-member-add.handler';
 import { RedisConnector } from '@src/infrastructure/connectors/redis.connector';
@@ -54,7 +54,7 @@ import { UnflagCommand } from '@src/feature/commands/moderation/unflag.command';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { GuildBanAddHandler } from '@src/handlers/guild-ban-add.handler';
 import { GuildBanRemoveHandler } from '@src/handlers/guild-ban-remove.handler';
-import { WhoisCommand } from '@src/feature/commands/utility/whois.command';
+import { WhoisCommand } from '@src/feature/commands/administration/whois.command';
 import { StaffMailCreateButtonInteraction } from '@src/feature/interactions/message-component/staff-mail-create-button.interaction';
 import { StaffMailCreateUrgentReportButtonInteraction } from '@src/feature/interactions/message-component/staff-mail-create-urgentreport-button.interaction';
 import { StaffMailCreateModalShowInteraction } from '@src/feature/interactions/message-component/staff-mail-create-modal-show.interaction';
@@ -69,6 +69,9 @@ import { MessageUpdateHandler } from '@src/handlers/message-update.handler';
 import { MessageBulkDeleteHandler } from '@src/handlers/message-bulk-delete.handler';
 import { StaffMailReportCommand } from '@src/feature/commands/staffmail/staff-mail-report.command';
 import { StaffMailReportInteraction } from '@src/feature/interactions/message-context-menu/staff-mail-report.interaction';
+import { ImportsHasCommand } from '@src/feature/commands/administration/imports-has.command';
+import { ImportsSetCommand } from '@src/feature/commands/administration/imports-set.command';
+import { ImportsRemoveCommand } from '@src/feature/commands/administration/imports-remove.command';
 
 const container = new Container();
 
@@ -209,6 +212,9 @@ container.bind<ICommand>('Command').to(FlagsCommand);
 container.bind<ICommand>('Command').to(UnflagCommand);
 container.bind<ICommand>('Command').to(WhoisCommand);
 container.bind<ICommand>('Command').to(StaffMailReportCommand);
+container.bind<ICommand>('Command').to(ImportsHasCommand);
+container.bind<ICommand>('Command').to(ImportsSetCommand);
+container.bind<ICommand>('Command').to(ImportsRemoveCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);

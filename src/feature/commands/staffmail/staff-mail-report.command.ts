@@ -21,7 +21,7 @@ import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-
 import { Environment } from '@models/environment';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import container from '@src/inversify.config';
-import { WhoisCommand } from '@src/feature/commands/utility/whois.command';
+import { WhoisCommand } from '@src/feature/commands/administration/whois.command';
 import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { TextHelper } from '@src/helpers/text.helper';

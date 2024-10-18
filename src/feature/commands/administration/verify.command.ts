@@ -20,7 +20,7 @@ import { MessageService } from '@src/infrastructure/services/message.service';
 import { TYPES } from '@src/types';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { Logger } from 'tslog';
-import { Verification } from '@src/feature/commands/utility/models/verification.model';
+import { Verification } from '@src/feature/commands/administration/models/verification.model';
 import { TextHelper } from '@src/helpers/text.helper';
 import LastFM from 'lastfm-typed';
 import { LoggingService } from '@src/infrastructure/services/logging.service';

@@ -164,18 +164,23 @@ export class WhoisCommand implements ICommand {
 
             // Crowns
             embeds.push(
-                new EmbedBuilder().setTitle(`Crowns Game`).setColor(EmbedHelper.blue).setFields(
-                    {
-                        name: 'Status',
-                        value: '[unknown]',
-                        inline: true,
-                    },
-                    {
-                        name: 'Imported?',
-                        value: '[unknown]',
-                        inline: true,
-                    }
-                )
+                new EmbedBuilder()
+                    .setTitle(`Crowns Game`)
+                    .setColor(EmbedHelper.blue)
+                    .setFields(
+                        {
+                            name: 'Status',
+                            value: '[unknown]',
+                            inline: true,
+                        },
+                        {
+                            name: 'Imported?',
+                            value: indexedUser.importsFlagDate
+                                ? `✅ <t:${moment(indexedUser.importsFlagDate).unix()}:f>`
+                                : `❌ No`,
+                            inline: true,
+                        }
+                    )
             );
         } else {
             embeds.push(

@@ -8,7 +8,7 @@ import { IMessageContextMenuInteraction } from '@src/feature/interactions/abstra
 import { Promise } from 'mongoose';
 import container from '@src/inversify.config';
 import { ICommand } from '@src/feature/commands/models/command.interface';
-import { VerifyCommand } from '@src/feature/commands/utility/verify.command';
+import { VerifyCommand } from '@src/feature/commands/administration/verify.command';
 import { Logger } from 'tslog';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';

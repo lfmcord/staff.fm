@@ -10,7 +10,7 @@ import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Environment } from '@models/environment';
 import container from '../../../inversify.config';
 import { ICommand } from '@src/feature/commands/models/command.interface';
-import { WhoisCommand } from '@src/feature/commands/utility/whois.command';
+import { WhoisCommand } from '@src/feature/commands/administration/whois.command';
 import { IModalSubmitInteraction } from '@src/feature/interactions/abstractions/modal-submit-interaction.interface';
 
 @injectable()
