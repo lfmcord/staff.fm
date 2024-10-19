@@ -47,7 +47,7 @@ export class WhoknowsTrigger {
 
         const isBan = args[1] == 'ban';
         const subjectId = TextHelper.getDiscordUserId(args[2]);
-        let reason = args.slice(3).join();
+        let reason = args.slice(3).join(' ');
         if (!subjectId) {
             this.logger.info(`'${args[2]}' is not a Discord user ID`);
             await message.reply(

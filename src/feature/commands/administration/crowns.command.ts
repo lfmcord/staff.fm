@@ -78,7 +78,7 @@ export class CrownsCommand implements ICommand {
         }
 
         const hasCrownsBan = foundUser.crownsBan != null;
-        const reason = args.slice(2).join();
+        const reason = args.slice(2).join(' ');
         let replyToUser;
         if (isBan) {
             if (hasCrownsBan) replyToUser = `This user already has a crowns ban flag.`;
