@@ -170,7 +170,9 @@ export class WhoisCommand implements ICommand {
                     .setFields(
                         {
                             name: 'Status',
-                            value: '[unknown]',
+                            value: indexedUser.crownsBan
+                                ? `<:nocrown:816944519924809779> Banned on <t:${moment(indexedUser.crownsBan.bannedOn).unix()}:d>`
+                                : `👑 No Crowns Ban`,
                             inline: true,
                         },
                         {

@@ -13,6 +13,7 @@ import { StaffMailDmTrigger } from '@src/feature/triggers/staff-mail-dm.trigger'
 import { Environment } from '@models/environment';
 import { VerificationLastFmTrigger } from '@src/feature/triggers/verification-lastfm.trigger';
 import { CommandService } from '@src/infrastructure/services/command.service';
+import { WhoknowsTrigger } from '@src/feature/triggers/whoknows.trigger';
 
 @injectable()
 export class MessageCreateHandler implements IHandler {
@@ -21,6 +22,7 @@ export class MessageCreateHandler implements IHandler {
     private logger: Logger<MessageCreateHandler>;
     commandService: CommandService;
     verificationLastFmTrigger: VerificationLastFmTrigger;
+    whoknowsTrigger: WhoknowsTrigger;
     env: Environment;
     private readonly staffMailDmReply: StaffMailDmTrigger;
     private readonly cachingRepository: CachingRepository;
@@ -33,6 +35,7 @@ export class MessageCreateHandler implements IHandler {
         @inject(TYPES.StaffMailDmTrigger) staffMailDmReply: StaffMailDmTrigger,
         @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.VerificationLastFmTrigger) verificationLastFmTrigger: VerificationLastFmTrigger,
+        @inject(TYPES.WhoknowsTrigger) whoknowsTrigger: WhoknowsTrigger,
         @inject(TYPES.CommandService) commandService: CommandService
     ) {
         this.commandService = commandService;
@@ -42,6 +45,7 @@ export class MessageCreateHandler implements IHandler {
         this.cachingRepository = cachingRepository;
         this.memberService = memberService;
         this.logger = logger;
+        this.whoknowsTrigger = whoknowsTrigger;
     }
 
     public async handle(message: Message) {
@@ -49,6 +53,9 @@ export class MessageCreateHandler implements IHandler {
         const isBot = message.author.bot;
         const isDms = message.channel.isDMBased();
         const isVerification = message.channelId === this.env.VERIFICATION_CHANNEL_ID;
+        const isWhoKnowsCommand = message.content.startsWith('!');
+
+        if (isWhoKnowsCommand) await this.whoknowsTrigger.run(message);
 
         if (isBot) return;
         if (isCommand) await this.handleCommand(message);

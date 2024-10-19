@@ -72,6 +72,9 @@ import { StaffMailReportInteraction } from '@src/feature/interactions/message-co
 import { ImportsHasCommand } from '@src/feature/commands/administration/imports-has.command';
 import { ImportsSetCommand } from '@src/feature/commands/administration/imports-set.command';
 import { ImportsRemoveCommand } from '@src/feature/commands/administration/imports-remove.command';
+import { CrownsCommand } from '@src/feature/commands/administration/crowns.command';
+import { CrownsBanHasCommand } from '@src/feature/commands/administration/crownsban-has.command';
+import { WhoknowsTrigger } from '@src/feature/triggers/whoknows.trigger';
 
 const container = new Container();
 
@@ -117,6 +120,7 @@ container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue({
     REDIS_PORT: Number.parseInt(process.env.REDIS_PORT ?? '6380') ?? 6380,
     SELFMUTED_ROLE_ID: process.env.SELFMUTED_ROLE_ID ?? '',
     WHOKNOWS_USER_ID: process.env.WHOKNOWS_USER_ID ?? '',
+    CROWNS_LOG_CHANNEL_ID: process.env.CROWNS_LOG_CHANNEL_ID ?? '',
 });
 
 // CORE
@@ -215,10 +219,13 @@ container.bind<ICommand>('Command').to(StaffMailReportCommand);
 container.bind<ICommand>('Command').to(ImportsHasCommand);
 container.bind<ICommand>('Command').to(ImportsSetCommand);
 container.bind<ICommand>('Command').to(ImportsRemoveCommand);
+container.bind<ICommand>('Command').to(CrownsCommand);
+container.bind<ICommand>('Command').to(CrownsBanHasCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
 container.bind<VerificationLastFmTrigger>(TYPES.VerificationLastFmTrigger).to(VerificationLastFmTrigger);
+container.bind<WhoknowsTrigger>(TYPES.WhoknowsTrigger).to(WhoknowsTrigger);
 
 // INTERACTIONS
 container.bind<IModalSubmitInteraction>('ModalSubmitInteraction').to(StaffMailCreateModalSubmitInteraction);

@@ -282,13 +282,26 @@ export class LoggingService {
     }
 
     async logImports(actor: User, subject: User, isDeletion: boolean = false) {
-        const logChannel = await this.getLogChannel(this.env.SELFMUTE_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CROWNS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const description = isDeletion
             ? `📈 ${bold('Added Imports')} to user ${TextHelper.userDisplay(subject)}`
             : `📉 ${bold('Removed Imports')} from user ${TextHelper.userDisplay(subject)}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logCrownsBan(actor: User, subject: User, reason: string, message: Message, isUnban: boolean = false) {
+        const logChannel = await this.getLogChannel(this.env.CROWNS_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description =
+            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject)}` +
+            `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
+        const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
+        embed.setTitle(isUnban ? `👑 Crowns Unban` : `<:nocrown:816944519924809779> Crowns Ban`);
+        embed.setURL(TextHelper.getDiscordMessageLink(message));
         await logChannel.send({ embeds: [embed] });
     }
 

@@ -66,6 +66,29 @@ export class UsersRepository {
             }
         );
     }
+
+    async addCrownBanToUser(actorId: string, subjectId: string, reason?: string): Promise<void> {
+        const now = moment.utc().toDate();
+        await UsersModelInstance.updateOne(
+            { userId: subjectId },
+            {
+                crownsBan: {
+                    reason: reason !== '' ? reason : null,
+                    bannedOn: now,
+                    bannedById: actorId,
+                },
+            }
+        );
+    }
+
+    async removeCrownsBanFromUser(userId: string): Promise<void> {
+        await UsersModelInstance.updateOne(
+            { userId: userId },
+            {
+                crownsBan: null,
+            }
+        );
+    }
 }
 
 export interface IVerificationModel {
@@ -80,10 +103,23 @@ const verificationSchema = new Schema<IVerificationModel>({
     verifiedById: { type: String, required: false },
 });
 
+export interface ICrownsBanModel {
+    reason: string;
+    bannedOn: Date;
+    bannedById: string;
+}
+
+const crownsBanSchema = new Schema<ICrownsBanModel>({
+    reason: { type: String, required: false },
+    bannedOn: { type: Date, required: true },
+    bannedById: { type: String, required: true },
+});
+
 export interface IUserModel {
     userId: string;
     verifications: IVerificationModel[];
     importsFlagDate: Date;
+    crownsBan?: ICrownsBanModel;
 }
 
 const usersSchema = new Schema<IUserModel>(
@@ -91,6 +127,7 @@ const usersSchema = new Schema<IUserModel>(
         userId: { type: String, required: true },
         verifications: { type: [verificationSchema], required: true },
         importsFlagDate: { type: Date, required: false },
+        crownsBan: { type: crownsBanSchema, required: false },
     },
     { collection: 'Users' }
 );
