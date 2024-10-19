@@ -47,9 +47,9 @@ export class MessageDeleteHandler implements IHandler {
             cachedMessage.channelId
         );
 
-        const author = await this.memberService.getGuildMemberFromUserId(cachedMessage.authorId);
+        const author = await this.memberService.fetchUser(cachedMessage.authorId);
         let actor;
-        if (actorId) actor = await this.memberService.getGuildMemberFromUserId(actorId);
+        if (actorId) actor = await this.memberService.fetchUser(actorId);
         await this.loggingService.logDeletedMessage(cachedMessage, author, actor ?? null);
         this.logger.info(`Logged deleted message with message ID ${message.id}.`);
     }

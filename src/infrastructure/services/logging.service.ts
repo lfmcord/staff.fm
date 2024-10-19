@@ -45,11 +45,7 @@ export class LoggingService {
         this.channelService = channelService;
     }
 
-    public async logDeletedMessage(
-        deletedMessage: CachedMessageModel,
-        author: GuildMember | null,
-        actor: GuildMember | null
-    ) {
+    public async logDeletedMessage(deletedMessage: CachedMessageModel, author: User | null, actor: User | null) {
         const logChannel = await this.getLogChannel(this.env.DELETED_MESSAGE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
@@ -58,8 +54,8 @@ export class LoggingService {
             .setFooter({ text: `Message ID: ${deletedMessage.messageId}` })
             .setTimestamp();
 
-        let description = `🗑️ Message from ${TextHelper.userDisplay(author?.user, false)} deleted `;
-        if (actor) description += `by ${TextHelper.userDisplay(actor?.user, false)} `;
+        let description = `🗑️ Message from ${TextHelper.userDisplay(author, false)} deleted `;
+        if (actor) description += `by ${TextHelper.userDisplay(actor, false)} `;
         description += `in <#${deletedMessage.channelId}>`;
         if (deletedMessage.contents !== '') description += `:\n${codeBlock(deletedMessage.contents)}`;
 

@@ -38,7 +38,10 @@ export class WhoknowsTrigger {
         this.logger.debug(`Checking if message starting with ! is a relevant WK command...`);
 
         const args = message.content.split(' ');
-        if (message.content.startsWith('!crowns') && (args[1] == 'ban' || args[1] == 'unban'))
+        if (
+            (message.content.startsWith('!crowns') || message.content.startsWith('!cw')) &&
+            (args[1] == 'ban' || args[1] == 'unban')
+        )
             await this.handleCrownsCommand(message, args);
     }
 
