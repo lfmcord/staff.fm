@@ -1,4 +1,4 @@
-import { Client, GuildMember, Role } from 'discord.js';
+import { Client, GuildMember, Role, User } from 'discord.js';
 import { TYPES } from '@src/types';
 import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
@@ -31,6 +31,15 @@ export class MemberService {
             return await guild.members.fetch(userId);
         } catch (e) {
             this.logger.warn(`${userId} is not an ID that belongs to a guild member. Cannot retrieve guild member.`);
+            return null;
+        }
+    }
+
+    async fetchUser(userId: string): Promise<User | null> {
+        try {
+            return await this.client.users.fetch(userId);
+        } catch (e) {
+            this.logger.warn(`${userId} is not an ID that belongs to a Discord user. Cannot retrieve user.`);
             return null;
         }
     }

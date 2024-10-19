@@ -1,6 +1,6 @@
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { EmbedBuilder, inlineCode, Message } from 'discord.js';
+import { Client, EmbedBuilder, inlineCode, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
@@ -29,17 +29,20 @@ export class WhoisCommand implements ICommand {
     private lastFmClient: LastFM;
     private memberService: MemberService;
     private usersRepository: UsersRepository;
+    private client: Client;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<WhoisCommand>,
         @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
-        @inject(TYPES.LastFmClient) lastFmClient: LastFM
+        @inject(TYPES.LastFmClient) lastFmClient: LastFM,
+        @inject(TYPES.Client) client: Client
     ) {
         this.logger = logger;
         this.lastFmClient = lastFmClient;
         this.memberService = memberService;
         this.usersRepository = usersRepository;
+        this.client = client;
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
@@ -80,27 +83,29 @@ export class WhoisCommand implements ICommand {
     async getEmbedsByDiscordUserId(userId: string): Promise<EmbedBuilder[]> {
         const embeds: EmbedBuilder[] = [];
         // Discord user
-        let guildMember;
-        try {
-            guildMember = await this.memberService.getGuildMemberFromUserId(userId);
-        } catch (e) {
-            this.logger.warn(`User with user ID ${userId} is not in the server.`);
-            embeds.push(
-                new EmbedBuilder()
-                    .setTitle(`Unknown Discord User`)
-                    .setColor(EmbedHelper.orange)
-                    .setDescription(`User with user ID '${userId}' is no longer in the server.`)
-            );
-        }
+        const guildMember = await this.memberService.getGuildMemberFromUserId(userId);
         if (!guildMember) {
-            embeds.push(
-                new EmbedBuilder()
-                    .setTitle(`Unknown Discord User`)
-                    .setColor(EmbedHelper.orange)
-                    .setDescription(
-                        `User with user ID ${userId} used the given username but is no longer in the server.`
-                    )
-            );
+            const user = await this.memberService.fetchUser(userId);
+            if (!user)
+                embeds.push(
+                    new EmbedBuilder()
+                        .setTitle(`Unknown Discord User`)
+                        .setColor(EmbedHelper.orange)
+                        .setDescription(`User with user ID ${userId} is not in the server.`)
+                );
+            else
+                embeds.push(
+                    EmbedHelper.getLogEmbed(user, user, LogLevel.Warning)
+                        .setTitle(`Discord Account`)
+                        .setDescription(`:warning: Not in this server.`)
+                        .setFields([
+                            {
+                                name: 'Account created',
+                                value: `<t:${moment(user.createdAt).unix()}:f> (<t:${moment(user.createdAt).unix()}:R>)`,
+                            },
+                        ])
+                        .setFooter({ text: `User ID: ${user.id}` })
+                );
         } else {
             embeds.push(
                 EmbedHelper.getLogEmbed(guildMember.user, guildMember.user, LogLevel.Info)
@@ -122,7 +127,7 @@ export class WhoisCommand implements ICommand {
 
         if (indexedUser) {
             const verifications = indexedUser.verifications.sort((a, b) => (a.verifiedOn > b.verifiedOn ? 1 : -1));
-            const currentLastFmUsername = verifications[0].username;
+            const currentLastFmUsername = verifications[0]?.username;
 
             // Last.fm Account
             if (!currentLastFmUsername)
@@ -159,7 +164,10 @@ export class WhoisCommand implements ICommand {
                 description += `- ${inlineCode(v.username ?? 'NO LAST.FM ACCOUNT')} (${`<t:${moment(v.verifiedOn).unix()}:D>`} by <@!${v.verifiedById}>)\n`;
             });
             embeds.push(
-                new EmbedBuilder().setTitle(`Past Verifications`).setColor(EmbedHelper.blue).setDescription(description)
+                new EmbedBuilder()
+                    .setTitle(`Past Verifications`)
+                    .setColor(EmbedHelper.blue)
+                    .setDescription(description != '' ? description : 'No Verifications')
             );
 
             // Crowns

@@ -62,8 +62,8 @@ export class CrownsBanHasCommand implements ICommand {
 
         let replyToUser = '👑 This user is not crowns banned.';
         if (foundUser.crownsBan != null) {
-            const actor = await this.memberService.getGuildMemberFromUserId(foundUser.crownsBan.bannedById);
-            replyToUser = `<:nocrown:816944519924809779> This user has been crowns banned on <t:${moment(foundUser.crownsBan.bannedOn).unix()}:f> by ${TextHelper.userDisplay(actor?.user, false)}.`;
+            const actor = await this.memberService.fetchUser(foundUser.crownsBan.bannedById);
+            replyToUser = `<:nocrown:816944519924809779> This user has been crowns banned on <t:${moment(foundUser.crownsBan.bannedOn).unix()}:d> by ${TextHelper.userDisplay(actor, false)}.`;
             replyToUser += `\n📝 ${bold('Reason:')} ${foundUser.crownsBan.reason ? foundUser.crownsBan.reason : 'No reason provided. Check the logs to find the reason.'}`;
         }
 
