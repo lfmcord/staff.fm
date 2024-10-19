@@ -285,10 +285,9 @@ export class LoggingService {
         const logChannel = await this.getLogChannel(this.env.CROWNS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
-        const description = isDeletion
-            ? `📈 ${bold('Added Imports')} to user ${TextHelper.userDisplay(subject)}`
-            : `📉 ${bold('Removed Imports')} from user ${TextHelper.userDisplay(subject)}`;
+        const description = `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject)}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
+        embed.setTitle(isDeletion ? `📉 Removed Imports Flag` : `📈 Added Imports Flag`);
         await logChannel.send({ embeds: [embed] });
     }
 

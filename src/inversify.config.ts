@@ -69,12 +69,10 @@ import { MessageUpdateHandler } from '@src/handlers/message-update.handler';
 import { MessageBulkDeleteHandler } from '@src/handlers/message-bulk-delete.handler';
 import { StaffMailReportCommand } from '@src/feature/commands/staffmail/staff-mail-report.command';
 import { StaffMailReportInteraction } from '@src/feature/interactions/message-context-menu/staff-mail-report.interaction';
-import { ImportsHasCommand } from '@src/feature/commands/administration/imports-has.command';
-import { ImportsSetCommand } from '@src/feature/commands/administration/imports-set.command';
-import { ImportsRemoveCommand } from '@src/feature/commands/administration/imports-remove.command';
 import { CrownsCommand } from '@src/feature/commands/administration/crowns.command';
 import { CrownsBanHasCommand } from '@src/feature/commands/administration/crownsban-has.command';
 import { WhoknowsTrigger } from '@src/feature/triggers/whoknows.trigger';
+import { ImportsCommand } from '@src/feature/commands/administration/imports.command';
 
 const container = new Container();
 
@@ -216,9 +214,7 @@ container.bind<ICommand>('Command').to(FlagsCommand);
 container.bind<ICommand>('Command').to(UnflagCommand);
 container.bind<ICommand>('Command').to(WhoisCommand);
 container.bind<ICommand>('Command').to(StaffMailReportCommand);
-container.bind<ICommand>('Command').to(ImportsHasCommand);
-container.bind<ICommand>('Command').to(ImportsSetCommand);
-container.bind<ICommand>('Command').to(ImportsRemoveCommand);
+container.bind<ICommand>('Command').to(ImportsCommand);
 container.bind<ICommand>('Command').to(CrownsCommand);
 container.bind<ICommand>('Command').to(CrownsBanHasCommand);
 
