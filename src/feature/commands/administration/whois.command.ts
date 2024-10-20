@@ -126,7 +126,7 @@ export class WhoisCommand implements ICommand {
         const indexedUser = await this.usersRepository.getUserByUserId(userId);
 
         if (indexedUser) {
-            const verifications = indexedUser.verifications.sort((a, b) => (a.verifiedOn > b.verifiedOn ? 1 : -1));
+            const verifications = indexedUser.verifications.sort((a, b) => (a.verifiedOn > b.verifiedOn ? -1 : 1));
             const currentLastFmUsername = verifications[0]?.username;
 
             // Last.fm Account

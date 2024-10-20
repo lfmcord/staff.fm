@@ -36,6 +36,7 @@ export class FlagsCommand implements ICommand {
             };
         }
 
+        // TODO put in txt instead
         let content = '';
         let i = 1;
         for (const flag of flags) {

@@ -41,22 +41,35 @@ export class VerificationLastFmTrigger {
 
     async run(message: Message) {
         if (message.content.startsWith(this.env.PREFIX)) return;
-        const lastFmUsername = TextHelper.getLastfmUsername(message.content);
 
-        // check if username is flagged
-        this.logger.debug(`Checking if '${lastFmUsername?.toLowerCase() ?? message.content}' is in flagged terms list`);
-        const flag = await this.flagsRepository.getFlagByTerm(lastFmUsername?.toLowerCase() ?? message.content);
-        if (flag) {
-            this.logger.info(`Verification message ${message.content} is exact match a flagged term (${flag.term})`);
-            await this.loggingService.logLastFmFlagAlert(message, flag);
-        } else {
-            const flags = await this.flagsRepository.getAllFlags();
-            for (const flag1 of flags) {
-                if (message.content?.match(flag1.term)) {
-                    this.logger.info(`Verification message ${message.content} contains a flagged term (${flag1.term})`);
-                    await this.loggingService.logLastFmFlagAlert(message, flag1);
-                    break;
-                }
+        const discordUsername = message.author.username.toLowerCase();
+        const discordDisplayname = message.author.displayName.toLowerCase();
+        const discordServerDisplayname = (
+            await this.memberService.getGuildMemberFromUserId(message.author.id)
+        )?.displayName.toLowerCase();
+        const lastFmUsername = TextHelper.getLastfmUsername(message.content)?.toLowerCase();
+
+        const flags = await this.flagsRepository.getAllFlags();
+
+        this.logger.info(
+            `Checking if new message or author is in flagged terms list. Last.fm username: ${lastFmUsername} Discord Username: ${discordUsername} Discord Displayname: ${discordDisplayname} Discord Server Displayname: ${discordServerDisplayname}`
+        );
+        for (const flag of flags) {
+            // check if last.fm username is flagged
+            if (message.content?.match(flag.term)) {
+                this.logger.info(`Verification message ${message.content} contains a flagged term (${flag.term})`);
+                await this.loggingService.logLastFmFlagAlert(message, flag);
+                return;
+            }
+            // check if discord username is flagged
+            if (
+                discordUsername.match(flag.term) ||
+                discordDisplayname.match(flag.term) ||
+                discordServerDisplayname?.match(flag.term)
+            ) {
+                this.logger.info(`User ${TextHelper.userLog(message.author)} matches flagged term ${flag.term}`);
+                await this.loggingService.logDiscordFlagAlert(message, flag);
+                return;
             }
         }
 

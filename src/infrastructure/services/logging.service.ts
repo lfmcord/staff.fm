@@ -213,6 +213,22 @@ export class LoggingService {
         logChannel.send({ embeds: [logEmbed] });
     }
 
+    async logDiscordFlagAlert(message: Message, flag: Flag) {
+        const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
+        if (!logChannel) return;
+
+        let description = `${TextHelper.userDisplay(message.author, false)} is trying to verify with a Discord account that was flagged as suspicious or malicious by staff.\n\n`;
+        description +=
+            `${bold(`Message: `)} ${TextHelper.getDiscordMessageLink(message)}\n` +
+            `${bold(`Flagged term: `)} ${inlineCode(flag.term)}\n` +
+            `${bold(`Reason: `)} ${flag.reason}`;
+
+        const logEmbed = EmbedHelper.getLogEmbed(this.client.user, message.author, LogLevel.Warning)
+            .setTitle(`⚠️ Discord Account Flagged`)
+            .setDescription(description);
+        logChannel.send({ embeds: [logEmbed] });
+    }
+
     async logDuplicateLastFmUsername(message: Message, otherMembers: string[]) {
         const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
         if (!logChannel) return;
