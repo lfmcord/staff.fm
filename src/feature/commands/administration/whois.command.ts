@@ -5,7 +5,7 @@ import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { TYPES } from '@src/types';
-import { IUserModel, UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { TextHelper } from '@src/helpers/text.helper';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { EmbedHelper } from '@src/helpers/embed.helper';
@@ -46,32 +46,23 @@ export class WhoisCommand implements ICommand {
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
-        let indexedUsers: IUserModel[] = [];
+        let usersToDisplay: string[] = [];
         const userId = TextHelper.getDiscordUserId(args[0]);
         if (userId) {
-            // arg is a user ID
-            const foundUser = await this.usersRepository.getUserByUserId(userId);
-            if (!foundUser) {
-                this.logger.info(`Whois command for user ID ${userId} cannot run because user is not in DB.`);
-                return {
-                    isSuccessful: false,
-                    replyToUser: `I have no information on this user. If you know their last.fm username, please verify them manually with \`>>verify ${userId} [last.fm username]\``,
-                };
-            }
-            indexedUsers.push(foundUser);
+            usersToDisplay.push(userId);
         } else {
             // arg is a last.fm username
-            indexedUsers = (await this.usersRepository.getUsersByLastFmUsername(args[0])) as IUserModel[];
-            if (indexedUsers.length === 0) {
+            usersToDisplay = (await this.usersRepository.getUsersByLastFmUsername(args[0])).map((u) => u.userId);
+            if (usersToDisplay.length === 0) {
                 return {
                     isSuccessful: false,
-                    replyToUser: `I could not find a user with this Last.fm username. Perhaps they are not indexed yet?`,
+                    replyToUser: `I could not find a user with this Last.fm username.`,
                 };
             }
         }
 
-        for (const u of indexedUsers) {
-            const embeds = await this.getEmbedsByDiscordUserId(u.userId);
+        for (const id of usersToDisplay) {
+            const embeds = await this.getEmbedsByDiscordUserId(id);
             message.channel.send({ embeds: embeds });
         }
 
@@ -91,7 +82,9 @@ export class WhoisCommand implements ICommand {
                     new EmbedBuilder()
                         .setTitle(`Unknown Discord User`)
                         .setColor(EmbedHelper.orange)
-                        .setDescription(`User with user ID ${userId} is not in the server.`)
+                        .setDescription(
+                            `I cannot find any information on user with user ID ${userId}. They might not exist or have deleted their account.`
+                        )
                 );
             else
                 embeds.push(

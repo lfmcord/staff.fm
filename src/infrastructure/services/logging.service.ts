@@ -196,7 +196,7 @@ export class LoggingService {
         if (!logChannel) return;
 
         const lastFmUsername = TextHelper.getLastfmUsername(message.content);
-        let description = `${TextHelper.userDisplay(message.author, false)} `;
+        let description = `${TextHelper.userDisplay(message.author, true)} `;
         if (lastFmUsername) description += `is trying to verify with a Last.fm account`;
         else description += `mentioned a term`;
         description += ` that was flagged as suspicious or malicious by staff.\n\n`;
@@ -217,7 +217,7 @@ export class LoggingService {
         const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
         if (!logChannel) return;
 
-        let description = `${TextHelper.userDisplay(message.author, false)} is trying to verify with a Discord account that was flagged as suspicious or malicious by staff.\n\n`;
+        let description = `${TextHelper.userDisplay(message.author, true)} is trying to verify with a Discord account that was flagged as suspicious or malicious by staff.\n\n`;
         description +=
             `${bold(`Message: `)} ${TextHelper.getDiscordMessageLink(message)}\n` +
             `${bold(`Flagged term: `)} ${inlineCode(flag.term)}\n` +
@@ -297,7 +297,7 @@ export class LoggingService {
         const logChannel = await this.getLogChannel(this.env.CROWNS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
-        const description = `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject)}`;
+        const description = `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
         embed.setTitle(isDeletion ? `📉 Removed Imports Flag` : `📈 Added Imports Flag`);
         await logChannel.send({ embeds: [embed] });
@@ -308,7 +308,7 @@ export class LoggingService {
         if (!logChannel) return;
 
         const description =
-            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject)}` +
+            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
             `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
         embed.setTitle(isUnban ? `👑 Crowns Unban` : `<:nocrown:816944519924809779> Crowns Ban`);
