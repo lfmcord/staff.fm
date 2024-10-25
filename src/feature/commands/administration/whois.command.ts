@@ -1,6 +1,6 @@
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { Client, EmbedBuilder, inlineCode, Message } from 'discord.js';
+import { Client, EmbedBuilder, Message, MessageCreateOptions } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
@@ -9,15 +9,13 @@ import { UsersRepository } from '@src/infrastructure/repositories/users.reposito
 import { TextHelper } from '@src/helpers/text.helper';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { EmbedHelper } from '@src/helpers/embed.helper';
-import { LogLevel } from '@src/helpers/models/LogLevel';
-import * as moment from 'moment/moment';
 import LastFM from 'lastfm-typed';
 import { Logger } from 'tslog';
 
 @injectable()
 export class WhoisCommand implements ICommand {
     name: string = 'whois';
-    description: string = 'Shows information about a discord or lastfm user.';
+    description: string = 'Shows information about a Discord or Lastfm user.';
     usageHint: string = '<user mention/ID or last.fm username>';
     examples: string[] = ['356178941913858049', 'haiyn'];
     permissionLevel = CommandPermissionLevel.Helper;
@@ -46,24 +44,14 @@ export class WhoisCommand implements ICommand {
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
-        let usersToDisplay: string[] = [];
         const userId = TextHelper.getDiscordUserId(args[0]);
         if (userId) {
-            usersToDisplay.push(userId);
+            message.channel.send(await this.getMessageForDiscordUser(userId));
         } else {
-            // arg is a last.fm username
-            usersToDisplay = (await this.usersRepository.getUsersByLastFmUsername(args[0])).map((u) => u.userId);
-            if (usersToDisplay.length === 0) {
-                return {
-                    isSuccessful: false,
-                    replyToUser: `I could not find a user with this Last.fm username.`,
-                };
+            const messagesToSend = await this.getMessagesForLastFmUsername(args[0]);
+            for (const messageToSend of messagesToSend) {
+                message.channel.send(messageToSend);
             }
-        }
-
-        for (const id of usersToDisplay) {
-            const embeds = await this.getEmbedsByDiscordUserId(id);
-            message.channel.send({ embeds: embeds });
         }
 
         return {
@@ -71,131 +59,86 @@ export class WhoisCommand implements ICommand {
         };
     }
 
-    async getEmbedsByDiscordUserId(userId: string): Promise<EmbedBuilder[]> {
+    async getMessagesForLastFmUsername(lastfmUsername: string): Promise<MessageCreateOptions[]> {
+        const messages: MessageCreateOptions[] = [];
+        const usersWithLastfmName = await this.usersRepository.getUsersByLastFmUsername(lastfmUsername);
+
+        let lastFmUser;
+        if (lastfmUsername) {
+            try {
+                lastFmUser = await this.lastFmClient.user.getInfo(lastfmUsername);
+            } catch (e) {
+                this.logger.warn(`Could not find last.fm user for username ${lastfmUsername} in whois command.`);
+            }
+        }
+
+        this.logger.info(
+            `Found ${usersWithLastfmName.length} indexed user with last.fm username ${lastfmUsername} to display.`
+        );
+        const embeds: EmbedBuilder[] = [];
+        embeds.push(EmbedHelper.getLastFmUserEmbed(lastfmUsername, lastFmUser).setTitle(`Last.fm Account`));
+        if (usersWithLastfmName.length == 0) embeds.push(EmbedHelper.getUserNotIndexedEmbed());
+        messages.push({ embeds: embeds });
+
+        let userCount = 1;
+        for (const indexedUser of usersWithLastfmName) {
+            const embeds: EmbedBuilder[] = [];
+            const guildMember = await this.memberService.getGuildMemberFromUserId(indexedUser.userId);
+            if (!guildMember) {
+                const user = await this.memberService.fetchUser(indexedUser.userId);
+                embeds.push(EmbedHelper.getDiscordUserEmbed(indexedUser.userId, user ?? undefined));
+            } else {
+                embeds.push(EmbedHelper.getDiscordMemberEmbed(indexedUser.userId, guildMember ?? undefined));
+            }
+            embeds.push(EmbedHelper.getVerificationHistoryEmbed(indexedUser.verifications));
+            embeds.push(EmbedHelper.getCrownsEmbed(indexedUser));
+            messages.push({ content: `### User ${userCount} using this Last.fm username:`, embeds: embeds });
+            userCount++;
+        }
+
+        return messages;
+    }
+
+    async getMessageForDiscordUser(userId: string): Promise<MessageCreateOptions> {
         const embeds: EmbedBuilder[] = [];
         // Discord user
         const guildMember = await this.memberService.getGuildMemberFromUserId(userId);
         if (!guildMember) {
             const user = await this.memberService.fetchUser(userId);
-            if (!user)
-                embeds.push(
-                    new EmbedBuilder()
-                        .setTitle(`Unknown Discord User`)
-                        .setColor(EmbedHelper.orange)
-                        .setDescription(
-                            `I cannot find any information on user with user ID ${userId}. They might not exist or have deleted their account.`
-                        )
-                );
-            else
-                embeds.push(
-                    EmbedHelper.getLogEmbed(user, user, LogLevel.Warning)
-                        .setTitle(`Discord Account`)
-                        .setDescription(`:warning: Not in this server.`)
-                        .setFields([
-                            {
-                                name: 'Account created',
-                                value: `<t:${moment(user.createdAt).unix()}:f> (<t:${moment(user.createdAt).unix()}:R>)`,
-                            },
-                        ])
-                        .setFooter({ text: `User ID: ${user.id}` })
-                );
+            embeds.push(EmbedHelper.getDiscordUserEmbed(userId, user ?? undefined));
         } else {
-            embeds.push(
-                EmbedHelper.getLogEmbed(guildMember.user, guildMember.user, LogLevel.Info)
-                    .setTitle(`Discord Account`)
-                    .setFields([
-                        {
-                            name: 'Joined',
-                            value: `<t:${moment(guildMember.joinedAt).unix()}:f> (<t:${moment(guildMember.joinedAt).unix()}:R>)`,
-                        },
-                        {
-                            name: 'Account created',
-                            value: `<t:${moment(guildMember.user.createdAt).unix()}:f> (<t:${moment(guildMember.user.createdAt).unix()}:R>)`,
-                        },
-                    ])
-                    .setFooter({ text: `User ID: ${guildMember.id}` })
-            );
+            embeds.push(EmbedHelper.getDiscordMemberEmbed(userId, guildMember ?? undefined));
         }
+
         const indexedUser = await this.usersRepository.getUserByUserId(userId);
-
-        if (indexedUser) {
-            const verifications = indexedUser.verifications.sort((a, b) => (a.verifiedOn > b.verifiedOn ? -1 : 1));
-            const currentLastFmUsername = verifications[0]?.username;
-
-            // Last.fm Account
-            if (!currentLastFmUsername)
-                embeds.push(
-                    new EmbedBuilder()
-                        .setTitle(`Last.fm Account`)
-                        .setColor(EmbedHelper.blue)
-                        .setDescription(`No Last.fm account currently in use.`)
-                );
-            else {
-                let lastFmUser;
-                try {
-                    lastFmUser = await this.lastFmClient.user.getInfo(currentLastFmUsername);
-                } catch (e) {
-                    this.logger.warn(
-                        `Could not find last.fm user for username ${currentLastFmUsername} for user ${TextHelper.userDisplay(guildMember?.user)} in whois command.`
-                    );
-                }
-                if (lastFmUser) embeds.push(EmbedHelper.getLastFmUserEmbed(lastFmUser).setTitle(`Last.fm Account`));
-                else
-                    embeds.push(
-                        new EmbedBuilder()
-                            .setTitle(`Last.fm Account`)
-                            .setColor(EmbedHelper.orange)
-                            .setDescription(
-                                `⚠️ Could not find Last.fm user for username ${inlineCode(currentLastFmUsername)}.\nPerhaps they've changed their username on the website?`
-                            )
-                    );
-            }
-
-            // Past verifications
-            let description = '';
-            verifications.forEach((v) => {
-                description += `- ${inlineCode(v.username ?? 'NO LAST.FM ACCOUNT')} (${`<t:${moment(v.verifiedOn).unix()}:D>`} by <@!${v.verifiedById}>)\n`;
-            });
-            embeds.push(
-                new EmbedBuilder()
-                    .setTitle(`Past Verifications`)
-                    .setColor(EmbedHelper.blue)
-                    .setDescription(description != '' ? description : 'No Verifications')
-            );
-
-            // Crowns
-            embeds.push(
-                new EmbedBuilder()
-                    .setTitle(`Crowns Game`)
-                    .setColor(EmbedHelper.blue)
-                    .setFields(
-                        {
-                            name: 'Status',
-                            value: indexedUser.crownsBan
-                                ? `<:nocrown:816944519924809779> Banned on <t:${moment(indexedUser.crownsBan.bannedOn).unix()}:d>`
-                                : `👑 No Crowns Ban`,
-                            inline: true,
-                        },
-                        {
-                            name: 'Imported?',
-                            value: indexedUser.importsFlagDate
-                                ? `✅ <t:${moment(indexedUser.importsFlagDate).unix()}:f>`
-                                : `❌ No`,
-                            inline: true,
-                        }
-                    )
-            );
-        } else {
-            embeds.push(
-                new EmbedBuilder()
-                    .setTitle(`User not indexed`)
-                    .setColor(EmbedHelper.orange)
-                    .setDescription(
-                        `This user is not yet indexed (hasn't been manually imported or verified yet), so I don't have any more info to show you. If you know their last.fm username, please verify them manually with \`>>verify ${userId} [last.fm username]\``
-                    )
-            );
+        if (!indexedUser) {
+            embeds.push(EmbedHelper.getUserNotIndexedEmbed(userId));
+            return { embeds: embeds };
         }
-        return embeds;
+
+        // Last.fm Account
+        const verifications = indexedUser.verifications.sort((a, b) => (a.verifiedOn > b.verifiedOn ? -1 : 1));
+        const currentLastFmUsername = verifications[0]?.username;
+
+        let lastFmUser;
+        if (currentLastFmUsername) {
+            try {
+                lastFmUser = await this.lastFmClient.user.getInfo(currentLastFmUsername);
+            } catch (e) {
+                this.logger.warn(
+                    `Could not find last.fm user for username ${currentLastFmUsername} for user ${TextHelper.userDisplay(guildMember?.user)} in whois command.`
+                );
+            }
+        }
+        embeds.push(EmbedHelper.getLastFmUserEmbed(currentLastFmUsername, lastFmUser).setTitle(`Last.fm Account`));
+
+        // Past verifications
+        embeds.push(EmbedHelper.getVerificationHistoryEmbed(verifications));
+
+        // Crowns
+        embeds.push(EmbedHelper.getCrownsEmbed(indexedUser));
+
+        return { embeds: embeds };
     }
 
     validateArgs(args: string[]): Promise<void> {

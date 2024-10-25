@@ -132,6 +132,7 @@ export class LoggingService {
         if (verification.lastfmUser) {
             embeds.push(
                 EmbedHelper.getLastFmUserEmbed(
+                    verification.lastfmUser.name,
                     verification.lastfmUser,
                     moment().diff(moment.unix(verification.lastfmUser.registered), 'days') <
                         this.env.LASTFM_AGE_ALERT_IN_DAYS
@@ -188,7 +189,7 @@ export class LoggingService {
         const logEmbed = EmbedHelper.getLogEmbed(message.author, message.author, LogLevel.Warning).setDescription(
             `${TextHelper.userDisplay(message.author, false)} is trying to verify with a new Last.fm Account that is younger than 30 days: ${TextHelper.getDiscordMessageLink(message)}`
         );
-        logChannel.send({ embeds: [logEmbed, EmbedHelper.getLastFmUserEmbed(lastFmUser, true)] });
+        logChannel.send({ embeds: [logEmbed, EmbedHelper.getLastFmUserEmbed(lastFmUser.name, lastFmUser, true)] });
     }
 
     async logLastFmFlagAlert(message: Message, flag: Flag) {

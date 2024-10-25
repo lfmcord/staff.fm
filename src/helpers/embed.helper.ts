@@ -6,6 +6,7 @@ import {
     Client,
     codeBlock,
     EmbedBuilder,
+    GuildMember,
     inlineCode,
     Message,
     MessageCreateOptions,
@@ -20,6 +21,8 @@ import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-
 import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
 import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
 import { CountryCodeHelper } from '@src/helpers/country-code.helper';
+import { IUserModel, IVerificationModel } from '@src/infrastructure/repositories/users.repository';
+import * as moment from 'moment';
 
 export class EmbedHelper {
     static readonly red = 12059152;
@@ -509,7 +512,25 @@ export class EmbedHelper {
         return logEmbed;
     }
 
-    static getLastFmUserEmbed(lastFmUser: getInfo, shouldAlert = false): EmbedBuilder {
+    static getLastFmUserEmbed(
+        lastFmUsername: string | undefined,
+        lastFmUser?: getInfo,
+        shouldAlert = false
+    ): EmbedBuilder {
+        if (!lastFmUsername)
+            return new EmbedBuilder()
+                .setTitle(`Last.fm Account`)
+                .setColor(EmbedHelper.blue)
+                .setDescription(`No Last.fm account currently in use.`);
+
+        if (!lastFmUser)
+            return new EmbedBuilder()
+                .setTitle(`Last.fm Account`)
+                .setColor(EmbedHelper.orange)
+                .setDescription(
+                    `⚠️ Could not find Last.fm user for username ${inlineCode(lastFmUsername)}.\nPerhaps they've changed their username on the website?`
+                );
+
         const embed = new EmbedBuilder()
             .setTitle('Last.fm Account')
             .setURL(lastFmUser.url)
@@ -549,6 +570,103 @@ export class EmbedHelper {
         const lfmImageUrl = lastFmUser.image.find((i) => i.size === 'extralarge')?.url;
         if (lfmImageUrl && lfmImageUrl !== '') embed.setThumbnail(lfmImageUrl);
         return embed;
+    }
+
+    static getDiscordUserEmbed(userId: string, user?: User): EmbedBuilder {
+        if (!user) {
+            return new EmbedBuilder()
+                .setTitle(`Unknown Discord User`)
+                .setColor(EmbedHelper.orange)
+                .setDescription(
+                    `I cannot find any information on user with user ID ${userId}. They might not exist or have deleted their account.`
+                );
+        }
+
+        return EmbedHelper.getLogEmbed(user, user, LogLevel.Warning)
+            .setTitle(`Discord Account`)
+            .setDescription(`:warning: Not in this server.`)
+            .setFields([
+                {
+                    name: 'Account created',
+                    value: `<t:${moment(user.createdAt).unix()}:f> (<t:${moment(user.createdAt).unix()}:R>)`,
+                },
+            ])
+            .setFooter({ text: `User ID: ${user.id}` });
+    }
+
+    static getDiscordMemberEmbed(userId: string, member?: GuildMember): EmbedBuilder {
+        if (!member) {
+            return new EmbedBuilder()
+                .setTitle(`Unknown Discord User`)
+                .setColor(EmbedHelper.orange)
+                .setDescription(
+                    `I cannot find any information on user with user ID ${userId}. They might not exist or have deleted their account.`
+                );
+        }
+
+        return EmbedHelper.getLogEmbed(member.user, member.user, LogLevel.Info)
+            .setTitle(`Discord Account`)
+            .setFields([
+                {
+                    name: 'Joined',
+                    value: `<t:${moment(member.joinedAt).unix()}:f> (<t:${moment(member.joinedAt).unix()}:R>)`,
+                },
+                {
+                    name: 'Account created',
+                    value: `<t:${moment(member.user.createdAt).unix()}:f> (<t:${moment(member.user.createdAt).unix()}:R>)`,
+                },
+            ])
+            .setFooter({ text: `User ID: ${member.id}` });
+    }
+
+    static getCrownsEmbed(indexedUser?: IUserModel): EmbedBuilder {
+        if (!indexedUser)
+            return new EmbedBuilder()
+                .setTitle(`Crowns Game`)
+                .setColor(EmbedHelper.orange)
+                .setDescription('No crowns data available.');
+
+        return new EmbedBuilder()
+            .setTitle(`Crowns Game`)
+            .setColor(EmbedHelper.blue)
+            .setFields(
+                {
+                    name: 'Status',
+                    value: indexedUser.crownsBan
+                        ? `<:nocrown:816944519924809779> Banned on <t:${moment(indexedUser.crownsBan.bannedOn).unix()}:d>`
+                        : `👑 No Crowns Ban`,
+                    inline: true,
+                },
+                {
+                    name: 'Imported?',
+                    value: indexedUser.importsFlagDate
+                        ? `✅ <t:${moment(indexedUser.importsFlagDate).unix()}:f>`
+                        : `❌ No`,
+                    inline: true,
+                }
+            );
+    }
+
+    static getVerificationHistoryEmbed(verifications: IVerificationModel[]): EmbedBuilder {
+        const sortedVerifications = verifications.sort((a, b) => (a.verifiedOn > b.verifiedOn ? -1 : 1));
+
+        let description = '';
+        sortedVerifications.forEach((v) => {
+            description += `- ${inlineCode(v.username ?? 'NO LAST.FM ACCOUNT')} (${`<t:${moment(v.verifiedOn).unix()}:D>`} by <@!${v.verifiedById}>)\n`;
+        });
+        return new EmbedBuilder()
+            .setTitle(`Past Verifications`)
+            .setColor(EmbedHelper.blue)
+            .setDescription(description != '' ? description : 'No Verifications');
+    }
+    static getUserNotIndexedEmbed(userId?: string): EmbedBuilder {
+        return new EmbedBuilder()
+            .setTitle(`User not indexed`)
+            .setColor(EmbedHelper.orange)
+            .setDescription(
+                `This user is not yet indexed (hasn't been manually imported or verified yet), so I don't have any more info to show you. 
+                If you know their last.fm username, please verify them manually with \`>>verify ${userId ?? '[user ID]'} [last.fm username]\``
+            );
     }
 
     static getLogLevelColor(level: LogLevel): number {

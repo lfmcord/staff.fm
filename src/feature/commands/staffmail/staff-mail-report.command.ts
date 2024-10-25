@@ -20,13 +20,12 @@ import { CommandResult } from '@src/feature/commands/models/command-result.model
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
 import { Environment } from '@models/environment';
 import { MemberService } from '@src/infrastructure/services/member.service';
-import container from '@src/inversify.config';
-import { WhoisCommand } from '@src/feature/commands/administration/whois.command';
 import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { TextHelper } from '@src/helpers/text.helper';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 
 @injectable()
 export class StaffMailReportCommand implements ICommand {
@@ -40,6 +39,7 @@ export class StaffMailReportCommand implements ICommand {
     isUsableInServer = false;
 
     private logger: Logger<StaffMailReportCommand>;
+    usersRepository: UsersRepository;
     loggingService: LoggingService;
     staffMailRepository: StaffMailRepository;
     memberService: MemberService;
@@ -52,8 +52,10 @@ export class StaffMailReportCommand implements ICommand {
         @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository,
+        @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
         @inject(TYPES.LoggingService) loggingService: LoggingService
     ) {
+        this.usersRepository = usersRepository;
         this.loggingService = loggingService;
         this.staffMailRepository = staffMailRepository;
         this.memberService = memberService;
@@ -202,12 +204,15 @@ export class StaffMailReportCommand implements ICommand {
                 this.env.PREFIX
             )
         );
-        if (!isAnonymous)
-            (
-                await (
-                    container.getAll<ICommand>('Command').find((c) => c.name == 'whois') as WhoisCommand
-                ).getEmbedsByDiscordUserId(reporter.user.id)
-            ).forEach((e) => embeds.push(e));
+        if (!isAnonymous) {
+            if (!isAnonymous) {
+                // Attach information about user
+                const indexedUser = await this.usersRepository.getUserByUserId(reporter.user.id);
+                embeds.push(EmbedHelper.getDiscordMemberEmbed(reporter.user.id, reporter ?? undefined));
+                embeds.push(EmbedHelper.getVerificationHistoryEmbed(indexedUser?.verifications ?? []));
+                embeds.push(EmbedHelper.getCrownsEmbed(indexedUser ?? undefined));
+            }
+        }
 
         await staffMailChannel!.send({
             content: `${rolePings}New StaffMail: Urgent Report`,

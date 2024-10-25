@@ -8,10 +8,9 @@ import { Logger } from 'tslog';
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Environment } from '@models/environment';
-import container from '../../../inversify.config';
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { WhoisCommand } from '@src/feature/commands/administration/whois.command';
 import { IModalSubmitInteraction } from '@src/feature/interactions/abstractions/modal-submit-interaction.interface';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 
 @injectable()
 export class StaffMailCreateModalSubmitInteraction implements IModalSubmitInteraction {
@@ -30,6 +29,8 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
         StaffMailCustomIds.InServerReportSendButton + '-submit',
     ];
     logger: Logger<StaffMailCreateModalSubmitInteraction>;
+    memberService: MemberService;
+    usersRepository: UsersRepository;
     loggingService: LoggingService;
     staffMailRepository: StaffMailRepository;
     env: Environment;
@@ -38,8 +39,12 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
         @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository,
         @inject(TYPES.BotLogger) logger: Logger<StaffMailCreateModalSubmitInteraction>,
         @inject(TYPES.LoggingService) loggingService: LoggingService,
+        @inject(TYPES.MemberService) memberService: MemberService,
+        @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
         @inject(TYPES.ENVIRONMENT) env: Environment
     ) {
+        this.memberService = memberService;
+        this.usersRepository = usersRepository;
         this.env = env;
         this.loggingService = loggingService;
         this.logger = logger;
@@ -84,14 +89,16 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
                 this.env.PREFIX
             )
         );
-        if (!isAnonymous)
-            (
-                await (
-                    container.getAll<ICommand>('Command').find((c) => c.name == 'whois') as WhoisCommand
-                ).getEmbedsByDiscordUserId(interaction.user.id)
-            ).forEach((e) => embeds.push(e));
 
-        embeds.push();
+        if (!isAnonymous) {
+            // Attach information about user
+            const member = await this.memberService.getGuildMemberFromUserId(interaction.user.id);
+            const indexedUser = await this.usersRepository.getUserByUserId(interaction.user.id);
+            embeds.push(EmbedHelper.getDiscordMemberEmbed(interaction.user.id, member ?? undefined));
+            embeds.push(EmbedHelper.getVerificationHistoryEmbed(indexedUser?.verifications ?? []));
+            embeds.push(EmbedHelper.getCrownsEmbed(indexedUser ?? undefined));
+        }
+
         await staffMailChannel!.send({
             content: `${rolePings} New StaffMail: ${humanReadableCategory}`,
             embeds: embeds,
