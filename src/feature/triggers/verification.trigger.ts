@@ -12,8 +12,8 @@ import { UsersRepository } from '@src/infrastructure/repositories/users.reposito
 import { MemberService } from '@src/infrastructure/services/member.service';
 
 @injectable()
-export class VerificationLastFmTrigger {
-    logger: Logger<VerificationLastFmTrigger>;
+export class VerificationTrigger {
+    logger: Logger<VerificationTrigger>;
     memberService: MemberService;
     usersRepository: UsersRepository;
     flagsRepository: FlagsRepository;
@@ -22,7 +22,7 @@ export class VerificationLastFmTrigger {
     loggingService: LoggingService;
 
     constructor(
-        @inject(TYPES.BotLogger) logger: Logger<VerificationLastFmTrigger>,
+        @inject(TYPES.BotLogger) logger: Logger<VerificationTrigger>,
         @inject(TYPES.LoggingService) loggingService: LoggingService,
         @inject(TYPES.LastFmClient) lastFmClient: LastFM,
         @inject(TYPES.ENVIRONMENT) env: Environment,
@@ -43,6 +43,7 @@ export class VerificationLastFmTrigger {
         if (message.content.startsWith(this.env.PREFIX)) return;
 
         const discordUsername = message.author.username.toLowerCase();
+        const discordUserId = message.author.id;
         const discordDisplayname = message.author.displayName.toLowerCase();
         const discordServerDisplayname = (
             await this.memberService.getGuildMemberFromUserId(message.author.id)
@@ -63,6 +64,7 @@ export class VerificationLastFmTrigger {
             }
             // check if discord username is flagged
             if (
+                discordUserId.match(flag.term) ||
                 discordUsername.match(flag.term) ||
                 discordDisplayname.match(flag.term) ||
                 discordServerDisplayname?.match(flag.term)

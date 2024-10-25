@@ -4,19 +4,19 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { Message, PartialMessage } from 'discord.js';
 import { Environment } from '@models/environment';
-import { VerificationLastFmTrigger } from '@src/feature/triggers/verification-lastfm.trigger';
+import { VerificationTrigger } from '@src/feature/triggers/verification.trigger';
 
 @injectable()
 export class MessageUpdateHandler implements IHandler {
     eventType = 'messageUpdate';
     private logger: Logger<MessageUpdateHandler>;
     env: Environment;
-    private verificationLastFmTrigger: VerificationLastFmTrigger;
+    private verificationLastFmTrigger: VerificationTrigger;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<MessageUpdateHandler>,
         @inject(TYPES.ENVIRONMENT) env: Environment,
-        @inject(TYPES.VerificationLastFmTrigger) verificationLastFmTrigger: VerificationLastFmTrigger
+        @inject(TYPES.VerificationLastFmTrigger) verificationLastFmTrigger: VerificationTrigger
     ) {
         this.env = env;
         this.logger = logger;

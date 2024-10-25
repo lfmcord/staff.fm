@@ -11,7 +11,7 @@ import { CachingRepository } from '@src/infrastructure/repositories/caching.repo
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { StaffMailDmTrigger } from '@src/feature/triggers/staff-mail-dm.trigger';
 import { Environment } from '@models/environment';
-import { VerificationLastFmTrigger } from '@src/feature/triggers/verification-lastfm.trigger';
+import { VerificationTrigger } from '@src/feature/triggers/verification.trigger';
 import { CommandService } from '@src/infrastructure/services/command.service';
 import { WhoknowsTrigger } from '@src/feature/triggers/whoknows.trigger';
 
@@ -21,7 +21,7 @@ export class MessageCreateHandler implements IHandler {
 
     private logger: Logger<MessageCreateHandler>;
     commandService: CommandService;
-    verificationLastFmTrigger: VerificationLastFmTrigger;
+    verificationLastFmTrigger: VerificationTrigger;
     whoknowsTrigger: WhoknowsTrigger;
     env: Environment;
     private readonly staffMailDmReply: StaffMailDmTrigger;
@@ -34,7 +34,7 @@ export class MessageCreateHandler implements IHandler {
         @inject(TYPES.CachingRepository) cachingRepository: CachingRepository,
         @inject(TYPES.StaffMailDmTrigger) staffMailDmReply: StaffMailDmTrigger,
         @inject(TYPES.ENVIRONMENT) env: Environment,
-        @inject(TYPES.VerificationLastFmTrigger) verificationLastFmTrigger: VerificationLastFmTrigger,
+        @inject(TYPES.VerificationLastFmTrigger) verificationLastFmTrigger: VerificationTrigger,
         @inject(TYPES.WhoknowsTrigger) whoknowsTrigger: WhoknowsTrigger,
         @inject(TYPES.CommandService) commandService: CommandService
     ) {

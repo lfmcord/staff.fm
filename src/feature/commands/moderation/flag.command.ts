@@ -15,9 +15,13 @@ import { TextHelper } from '@src/helpers/text.helper';
 export class FlagCommand implements ICommand {
     name: string = 'flag';
     description: string =
-        "Flags a term as suspicious or otherwise malicious in order to show a warning if someone' last.fm username contains it. Can be a full last.fm username or just a part of it.";
+        'Flags a term as suspicious or otherwise malicious in order to show a warning if someone posts in the verification channel. Can be a full or partial last.fm username, discord username/displayname or a discord user ID.';
     usageHint: string = '<term to flag> <reason>';
-    examples: string[] = ['haiyn big dummy', '1488 people with that in their name are nazis'];
+    examples: string[] = [
+        'haiyn big dummy',
+        '1488 people with that in their name are nazis',
+        '356178941913858049 unresolved business with staff',
+    ];
     permissionLevel = CommandPermissionLevel.Moderator;
     aliases = [];
     isUsableInDms = false;

@@ -46,7 +46,7 @@ import { StaffMailReplyCommand } from '@src/feature/commands/staffmail/staff-mai
 import { Environment } from '@models/environment';
 import { AuditService } from '@src/infrastructure/services/audit.service';
 import * as process from 'process';
-import { VerificationLastFmTrigger } from '@src/feature/triggers/verification-lastfm.trigger';
+import { VerificationTrigger } from '@src/feature/triggers/verification.trigger';
 import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
 import { FlagCommand } from '@src/feature/commands/moderation/flag.command';
 import { FlagsCommand } from '@src/feature/commands/moderation/flags.command';
@@ -220,7 +220,7 @@ container.bind<ICommand>('Command').to(CrownsBanHasCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
-container.bind<VerificationLastFmTrigger>(TYPES.VerificationLastFmTrigger).to(VerificationLastFmTrigger);
+container.bind<VerificationTrigger>(TYPES.VerificationLastFmTrigger).to(VerificationTrigger);
 container.bind<WhoknowsTrigger>(TYPES.WhoknowsTrigger).to(WhoknowsTrigger);
 
 // INTERACTIONS
