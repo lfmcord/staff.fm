@@ -11,6 +11,8 @@ import {
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
 import { TextHelper } from '@src/helpers/text.helper';
 import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
+import { IUserModel } from '@src/infrastructure/repositories/users.repository';
+import * as moment from 'moment';
 
 export class ComponentHelper {
     public static cancelButton = (customId: string) =>
@@ -207,4 +209,18 @@ export class ComponentHelper {
         modalComponents.forEach((c) => modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(c)));
         return modal;
     };
+
+    static verificationMenu(user: IUserModel) {
+        let options = user.verifications.map((v, idx) =>
+            new StringSelectMenuOptionBuilder()
+                .setLabel(`${idx + 1}. ${v.username ?? 'NO LAST.FM ACCOUNT'}`)
+                .setDescription(`Verified on ${moment(v.verifiedOn).format('ddd, MMM Do YYYY, HH:mm')}`)
+                .setValue(user.userId + '_' + v._id.toString())
+        );
+        options = options.slice(0, 25);
+        return new StringSelectMenuBuilder()
+            .setCustomId('defer-verifyremove')
+            .setPlaceholder('Select the verification to delete')
+            .addOptions(options);
+    }
 }

@@ -39,10 +39,13 @@ export class InteractionCreateHandler implements IHandler {
         const foundInteraction = interactions.find(
             (i: IMessageContextMenuInteraction) => i.data.name === interaction.commandName
         );
-        if (!foundInteraction)
-            throw Error(
+        if (!foundInteraction) {
+            this.logger.error(
                 `Could not find message context menu interaction for name ${interaction.commandName} among ${interactions?.length} message context menu interactions.`
             );
+            return;
+        }
+
         this.logger.debug(`${foundInteraction.constructor.name} is handling the message context menu  interaction...`);
         await foundInteraction.manage(interaction);
     }
@@ -66,10 +69,13 @@ export class InteractionCreateHandler implements IHandler {
         const foundInteraction = interactions.find((i: IMessageComponentInteraction) =>
             i.customIds.includes(interaction.customId)
         );
-        if (!foundInteraction)
-            throw Error(
+        if (!foundInteraction) {
+            this.logger.error(
                 `Could not find message component interaction for ID ${interaction.customId} among ${interactions?.length} message component interactions.`
             );
+            return;
+        }
+
         this.logger.debug(`${foundInteraction.constructor.name} is handling the message component interaction...`);
         await foundInteraction.manage(interaction);
     }
@@ -79,10 +85,13 @@ export class InteractionCreateHandler implements IHandler {
         const foundInteraction = interactions.find((i: IModalSubmitInteraction) =>
             i.customIds.includes(interaction.customId)
         );
-        if (!foundInteraction)
-            throw Error(
+        if (!foundInteraction) {
+            this.logger.error(
                 `Could not find modal submit interaction for ID ${interaction.customId} among ${interactions?.length} modal submit interactions.`
             );
+            return;
+        }
+
         this.logger.debug(`${foundInteraction.constructor.name} is handling the modal submit interaction...`);
         await foundInteraction.manage(interaction);
     }

@@ -73,6 +73,8 @@ import { CrownsCommand } from '@src/feature/commands/administration/crowns.comma
 import { CrownsBanHasCommand } from '@src/feature/commands/administration/crownsban-has.command';
 import { WhoknowsTrigger } from '@src/feature/triggers/whoknows.trigger';
 import { ImportsCommand } from '@src/feature/commands/administration/imports.command';
+import { VerifyRemoveCommand } from '@src/feature/commands/administration/verify-remove.command';
+import { VerifyRemoveInteraction } from '@src/feature/interactions/message-component/verify-remove.interaction';
 
 const container = new Container();
 
@@ -217,6 +219,7 @@ container.bind<ICommand>('Command').to(StaffMailReportCommand);
 container.bind<ICommand>('Command').to(ImportsCommand);
 container.bind<ICommand>('Command').to(CrownsCommand);
 container.bind<ICommand>('Command').to(CrownsBanHasCommand);
+container.bind<ICommand>('Command').to(VerifyRemoveCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
@@ -232,6 +235,7 @@ container
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateModalShowInteraction);
 container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(VerifyContextMenuInteraction);
 container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(StaffMailReportInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(VerifyRemoveInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);

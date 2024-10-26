@@ -647,12 +647,12 @@ export class EmbedHelper {
             );
     }
 
-    static getVerificationHistoryEmbed(verifications: IVerificationModel[]): EmbedBuilder {
+    static getVerificationHistoryEmbed(verifications: IVerificationModel[], isNumbered = false): EmbedBuilder {
         const sortedVerifications = verifications.sort((a, b) => (a.verifiedOn > b.verifiedOn ? -1 : 1));
 
         let description = '';
-        sortedVerifications.forEach((v) => {
-            description += `- ${inlineCode(v.username ?? 'NO LAST.FM ACCOUNT')} (${`<t:${moment(v.verifiedOn).unix()}:D>`} by <@!${v.verifiedById}>)\n`;
+        sortedVerifications.forEach((v, idx) => {
+            description += `${isNumbered ? idx + 1 + '.' : '-'} ${inlineCode(v.username ?? 'NO LAST.FM ACCOUNT')} (${`<t:${moment(v.verifiedOn).unix()}:D>`} by <@!${v.verifiedById}>)\n`;
         });
         return new EmbedBuilder()
             .setTitle(`Past Verifications`)

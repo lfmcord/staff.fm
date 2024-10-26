@@ -89,9 +89,14 @@ export class UsersRepository {
             }
         );
     }
+
+    async removeVerificationFromUser(userId: string, _id: string) {
+        return UsersModelInstance.updateOne({ userId: userId }, { $pull: { verifications: { _id: _id } } });
+    }
 }
 
 export interface IVerificationModel {
+    _id: string;
     username: string;
     verifiedOn: Date;
     verifiedById: string;

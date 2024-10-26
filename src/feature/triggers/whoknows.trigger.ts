@@ -8,10 +8,14 @@ import { MemberService } from '@src/infrastructure/services/member.service';
 import { TextHelper } from '@src/helpers/text.helper';
 import { Environment } from '@models/environment';
 import { MessageService } from '@src/infrastructure/services/message.service';
+import { LastfmError } from '@models/lastfm-error.model';
+import LastFM from 'lastfm-typed';
+import { Verification } from '@src/feature/commands/administration/models/verification.model';
 
 @injectable()
 export class WhoknowsTrigger {
     logger: Logger<WhoknowsTrigger>;
+    lastFmClient: LastFM;
     memberService: MemberService;
     usersRepository: UsersRepository;
     loggingService: LoggingService;
@@ -24,8 +28,10 @@ export class WhoknowsTrigger {
         @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.MessageService) messageService: MessageService,
+        @inject(TYPES.LastFmClient) lastFmClient: LastFM,
         @inject(TYPES.ENVIRONMENT) env: Environment
     ) {
+        this.lastFmClient = lastFmClient;
         this.memberService = memberService;
         this.usersRepository = usersRepository;
         this.loggingService = loggingService;
@@ -43,6 +49,8 @@ export class WhoknowsTrigger {
             (args[1] == 'ban' || args[1] == 'unban')
         )
             await this.handleCrownsCommand(message, args);
+
+        if (message.content.startsWith('!login')) await this.handleLoginCommand(message, args.slice(1));
     }
 
     private async handleCrownsCommand(message: Message, args: string[]) {
@@ -93,5 +101,56 @@ export class WhoknowsTrigger {
             return;
         }
         await this.loggingService.logCrownsBan(message.author, subject, reason, message, !isBan);
+    }
+
+    private async handleLoginCommand(message: Message, args: string[]) {
+        if (args.length == 0 || args[0].startsWith('[')) {
+            this.logger.info(`'${args[0]}' is most likely not a valid last.fm name, skipping verification`);
+            return;
+        }
+        const indexedUser = await this.usersRepository.getUserByUserId(message.author.id);
+        if (!indexedUser) {
+            this.logger.warn(
+                `Cannot find indexed user for user ID ${message.author.id}, so I cannot add this login to their verifications`
+            );
+            return;
+        }
+        const lastUsedLastFmUsername = indexedUser.verifications.sort((a, b) =>
+            a.verifiedOn > b.verifiedOn ? -1 : 1
+        )[0].username;
+        if (lastUsedLastFmUsername == args[0].toLowerCase()) {
+            this.logger.info(
+                `User ${TextHelper.userLog(message.author)} latest verification is already for username ${args[0].toLowerCase()}. Skipping.`
+            );
+            return;
+        }
+
+        let lastfmUser;
+        try {
+            lastfmUser = await this.lastFmClient.user.getInfo({ username: args[0] });
+        } catch (e) {
+            if ((e as LastfmError).code == '6') {
+                this.logger.info(
+                    `Last.fm user with name '${args[0]}' could not be found, I am not adding this verification.`
+                );
+            } else {
+                this.logger.error('Last.fm returned an error that is not code 6 (not found)', e);
+            }
+            return;
+        }
+
+        const member = await this.memberService.getGuildMemberFromUserId(message.author.id);
+        const wk = await this.memberService.fetchUser(this.env.WHOKNOWS_USER_ID);
+        const newVerification: Verification = {
+            verificationMessage: message,
+            lastfmUser: lastfmUser,
+            discordAccountCreated: message.author.createdTimestamp,
+            isReturningUser: false,
+            lastfmAccountCreated: lastfmUser.registered,
+            verifiedMember: member!,
+            verifyingUser: wk!,
+        };
+        await this.usersRepository.addVerificationToUser(newVerification);
+        await this.loggingService.logVerification(newVerification);
     }
 }
