@@ -44,8 +44,7 @@ export class FlagsRepository {
                     term: flag.term,
                     reason: flag.reason,
                     createdAt: flag.createdAt,
-                    createdBy:
-                        (await this.memberService.getGuildMemberFromUserId(flag.createdById))?.user ?? flag.createdById,
+                    createdBy: (await this.memberService.fetchUser(flag.createdById)) ?? flag.createdById,
                 };
             })
         );

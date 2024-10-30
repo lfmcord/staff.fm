@@ -1,13 +1,12 @@
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { EmbedBuilder, inlineCode, Message } from 'discord.js';
+import { AttachmentBuilder, Message, User } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
 import { TYPES } from '@src/types';
 import * as moment from 'moment';
-import { EmbedHelper } from '@src/helpers/embed.helper';
-import { TextHelper } from '@src/helpers/text.helper';
+import * as Buffer from 'buffer';
 
 @injectable()
 export class FlagsCommand implements ICommand {
@@ -36,22 +35,20 @@ export class FlagsCommand implements ICommand {
             };
         }
 
-        // TODO put in txt instead
         let content = '';
         let i = 1;
         for (const flag of flags) {
-            const newLine = `${i}. ${inlineCode(flag.term)}: ${flag.reason} (created <t:${moment(flag.createdAt).unix()}:D> by ${TextHelper.userDisplay(flag.createdBy)}\n`;
-            if (content.length + newLine.length >= 4096) {
-                await message.channel.send({
-                    embeds: [new EmbedBuilder().setDescription(content).setColor(EmbedHelper.blue)],
-                });
-                content = '';
-            }
+            const newLine = `${i}. ${flag.term}: ${flag.reason} (created ${moment(flag.createdAt).format('YYYY-MM-DD')} by ${flag.createdBy instanceof User ? flag.createdBy.username : flag.createdBy})\n`;
             content += newLine;
             i++;
         }
         await message.channel.send({
-            embeds: [new EmbedBuilder().setDescription(content).setColor(EmbedHelper.blue)],
+            content: `There are currently ${flags.length} flagged terms:`,
+            files: [
+                new AttachmentBuilder(Buffer.Buffer.from(content, 'utf-8'), {
+                    name: `${moment().format('YYYY_MM_DD')}_flags.txt`,
+                }),
+            ],
         });
 
         return {
