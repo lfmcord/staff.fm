@@ -34,13 +34,13 @@ export class ComponentHelper {
     public static reportButton = (customId: string) =>
         new ButtonBuilder()
             .setCustomId(customId)
-            .setLabel('Send Report')
-            .setStyle(ButtonStyle.Success)
-            .setEmoji({ name: '✉️' });
+            .setLabel('Create Report')
+            .setStyle(ButtonStyle.Danger)
+            .setEmoji({ name: '⚠️' });
     public static reportAnonButton = (customId: string) =>
         new ButtonBuilder()
             .setCustomId(customId)
-            .setLabel('Send Anonymous Report')
+            .setLabel('Create Anonymous Report')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji({ name: '🕵️' });
 
@@ -111,7 +111,7 @@ export class ComponentHelper {
 
         switch (sendButtonId) {
             case StaffMailCustomIds.ReportSendButton:
-            case StaffMailCustomIds.ReportSendAnonButton:
+            case StaffMailCustomIds.InServerReportSendButton:
                 modal.setTitle('Sending a report');
                 modalComponents.push(
                     new TextInputBuilder()
@@ -124,6 +124,24 @@ export class ComponentHelper {
                     new TextInputBuilder()
                         .setCustomId(`${id}-text`)
                         .setLabel("What you'd like to report")
+                        .setStyle(TextInputStyle.Paragraph)
+                        .setMaxLength(2048)
+                );
+                break;
+            case StaffMailCustomIds.ReportSendAnonButton:
+            case StaffMailCustomIds.InServerReportSendAnonButton:
+                modal.setTitle('Sending an anon report');
+                modalComponents.push(
+                    new TextInputBuilder()
+                        .setCustomId(`${id}-summary`)
+                        .setLabel('A short summary about your report')
+                        .setStyle(TextInputStyle.Short)
+                        .setMaxLength(64)
+                );
+                modalComponents.push(
+                    new TextInputBuilder()
+                        .setCustomId(`${id}-text`)
+                        .setLabel("What you'd like to anonymously report")
                         .setStyle(TextInputStyle.Paragraph)
                         .setMaxLength(2048)
                 );

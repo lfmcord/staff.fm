@@ -39,18 +39,19 @@ export class StaffMailManagementCommand implements ICommand {
     async run(message: Message | PartialMessage): Promise<CommandResult> {
         const createButton = new ButtonBuilder()
             .setCustomId('defer-staff-mail-create-button')
-            .setLabel('Send a message')
+            .setLabel('Contact Staff')
             .setStyle(ButtonStyle.Primary)
-            .setEmoji({ name: '📫' });
+            .setEmoji({ name: '✉️' });
         message.channel.send({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle('How to contact staff')
+                    .setTitle('📯 Contacting Staff')
                     .setColor(EmbedHelper.blue)
                     .setDescription(
-                        `If you wish to contact the staff team, ${bold('please use the button below')}. You can also simply DM me ${inlineCode(this.env.PREFIX + 'staffmail')} to start the process!` +
-                            `\n\nSending a message to staff will start a conversation in our Direct Messages. Nobody but you and the staff team are able to see them.\n\n` +
-                            `If it is an urgent matter, feel free to use the <@&${this.env.MODERATOR_ROLE_IDS[0]}> ping!`
+                        `If you wish to **contact the staff team about a general matter** that isn't urgent, please use one of the following ways to reach out:\n` +
+                            `- ${bold('Use the button below')} or DM me ${inlineCode(this.env.PREFIX + 'staffmail')} to select what you would like to talk about.\n` +
+                            `- If your issue is sensitive or pertaining to a staff member, please DM an <@&${this.env.ADMIN_ROLE_IDS[0]}>.\n\n` +
+                            `Contacting staff through any of these means will start a conversation in our Direct Messages. Nobody but you and the staff team are able to see them. You are able to choose to remain anonymous as well.`
                     ),
             ],
             components: [new ActionRowBuilder<ButtonBuilder>().addComponents(createButton)],
@@ -58,12 +59,14 @@ export class StaffMailManagementCommand implements ICommand {
         message.channel.send({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle('Sending Reports')
+                    .setTitle(':fire_engine: Reporting Something')
                     .setColor(EmbedHelper.red)
                     .setDescription(
-                        `If you have a report of someone breaking rules or another situation that requires ${bold("Staff's immediate attention")}, click the button below.\n\n
-                        You can also report it by DMing me ${inlineCode(this.env.PREFIX + 'report')} along with your report. You can also right-click/tap-and-hold the message in the server you want to report and select Apps -> Report Message.\n\n
-                        💡 ${bold('Hint:')} Including message links, screenshots or user names/IDs helps staff to resolve the issue faster.`
+                        `If you have a report of someone breaking rules or another situation that requires ${bold("Staff's immediate attention")}, use one of these ways:\n\n` +
+                            `- **Use the button below or DM me ${inlineCode(this.env.PREFIX + 'report')}!**\n` +
+                            `- ${bold('Right-click a message and select Apps -> Report Message')} to quickly report a message.\n` +
+                            `- If it is an urgent matter, feel free to **use the <@&${this.env.MODERATOR_ROLE_IDS[0]}> and <@&${this.env.ADMIN_ROLE_IDS[0]}> ping!**\n\n` +
+                            `-# 💡 Hint: Including message links, screenshots or user names/IDs helps staff to resolve the issue faster. You can close and reopen the report menu without losing progress.`
                     ),
             ],
             components: [
