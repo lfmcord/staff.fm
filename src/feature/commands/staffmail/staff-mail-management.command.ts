@@ -39,16 +39,16 @@ export class StaffMailManagementCommand implements ICommand {
     async run(message: Message | PartialMessage): Promise<CommandResult> {
         const createButton = new ButtonBuilder()
             .setCustomId('defer-staff-mail-create-button')
-            .setLabel('Contact Staff')
+            .setLabel('Contact Discord Staff')
             .setStyle(ButtonStyle.Primary)
             .setEmoji({ name: '✉️' });
         message.channel.send({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle('📯 Contacting Staff')
+                    .setTitle('📯 Contacting Discord Staff')
                     .setColor(EmbedHelper.blue)
                     .setDescription(
-                        `If you wish to **contact the staff team about a general matter** that isn't urgent, please use one of the following ways to reach out:\n` +
+                        `If you wish to **contact the Discord server staff team about a general matter pertaining to the server** that isn't urgent, please use one of the following ways to reach out:\n` +
                             `- ${bold('Use the button below')} or DM me ${inlineCode(this.env.PREFIX + 'staffmail')} to select what you would like to talk about.\n` +
                             `- If your issue is sensitive or pertaining to a staff member, please DM an <@&${this.env.ADMIN_ROLE_IDS[0]}>.\n\n` +
                             `Contacting staff through any of these means will start a conversation in our Direct Messages. Nobody but you and the staff team are able to see them. You are able to choose to remain anonymous as well.`
