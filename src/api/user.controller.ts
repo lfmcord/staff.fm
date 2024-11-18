@@ -56,7 +56,7 @@ export class UserController {
                 lastfmUser: request.body.username,
                 verifyingUser: whoknowsUser!.user,
                 discordAccountCreated: member.user.createdTimestamp,
-                verifiedMember: member,
+                verifiedUser: member.user,
                 lastfmAccountCreated: lastFmUser.registered,
                 verificationMessage: null,
             };

@@ -147,7 +147,7 @@ export class WhoknowsTrigger {
             discordAccountCreated: message.author.createdTimestamp,
             isReturningUser: false,
             lastfmAccountCreated: lastfmUser.registered,
-            verifiedMember: member!,
+            verifiedUser: member!.user,
             verifyingUser: wk!,
         };
         await this.usersRepository.addVerificationToUser(newVerification);

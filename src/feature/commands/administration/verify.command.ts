@@ -101,14 +101,14 @@ export class VerifyCommand implements ICommand {
                     `The supplied first argument is not a discord user: ${args[0]}`,
                     `The first argument in the command has to be a valid Discord user!`
                 );
-            const memberToVerify = await this.memberService.getGuildMemberFromUserId(userId);
-            if (!memberToVerify) {
+            const user = await this.memberService.fetchUser(userId);
+            if (!user) {
                 throw new ValidationError(
-                    `No guild member for: ${args[0]}`,
+                    `No discord user for: ${args[0]}`,
                     `I can't find the user you are trying to verify!`
                 );
             }
-            return await this.verifyUser(message, message, memberToVerify?.user, message.author, args[1]);
+            return await this.verifyUser(message, message, user, message.author, args[1]);
         }
     }
 
@@ -129,24 +129,15 @@ export class VerifyCommand implements ICommand {
         lastfmUsername?: string
     ): Promise<CommandResult> {
         const memberToVerify = await this.memberService.getGuildMemberFromUserId(targetUser.id);
+        const userToVerify = await this.memberService.fetchUser(targetUser.id);
         if (!lastfmUsername) lastfmUsername = TextHelper.getLastfmUsername(verificationMessage.content) ?? undefined;
 
-        if (!memberToVerify) {
+        if (!userToVerify) {
             return {
                 isSuccessful: false,
-                replyToUser: `I cannot find this user!`,
-                shouldDelete: true,
+                replyToUser: `This doesn't seem to be a valid discord user!`,
             };
         }
-
-        // const memberRoles = await this.memberService.getRolesFromGuildMember(memberToVerify);
-        // if (!memberRoles.find((r) => r.id === this.env.UNVERIFIED_ROLE_ID)) {
-        //     return {
-        //         isSuccessful: false,
-        //         replyToUser: `This user is already verified!`,
-        //         shouldDelete: true,
-        //     };
-        // }
 
         if (
             (await this.memberService.getMemberPermissionLevel(verificationMessage.member!)) <
@@ -158,7 +149,8 @@ export class VerifyCommand implements ICommand {
                 flags.find(
                     (flag) =>
                         verificationMessage?.content?.match(flag.term) != null ||
-                        lastfmUsername?.match(flag.term) != null
+                        lastfmUsername?.match(flag.term) != null ||
+                        this.memberService.checkIfMemberIsFlagged(flag, memberToVerify ?? userToVerify)
                 )
             ) {
                 this.logger.debug(`Verifier is trying to verify a flagged account.`);
@@ -173,6 +165,13 @@ export class VerifyCommand implements ICommand {
         await verificationMessage.react(TextHelper.loading);
         let lastfmUser;
         if (!lastfmUsername) {
+            if (!memberToVerify) {
+                await verificationMessage.reactions.removeAll();
+                return {
+                    isSuccessful: false,
+                    replyToUser: `I cannot verify a user that isn't on the server without a last.fm account. If you know a last.fm account for this user, please link it with \`${this.env.PREFIX}verify ${userToVerify.id}\`.`,
+                };
+            }
             const wasVerified = await this.tryToVerifyUserWithoutLastfm(trigger, memberToVerify);
             if (!wasVerified) {
                 this.logger.debug(`Verifying without a last.fm account was aborted or timed out.`);
@@ -204,22 +203,22 @@ export class VerifyCommand implements ICommand {
             }
             this.logger.debug(`User has a playcount of ${lastfmUser.playcount}`);
             if (lastfmUser.playcount == 0) {
-                await this.loggingService.logZeroPlaycountVerification(memberToVerify.user, lastfmUser.name);
+                await this.loggingService.logZeroPlaycountVerification(userToVerify, lastfmUser.name);
             }
-            await this.assignScrobbleRoles(memberToVerify, lastfmUser.playcount);
+            if (memberToVerify) await this.assignScrobbleRoles(memberToVerify, lastfmUser.playcount);
         }
 
         const verification: Verification = {
             verificationMessage: verificationMessage ?? null,
             verifyingUser: verifier,
-            verifiedMember: memberToVerify,
+            verifiedUser: userToVerify,
             lastfmUser: lastfmUser ?? null,
-            discordAccountCreated: memberToVerify.user.createdTimestamp,
+            discordAccountCreated: userToVerify.createdTimestamp,
             lastfmAccountCreated: lastfmUser?.registered ?? null,
             isReturningUser: false,
         };
 
-        const existingUser = await this.usersRepository.getUserByUserId(verification.verifiedMember.id);
+        const existingUser = await this.usersRepository.getUserByUserId(verification.verifiedUser.id);
         if (!existingUser) {
             await this.usersRepository.addUser(verification);
         } else {
@@ -227,7 +226,7 @@ export class VerifyCommand implements ICommand {
             await this.usersRepository.addVerificationToUser(verification);
         }
 
-        await memberToVerify.roles.remove(this.env.UNVERIFIED_ROLE_ID as RoleResolvable);
+        if (memberToVerify) await memberToVerify.roles.remove(this.env.UNVERIFIED_ROLE_ID as RoleResolvable);
 
         try {
             await verificationMessage.reactions.removeAll();
@@ -239,6 +238,7 @@ export class VerifyCommand implements ICommand {
 
         return {
             isSuccessful: true,
+            replyToUser: `I've verified the user <@!${userToVerify.id}>.`,
             shouldDelete: trigger.channel?.id == this.env.VERIFICATION_CHANNEL_ID,
         };
     }

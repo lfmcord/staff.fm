@@ -21,7 +21,7 @@ export class UsersRepository {
 
     async addUser(verification: Verification) {
         const userInstance = new UsersModelInstance({
-            userId: verification.verifiedMember.id,
+            userId: verification.verifiedUser.id,
             verifications: [
                 {
                     username: verification.lastfmUser?.name.toLowerCase(),
@@ -35,7 +35,7 @@ export class UsersRepository {
 
     async addVerificationToUser(verification: Verification) {
         await UsersModelInstance.updateOne(
-            { userId: verification.verifiedMember.id },
+            { userId: verification.verifiedUser.id },
             {
                 $push: {
                     verifications: {

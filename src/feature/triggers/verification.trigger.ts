@@ -43,7 +43,6 @@ export class VerificationTrigger {
         if (message.content.startsWith(this.env.PREFIX)) return;
 
         const discordUsername = message.author.username.toLowerCase();
-        const discordUserId = message.author.id;
         const discordDisplayname = message.author.displayName.toLowerCase();
         const discordServerDisplayname = (
             await this.memberService.getGuildMemberFromUserId(message.author.id)
@@ -63,12 +62,7 @@ export class VerificationTrigger {
                 return;
             }
             // check if discord username is flagged
-            if (
-                discordUserId.match(flag.term) ||
-                discordUsername.match(flag.term) ||
-                discordDisplayname.match(flag.term) ||
-                discordServerDisplayname?.match(flag.term)
-            ) {
+            if (this.memberService.checkIfMemberIsFlagged(flag, message.author)) {
                 this.logger.info(`User ${TextHelper.userLog(message.author)} matches flagged term ${flag.term}`);
                 await this.loggingService.logDiscordFlagAlert(message, flag);
                 return;

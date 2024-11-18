@@ -1,8 +1,8 @@
-import { GuildMember, Message, User } from 'discord.js';
+import { Message, User } from 'discord.js';
 import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
 
 export class Verification {
-    verifiedMember: GuildMember;
+    verifiedUser: User;
     verifyingUser: User;
     lastfmUser: getInfo | null;
     verificationMessage: Message | null;
@@ -11,7 +11,7 @@ export class Verification {
     isReturningUser: boolean;
 
     constructor(
-        verifiedMember: GuildMember,
+        verifiedMember: User,
         verifyingUser: User,
         lastfmUser: getInfo | null,
         verificationMessage: Message,
@@ -19,7 +19,7 @@ export class Verification {
         lastfmAccountCreated: number | null,
         isReturningUser: boolean
     ) {
-        this.verifiedMember = verifiedMember;
+        this.verifiedUser = verifiedMember;
         this.verifyingUser = verifyingUser;
         this.lastfmUser = lastfmUser;
         this.verificationMessage = verificationMessage;

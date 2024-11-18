@@ -106,14 +106,14 @@ export class LoggingService {
         if (!logChannel) return;
 
         const embeds: EmbedBuilder[] = [];
-        const description = `${bold('Verified user')} ${inlineCode(verification.verifiedMember.user.username)} ${italic('(ID ' + verification.verifiedMember.user.id + ')')}`;
+        const description = `${bold('Verified user')} ${inlineCode(verification.verifiedUser.username)} ${italic('(ID ' + verification.verifiedUser.id + ')')}`;
         embeds.push(
-            EmbedHelper.getLogEmbed(verification.verifyingUser, verification.verifiedMember.user, LogLevel.Info)
+            EmbedHelper.getLogEmbed(verification.verifyingUser, verification.verifiedUser, LogLevel.Info)
                 .setDescription(description)
                 .setFields([
                     {
                         name: `Created`,
-                        value: `<t:${moment(verification.verifiedMember.user.createdAt).unix()}:D> (<t:${moment(verification.verifiedMember.user.createdAt).unix()}:R>)`,
+                        value: `<t:${moment(verification.verifiedUser.createdAt).unix()}:D> (<t:${moment(verification.verifiedUser.createdAt).unix()}:R>)`,
                         inline: true,
                     },
                     {

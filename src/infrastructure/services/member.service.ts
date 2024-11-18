@@ -5,6 +5,7 @@ import { CommandPermissionLevel } from '@src/feature/commands/models/command-per
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { Environment } from '@models/environment';
 import { Logger } from 'tslog';
+import { Flag } from '@src/feature/commands/moderation/models/flag.model';
 
 @injectable()
 export class MemberService {
@@ -139,5 +140,29 @@ export class MemberService {
             }
         }
         return permissionLevel;
+    }
+
+    checkIfMemberIsFlagged(flag: Flag, user?: GuildMember | User): boolean {
+        if (!user) return false;
+
+        let discordUsername, discordUserId, discordDisplayname, discordServerDisplayname;
+
+        if (user instanceof GuildMember) {
+            discordUsername = user.user.username.toLowerCase();
+            discordUserId = user.user.id;
+            discordDisplayname = user.user.displayName.toLowerCase();
+            discordServerDisplayname = user.displayName.toLowerCase();
+        } else {
+            discordUsername = user.username.toLowerCase();
+            discordUserId = user.id;
+            discordDisplayname = user.displayName.toLowerCase();
+        }
+
+        return (
+            discordUserId == flag.term ||
+            discordUsername.match(flag.term) != null ||
+            discordDisplayname.match(flag.term) != null ||
+            discordServerDisplayname?.match(flag.term) != null
+        );
     }
 }
