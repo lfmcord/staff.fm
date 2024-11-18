@@ -241,4 +241,13 @@ export class ComponentHelper {
             .setPlaceholder('Select the verification to delete')
             .addOptions(options);
     }
+
+    static zeroPlaycountWarningActions() {
+        const dismissButton = new ButtonBuilder()
+            .setCustomId(`defer-dismiss-playcount-warning`)
+            .setLabel('Dismiss')
+            .setStyle(ButtonStyle.Secondary);
+
+        return new ActionRowBuilder<ButtonBuilder>().addComponents(dismissButton);
+    }
 }

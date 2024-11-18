@@ -202,7 +202,7 @@ export class VerifyCommand implements ICommand {
                 };
             }
             this.logger.debug(`User has a playcount of ${lastfmUser.playcount}`);
-            if (lastfmUser.playcount == 0) {
+            if (lastfmUser.playcount > 0) {
                 await this.loggingService.logZeroPlaycountVerification(userToVerify, lastfmUser.name);
             }
             if (memberToVerify) await this.assignScrobbleRoles(memberToVerify, lastfmUser.playcount);

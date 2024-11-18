@@ -25,6 +25,7 @@ import { Environment } from '@models/environment';
 import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
 import { Flag } from '@src/feature/commands/moderation/models/flag.model';
 import moment = require('moment');
+import { ComponentHelper } from '@src/helpers/component.helper';
 
 @injectable()
 export class LoggingService {
@@ -272,10 +273,16 @@ export class LoggingService {
             `Last.fm returned a playcount of 0 for ${TextHelper.userDisplay(user, true)}. If this is incorrect, please rerun the verify command or ask a Helper to fix the scrobble roles.\n\n` +
             `${bold(`Last.fm Link: `)} https://last.fm/user/${lastFmUsername}\n`;
 
+        const footer = `Please dismiss this with the button below if this is correct or verify them again if it's not.`;
+
         const logEmbed = EmbedHelper.getLogEmbed(this.client.user, user, LogLevel.Warning)
-            .setTitle(`⚠️ Last.fm returned 0 playcount`)
+            .setTitle(`:zero: Last.fm returned 0 playcount`)
+            .setFooter({ text: footer })
             .setDescription(description);
-        logChannel.send({ embeds: [logEmbed] });
+        await logChannel.send({
+            embeds: [logEmbed],
+            components: [ComponentHelper.zeroPlaycountWarningActions()],
+        });
     }
 
     async logFlag(flag: Flag, isUnflag: boolean = false) {

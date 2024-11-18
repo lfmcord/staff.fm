@@ -75,6 +75,7 @@ import { WhoknowsTrigger } from '@src/feature/triggers/whoknows.trigger';
 import { ImportsCommand } from '@src/feature/commands/administration/imports.command';
 import { VerifyRemoveCommand } from '@src/feature/commands/administration/verify-remove.command';
 import { VerifyRemoveInteraction } from '@src/feature/interactions/message-component/verify-remove.interaction';
+import { VerifyDismissPlaycountWarningInteraction } from '@src/feature/interactions/message-component/verify-dismiss-playcount-warning.interaction';
 
 const container = new Container();
 
@@ -236,6 +237,9 @@ container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(S
 container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(VerifyContextMenuInteraction);
 container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(StaffMailReportInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(VerifyRemoveInteraction);
+container
+    .bind<IMessageComponentInteraction>('MessageComponentInteraction')
+    .to(VerifyDismissPlaycountWarningInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);
