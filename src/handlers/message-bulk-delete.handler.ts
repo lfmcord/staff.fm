@@ -48,7 +48,7 @@ export class MessageBulkDeleteHandler implements IHandler {
                 this.logger.debug(`Deleted message in channel ID ${message.channelId} was cached.`);
                 fetchedMessages += `[${cachedMessage.authorId}]: ${message.content}`;
                 if (cachedMessage.attachments.length > 0) {
-                    fetchedMessages += ` Attachments: ${cachedMessage.attachments.join(' ; ')}`;
+                    fetchedMessages += ` Attachments: ${cachedMessage.attachments.length}`;
                 }
                 fetchedMessages += '\n';
             }
