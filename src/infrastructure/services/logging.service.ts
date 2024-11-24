@@ -26,6 +26,8 @@ import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
 import { Flag } from '@src/feature/commands/moderation/models/flag.model';
 import moment = require('moment');
 import { ComponentHelper } from '@src/helpers/component.helper';
+import { CachedAttachmentModel } from '@src/infrastructure/repositories/models/cached-attachment.model';
+import { extension } from 'mime-types';
 
 @injectable()
 export class LoggingService {
@@ -62,7 +64,23 @@ export class LoggingService {
 
         logEmbed.setDescription(description);
 
-        await logChannel.send({ embeds: [logEmbed], files: deletedMessage.attachments });
+        let attachments: AttachmentBuilder[] | string[] = [];
+        if (deletedMessage.attachments.length > 0 && typeof deletedMessage.attachments[0] == 'string') {
+            this.logger.trace(`attachments are urls`);
+            attachments = deletedMessage.attachments as string[];
+        } else {
+            this.logger.trace(`attachments are cached`);
+            attachments = deletedMessage.attachments.map((a) => {
+                a = a as CachedAttachmentModel;
+                this.logger.trace(`mapping ${a.mimeType}`);
+                const ext = extension(a.mimeType);
+                return new AttachmentBuilder(a.data, { name: `deleted_${ext}_${deletedMessage.messageId}.${ext}` });
+            });
+        }
+        await logChannel.send({
+            embeds: [logEmbed],
+            files: attachments,
+        });
     }
 
     public async logBulkDelete(
