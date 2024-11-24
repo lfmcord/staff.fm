@@ -81,7 +81,7 @@ export class SetInactiveCommand implements ICommand {
             };
         }
 
-        const isInactive = moment().isSameOrAfter(moment(lastMessageDate).add(1, 's'));
+        const isInactive = moment().isSameOrAfter(moment(lastMessageDate).add(1, 'M'));
         if (!isInactive) {
             return {
                 isSuccessful: false,
