@@ -205,7 +205,7 @@ export class VerifyCommand implements ICommand {
             if (lastfmUser.playcount == 0) {
                 await this.loggingService.logZeroPlaycountVerification(userToVerify, lastfmUser.name);
             }
-            if (memberToVerify) await this.assignScrobbleRoles(memberToVerify, lastfmUser.playcount);
+            if (memberToVerify) await this.memberService.assignScrobbleRoles(memberToVerify, lastfmUser.playcount);
         }
 
         const verification: Verification = {
@@ -296,19 +296,6 @@ export class VerifyCommand implements ICommand {
                 await noLastFmVerificationMessage?.delete();
             }
             return true;
-        }
-    }
-
-    private async assignScrobbleRoles(member: GuildMember, scrobbleCount: number) {
-        if (scrobbleCount < this.env.SCROBBLE_MILESTONE_NUMBERS[1]) {
-            await member.roles.add(this.env.SCROBBLE_MILESTONE_ROLE_IDS[0]);
-            return;
-        }
-        for (const num of this.env.SCROBBLE_MILESTONE_NUMBERS) {
-            const index = this.env.SCROBBLE_MILESTONE_NUMBERS.indexOf(num);
-            if (index === 0) continue; // we skip the lowest scrobble role
-            if (scrobbleCount >= num) await member.roles.add(this.env.SCROBBLE_MILESTONE_ROLE_IDS[index]);
-            else break;
         }
     }
 }

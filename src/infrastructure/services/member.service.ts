@@ -165,4 +165,17 @@ export class MemberService {
             discordServerDisplayname?.match(flag.term) != null
         );
     }
+
+    async assignScrobbleRoles(member: GuildMember, scrobbleCount: number) {
+        if (scrobbleCount < this.env.SCROBBLE_MILESTONE_NUMBERS[1]) {
+            await member.roles.add(this.env.SCROBBLE_MILESTONE_ROLE_IDS[0]);
+            return;
+        }
+        for (const num of this.env.SCROBBLE_MILESTONE_NUMBERS) {
+            const index = this.env.SCROBBLE_MILESTONE_NUMBERS.indexOf(num);
+            if (index === 0) continue; // we skip the lowest scrobble role
+            if (scrobbleCount >= num) await member.roles.add(this.env.SCROBBLE_MILESTONE_ROLE_IDS[index]);
+            else break;
+        }
+    }
 }

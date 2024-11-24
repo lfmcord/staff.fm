@@ -38,4 +38,5 @@ export interface Environment {
     SELFMUTED_ROLE_ID: string;
     WHOKNOWS_USER_ID: string;
     CROWNS_LOG_CHANNEL_ID: string;
+    INACTIVE_ROLE_ID: string;
 }

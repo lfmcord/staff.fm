@@ -76,6 +76,9 @@ import { ImportsCommand } from '@src/feature/commands/administration/imports.com
 import { VerifyRemoveCommand } from '@src/feature/commands/administration/verify-remove.command';
 import { VerifyRemoveInteraction } from '@src/feature/interactions/message-component/verify-remove.interaction';
 import { VerifyDismissPlaycountWarningInteraction } from '@src/feature/interactions/message-component/verify-dismiss-playcount-warning.interaction';
+import { IsInactiveCommand } from '@src/feature/commands/administration/is-inactive.command';
+import { SetInactiveCommand } from '@src/feature/commands/administration/set-inactive.command';
+import { SetActiveCommand } from '@src/feature/commands/administration/set-active.command';
 
 const container = new Container();
 
@@ -122,6 +125,7 @@ container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue({
     SELFMUTED_ROLE_ID: process.env.SELFMUTED_ROLE_ID ?? '',
     WHOKNOWS_USER_ID: process.env.WHOKNOWS_USER_ID ?? '',
     CROWNS_LOG_CHANNEL_ID: process.env.CROWNS_LOG_CHANNEL_ID ?? '',
+    INACTIVE_ROLE_ID: process.env.INACTIVE_ROLE_ID ?? '',
 });
 
 // CORE
@@ -221,6 +225,9 @@ container.bind<ICommand>('Command').to(ImportsCommand);
 container.bind<ICommand>('Command').to(CrownsCommand);
 container.bind<ICommand>('Command').to(CrownsBanHasCommand);
 container.bind<ICommand>('Command').to(VerifyRemoveCommand);
+container.bind<ICommand>('Command').to(IsInactiveCommand);
+container.bind<ICommand>('Command').to(SetInactiveCommand);
+container.bind<ICommand>('Command').to(SetActiveCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
@@ -244,7 +251,7 @@ container
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);
 container.bind<SelfMutesRepository>(TYPES.SelfMutesRepository).to(SelfMutesRepository);
-container.bind<CachingRepository>(TYPES.CachingRepository).to(CachingRepository);
+container.bind<CachingRepository>(TYPES.CachingRepository).to(CachingRepository).inSingletonScope();
 container.bind<MuteRndRepository>(TYPES.MuteRndRepository).to(MuteRndRepository);
 container.bind<FlagsRepository>(TYPES.FlagsRepository).to(FlagsRepository);
 container.bind<UsersRepository>(TYPES.UsersRepository).to(UsersRepository);
