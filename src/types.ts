@@ -34,6 +34,7 @@ export const TYPES = {
     MuteRndRepository: Symbol('MuteRndRepository'),
     FlagsRepository: Symbol('FlagsRepository'),
     UsersRepository: Symbol('UsersRepository'),
+    DiscussionsRepository: Symbol('DiscussionsRepository'),
 
     // SERVICES
     MessageService: Symbol('MessageService'),

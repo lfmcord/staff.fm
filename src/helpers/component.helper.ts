@@ -13,6 +13,7 @@ import { TextHelper } from '@src/helpers/text.helper';
 import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
 import { IUserModel } from '@src/infrastructure/repositories/users.repository';
 import * as moment from 'moment';
+import { IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
 
 export class ComponentHelper {
     public static cancelButton = (customId: string) =>
@@ -249,5 +250,19 @@ export class ComponentHelper {
             .setStyle(ButtonStyle.Secondary);
 
         return new ActionRowBuilder<ButtonBuilder>().addComponents(dismissButton);
+    }
+
+    static discussionsMenu(topics: IDiscussionsModel[]) {
+        let options = topics.map((t, idx) =>
+            new StringSelectMenuOptionBuilder()
+                .setLabel(`${idx + 1}. ${t.topic.slice(0, 20)}`)
+                .setDescription(`added on ${moment(t.addedAt).format('ddd, MMM Do YYYY, HH:mm')}`)
+                .setValue(t._id.toString())
+        );
+        options = options.slice(0, 25);
+        return new StringSelectMenuBuilder()
+            .setCustomId('defer-discussions-topic-remove')
+            .setPlaceholder('Select the topic to remove')
+            .addOptions(options);
     }
 }

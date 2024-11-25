@@ -79,6 +79,9 @@ import { VerifyDismissPlaycountWarningInteraction } from '@src/feature/interacti
 import { IsInactiveCommand } from '@src/feature/commands/administration/is-inactive.command';
 import { SetInactiveCommand } from '@src/feature/commands/administration/set-inactive.command';
 import { SetActiveCommand } from '@src/feature/commands/administration/set-active.command';
+import { DiscussionsRepository } from '@src/infrastructure/repositories/discussions.repository';
+import { DiscussionsTopicCommand } from '@src/feature/commands/administration/discussions/discussions-topic.command';
+import { DiscussionsTopicRemoveInteraction } from '@src/feature/interactions/message-component/discussions-topic-remove.interaction';
 
 const container = new Container();
 
@@ -228,6 +231,7 @@ container.bind<ICommand>('Command').to(VerifyRemoveCommand);
 container.bind<ICommand>('Command').to(IsInactiveCommand);
 container.bind<ICommand>('Command').to(SetInactiveCommand);
 container.bind<ICommand>('Command').to(SetActiveCommand);
+container.bind<ICommand>('Command').to(DiscussionsTopicCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
@@ -247,6 +251,7 @@ container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(V
 container
     .bind<IMessageComponentInteraction>('MessageComponentInteraction')
     .to(VerifyDismissPlaycountWarningInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(DiscussionsTopicRemoveInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);
@@ -255,6 +260,7 @@ container.bind<CachingRepository>(TYPES.CachingRepository).to(CachingRepository)
 container.bind<MuteRndRepository>(TYPES.MuteRndRepository).to(MuteRndRepository);
 container.bind<FlagsRepository>(TYPES.FlagsRepository).to(FlagsRepository);
 container.bind<UsersRepository>(TYPES.UsersRepository).to(UsersRepository);
+container.bind<DiscussionsRepository>(TYPES.DiscussionsRepository).to(DiscussionsRepository);
 
 // SERVICES
 container.bind<MessageService>(TYPES.MessageService).to(MessageService);
