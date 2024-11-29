@@ -175,7 +175,7 @@ export class Bot {
     }
 
     private apiListen(): void {
-        this.apiRouter.listen();
+        // this.apiRouter.listen();
     }
 
     private async registerInteractions() {

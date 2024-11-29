@@ -106,6 +106,7 @@ export class StaffMailReplyCommand implements ICommand {
         this.logger.debug(`Updating staff mail in DB and staff mail channel...`);
         await this.staffMailRepository.updateStaffMailLastMessageId(staffMail.id, messageToUser.id);
 
+        // TODO: Catch 403 case
         await staffMail.channel!.send({
             embeds: [
                 EmbedHelper.getStaffMailStaffViewOutgoingEmbed(

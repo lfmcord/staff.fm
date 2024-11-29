@@ -28,6 +28,7 @@ import moment = require('moment');
 import { ComponentHelper } from '@src/helpers/component.helper';
 import { CachedAttachmentModel } from '@src/infrastructure/repositories/models/cached-attachment.model';
 import { extension } from 'mime-types';
+import { IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
 
 @injectable()
 export class LoggingService {
@@ -339,6 +340,34 @@ export class LoggingService {
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
         embed.setTitle(isUnban ? `👑 Crowns Unban` : `<:nocrown:816944519924809779> Crowns Ban`);
         embed.setURL(TextHelper.getDiscordMessageLink(message));
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logNoDiscussionTopicsAlert() {
+        const logChannel = await this.getLogChannel(this.env.HELPERS_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description = `Discussions are scheduled but there are no more topics available. Please add more topics using \`${this.env.PREFIX}dtopic add\`. Automatic posting of discussions is disabled, enable it again with \`${this.env.PREFIX}dtopic auto\` once there are topics available.`;
+        const embed = new EmbedBuilder()
+            .setColor(EmbedHelper.orange)
+            .setTitle(`⚠️ No Discussion Topics Available`)
+            .setDescription(description)
+            .setTimestamp();
+
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logDiscussionStillActiveAlert(discussion: IDiscussionsModel) {
+        const logChannel = await this.getLogChannel(this.env.HELPERS_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description = `The previous discussion in <#${discussion.threadId}> still active and has not been closed. Please close it manually once it's not active anymore.`;
+        const embed = new EmbedBuilder()
+            .setColor(EmbedHelper.blue)
+            .setTitle(`ℹ️ Previous Discussion Still Active`)
+            .setDescription(description)
+            .setTimestamp();
+
         await logChannel.send({ embeds: [embed] });
     }
 

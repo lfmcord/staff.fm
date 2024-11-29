@@ -82,6 +82,8 @@ import { SetActiveCommand } from '@src/feature/commands/administration/set-activ
 import { DiscussionsRepository } from '@src/infrastructure/repositories/discussions.repository';
 import { DiscussionsTopicCommand } from '@src/feature/commands/administration/discussions/discussions-topic.command';
 import { DiscussionsTopicRemoveInteraction } from '@src/feature/interactions/message-component/discussions-topic-remove.interaction';
+import { DiscussionsTrigger } from '@src/feature/triggers/discussions.trigger';
+import { DiscussionsManageCommand } from '@src/feature/commands/administration/discussions/discussions-manage.command';
 
 const container = new Container();
 
@@ -119,16 +121,19 @@ container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue({
     USER_LOG_CHANNEL_ID: process.env.USER_LOG_CHANNEL_ID ?? '',
     DELETED_MESSAGE_LOG_CHANNEL_ID: process.env.DELETED_MESSAGE_LOG_CHANNEL_ID ?? '',
     DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS: process.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS?.split(',') ?? [],
-    LASTFM_AGE_ALERT_IN_DAYS: Number.parseInt(process.env.LASTFM_AGE_ALERT_IN_DAYS ?? '30') ?? 30,
-    LOG_LEVEL: Number.parseInt(process.env.LOG_LEVEL ?? '1') ?? 1,
-    MESSAGE_CACHING_DURATION_IN_SECONDS:
-        Number.parseInt(process.env.MESSAGE_CACHING_DURATION_IN_SECONDS ?? '86400') ?? 86400,
+    LASTFM_AGE_ALERT_IN_DAYS: parseInt(process.env.LASTFM_AGE_ALERT_IN_DAYS || '30', 10),
+    LOG_LEVEL: parseInt(process.env.LOG_LEVEL ?? '1') ?? 1,
+    MESSAGE_CACHING_DURATION_IN_SECONDS: parseInt(process.env.MESSAGE_CACHING_DURATION_IN_SECONDS || '86400', 10),
     REDIS_HOST: process.env.REDIS_HOST ?? 'localhost',
-    REDIS_PORT: Number.parseInt(process.env.REDIS_PORT ?? '6380') ?? 6380,
+    REDIS_PORT: parseInt(process.env.REDIS_PORT || '6380', 10),
     SELFMUTED_ROLE_ID: process.env.SELFMUTED_ROLE_ID ?? '',
     WHOKNOWS_USER_ID: process.env.WHOKNOWS_USER_ID ?? '',
     CROWNS_LOG_CHANNEL_ID: process.env.CROWNS_LOG_CHANNEL_ID ?? '',
     INACTIVE_ROLE_ID: process.env.INACTIVE_ROLE_ID ?? '',
+    DISCUSSIONS_CHANNEL_ID: process.env.DISCUSSIONS_CHANNEL_ID ?? '',
+    HELPERS_CHANNEL_ID: process.env.HELPERS_CHANNEL_ID ?? '',
+    DISCUSSIONS_AUTO_INTERVAL_IN_DAYS: parseInt(process.env.DISCUSSIONS_AUTO_INTERVAL_IN_DAYS || '2', 10),
+    DISCUSSIONS_PING_ROLE_ID: process.env.DISCUSSIONS_PING_ROLE_ID ?? '',
 });
 
 // CORE
@@ -232,11 +237,13 @@ container.bind<ICommand>('Command').to(IsInactiveCommand);
 container.bind<ICommand>('Command').to(SetInactiveCommand);
 container.bind<ICommand>('Command').to(SetActiveCommand);
 container.bind<ICommand>('Command').to(DiscussionsTopicCommand);
+container.bind<ICommand>('Command').to(DiscussionsManageCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
 container.bind<VerificationTrigger>(TYPES.VerificationLastFmTrigger).to(VerificationTrigger);
 container.bind<WhoknowsTrigger>(TYPES.WhoknowsTrigger).to(WhoknowsTrigger);
+container.bind<DiscussionsTrigger>(TYPES.DiscussionsTrigger).to(DiscussionsTrigger);
 
 // INTERACTIONS
 container.bind<IModalSubmitInteraction>('ModalSubmitInteraction').to(StaffMailCreateModalSubmitInteraction);

@@ -8,6 +8,8 @@ import {
     Message,
     MessageResolvable,
     TextBasedChannel,
+    TextChannel,
+    ThreadChannel,
 } from 'discord.js';
 import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
@@ -27,10 +29,23 @@ export class ChannelService {
         this.environment = environment;
         this.client = client;
     }
+
     async getGuildChannelById(channelId: string): Promise<GuildTextBasedChannel | null> {
         try {
             const guild = await this.client.guilds.fetch(this.environment.GUILD_ID);
             return (await guild.channels.fetch(channelId)) as GuildTextBasedChannel | null;
+        } catch (e) {
+            this.logger.warn(`Failed while trying to get guild channel for ID ${channelId}.`, e);
+            return null;
+        }
+    }
+
+    async getGuildThreadById(channelId: string, threadId: string): Promise<ThreadChannel | null> {
+        const guild = await this.client.guilds.fetch(this.environment.GUILD_ID);
+        const channel = await guild.channels.fetch(channelId);
+        try {
+            const thread = await (channel as TextChannel).threads.fetch(threadId);
+            return !thread || !thread.isThread() ? null : (thread as ThreadChannel);
         } catch (e) {
             this.logger.warn(`Failed while trying to get guild channel for ID ${channelId}.`, e);
             return null;
@@ -82,5 +97,10 @@ export class ChannelService {
             this.logger.warn(`Could not fetch message with message ID ${messageId} from channel with ID ${channel.id}`);
             return null;
         }
+    }
+
+    async getGuildTextChannelById(id: string) {
+        const guild = await this.client.guilds.fetch(this.environment.GUILD_ID);
+        return await guild.channels.fetch(id);
     }
 }

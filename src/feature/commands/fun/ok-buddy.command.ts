@@ -7,6 +7,7 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import { TextHelper } from '@src/helpers/text.helper';
+import { Logger } from 'tslog';
 
 @injectable()
 export class OkBuddyCommand implements ICommand {
@@ -20,9 +21,14 @@ export class OkBuddyCommand implements ICommand {
     isUsableInServer = true;
 
     private messageService: MessageService;
+    private logger: Logger<OkBuddyCommand>;
 
-    constructor(@inject(TYPES.MessageService) messageService: MessageService) {
+    constructor(
+        @inject(TYPES.MessageService) messageService: MessageService,
+        @inject(TYPES.BotLogger) logger: Logger<OkBuddyCommand>
+    ) {
         this.messageService = messageService;
+        this.logger = logger;
     }
 
     validateArgs(_: string[]): Promise<void> {
@@ -50,6 +56,7 @@ export class OkBuddyCommand implements ICommand {
         }
 
         const text = referenceMessage.content;
+        this.logger.debug(`Text: ${text}`);
         if (text === '') {
             if (!referenceMessage) {
                 return {

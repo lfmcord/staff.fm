@@ -39,4 +39,8 @@ export interface Environment {
     WHOKNOWS_USER_ID: string;
     CROWNS_LOG_CHANNEL_ID: string;
     INACTIVE_ROLE_ID: string;
+    HELPERS_CHANNEL_ID: string;
+    DISCUSSIONS_CHANNEL_ID: string;
+    DISCUSSIONS_AUTO_INTERVAL_IN_DAYS: number;
+    DISCUSSIONS_PING_ROLE_ID: string;
 }

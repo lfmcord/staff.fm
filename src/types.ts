@@ -26,6 +26,7 @@ export const TYPES = {
     StaffMailDmTrigger: Symbol('StaffMailDmTrigger'),
     VerificationLastFmTrigger: Symbol('VerificationLastFmTrigger'),
     WhoknowsTrigger: Symbol('WhoknowsTrigger'),
+    DiscussionsTrigger: Symbol('DiscussionsTrigger'),
 
     // REPOSITORIES
     StaffMailRepository: Symbol('StaffMailRepository'),

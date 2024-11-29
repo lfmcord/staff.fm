@@ -127,6 +127,7 @@ export class StaffMailContactCommand implements ICommand {
             summary,
             StaffMailType.Staff
         );
+        // TODO: Catch 403 case
         const messageToUser = await member.send({
             content: `📫 You've received a new message from staff!`,
             embeds: [EmbedHelper.getStaffMailOpenEmbed(true), EmbedHelper.getStaffMailLinkToLatestMessage()],

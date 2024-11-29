@@ -39,7 +39,7 @@ export class DiscussionsTopicRemoveInteraction implements IMessageComponentInter
             return;
         }
         this.logger.info(`Deleting discussion with _id ${discussionToDelete._id}`);
-        await this.discussionsRepository.removeTopicById(id);
+        await this.discussionsRepository.removeDiscussionById(id);
 
         const user = await this.memberService.fetchUser(discussionToDelete.addedById);
 

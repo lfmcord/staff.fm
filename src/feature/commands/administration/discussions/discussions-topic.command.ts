@@ -14,13 +14,13 @@ import { ComponentHelper } from '@src/helpers/component.helper';
 
 @injectable()
 export class DiscussionsTopicCommand implements ICommand {
-    name: string = 'topic';
+    name: string = 'dtopic';
     description: string = 'Adds or removes a discussion topic for automatic posting in the discussions channel.';
     usageHint: string = 'add [topic] | remove [(optional) number to remove] | remove | show';
     examples: string[] = ["add Who's the best artist of all time?", 'remove', 'remove 2', 'show'];
     permissionLevel = CommandPermissionLevel.Helper;
     operations = ['add', 'remove', 'show'];
-    aliases = ['discussiontopic', 'discussiontopics', 'discussionstopics', 'topics'];
+    aliases = ['discussiontopic', 'discussiontopics', 'discussionstopics', 'dtopics'];
     isUsableInDms = false;
     isUsableInServer = true;
 
@@ -105,7 +105,7 @@ export class DiscussionsTopicCommand implements ICommand {
     }
 
     private async removeDiscussionsTopic(args: string[], message: Message): Promise<CommandResult> {
-        const topics = await this.discussionsRepository.getAllDiscussions();
+        const topics = await this.discussionsRepository.getAllUnusedDiscussions();
         if (args[1]) {
             const numberToRemove = Number.parseInt(args[1]);
             const discussionToRemove = topics[numberToRemove - 1];
@@ -115,7 +115,7 @@ export class DiscussionsTopicCommand implements ICommand {
                     replyToUser: `This number is too high, I don't have that many topics stored!`,
                 };
             this.logger.info(`Removing '${discussionToRemove.topic}' by ${message.author.username}...`);
-            await this.discussionsRepository.removeTopicById(discussionToRemove._id);
+            await this.discussionsRepository.removeDiscussionById(discussionToRemove._id);
             const user = await this.memberService.fetchUser(discussionToRemove.addedById);
 
             return {
