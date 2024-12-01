@@ -58,17 +58,19 @@ export class DiscussionsTrigger {
             return null;
         }
 
+        const nextTopicPostDate = moment()
+            .set({ hour: 14, minute: 0, second: 0, millisecond: 0 })
+            .add(this.environment.DISCUSSIONS_AUTO_INTERVAL_IN_DAYS, 'days')
+            .toDate();
+
+        newDiscussion.scheduledToCloseAt = nextTopicPostDate;
+
         const thread = await this.openDiscussion(newDiscussion!);
 
         if (!thread) {
             this.logger.error(`Couldn't open discussion thread. I am not starting a new discussion.`);
             return null;
         }
-
-        const nextTopicPostDate = moment()
-            .set({ hour: 14, minute: 0, second: 0, millisecond: 0 })
-            .add(this.environment.DISCUSSIONS_AUTO_INTERVAL_IN_DAYS, 'days')
-            .toDate();
 
         this.logger.debug(`Scheduling next discussion for ${nextTopicPostDate}.`);
         newDiscussion = await this.discussionsRepository.openDiscussionById(
@@ -93,17 +95,19 @@ export class DiscussionsTrigger {
             return null;
         }
 
+        const closeDate = moment()
+            .set({ hour: 14, minute: 0, second: 0, millisecond: 0 })
+            .add(this.environment.DISCUSSIONS_AUTO_INTERVAL_IN_DAYS, 'days')
+            .toDate();
+
+        discussion.scheduledToCloseAt = closeDate;
+
         const thread = await this.openDiscussion(discussion);
 
         if (!thread) {
             this.logger.error(`Couldn't open discussion thread. I am not starting a new discussion.`);
             return null;
         }
-
-        const closeDate = moment()
-            .set({ hour: 14, minute: 0, second: 0, millisecond: 0 })
-            .add(this.environment.DISCUSSIONS_AUTO_INTERVAL_IN_DAYS, 'days')
-            .toDate();
 
         this.logger.debug(`Scheduling one-time discussion to close at ${closeDate}.`);
         await this.discussionsRepository.openDiscussionById(discussion._id, closeDate, thread.id);
