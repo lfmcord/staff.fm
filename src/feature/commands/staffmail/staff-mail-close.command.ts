@@ -12,6 +12,7 @@ import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
 import * as Buffer from 'buffer';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
+import * as moment from 'moment';
 
 @injectable()
 export class StaffMailCloseCommand implements ICommand {
@@ -47,9 +48,9 @@ export class StaffMailCloseCommand implements ICommand {
             `New staffmail close request by user ${TextHelper.userLog(message.author)} for channel ID ${message.channelId}.`
         );
         const isSilentClose = message.content.match(this.aliases[0]) != null;
-        const deleted = await this.staffmailRepository.deleteStaffMail(message.channelId);
-        const isAnonymous = deleted?.mode === StaffMailModeEnum.ANONYMOUS;
-        if (deleted == null) {
+        const staffMail = await this.staffmailRepository.getStaffMailByChannelId(message.channelId);
+        const isAnonymous = staffMail?.mode === StaffMailModeEnum.ANONYMOUS;
+        if (!staffMail) {
             return {
                 isSuccessful: false,
                 reason: `Cannot find a staff mail for channel ID ${message.channelId}`,
@@ -59,10 +60,10 @@ export class StaffMailCloseCommand implements ICommand {
 
         let logNote = '';
         if (!isSilentClose) {
-            if (deleted.user != null) {
+            if (staffMail.user != null) {
                 try {
-                    await deleted.user.send({
-                        embeds: [EmbedHelper.getStaffMailCloseEmbed(deleted.summary, deleted.type, args.join(' '))],
+                    await staffMail.user.send({
+                        embeds: [EmbedHelper.getStaffMailCloseEmbed(staffMail.summary, staffMail.type, args.join(' '))],
                     });
                 } catch (e) {
                     this.logger.warn(`Could not send closing message to user.`, e);
@@ -74,8 +75,8 @@ export class StaffMailCloseCommand implements ICommand {
 
                 try {
                     const oldStaffMailEmbed = await this.channelService.getMessageFromChannelByMessageId(
-                        deleted.mainMessageId,
-                        deleted.user.dmChannel!
+                        staffMail.mainMessageId,
+                        staffMail.user.dmChannel!
                     );
                     await oldStaffMailEmbed?.unpin();
                 } catch (e) {
@@ -83,7 +84,7 @@ export class StaffMailCloseCommand implements ICommand {
                 }
             } else {
                 this.logger.info(
-                    `User with ID ${deleted.userId} has left the server. StaffMail channel was closed regardless.`
+                    `User with ID ${staffMail.userId} has left the server. StaffMail channel was closed regardless.`
                 );
                 logNote = `User left, user was not notified of closing.`;
             }
@@ -96,21 +97,23 @@ export class StaffMailCloseCommand implements ICommand {
 
         const protocol = await this.getChannelProtocol(
             message.channel as GuildTextBasedChannel,
-            isAnonymous ? null : deleted.user
+            isAnonymous ? null : staffMail.user
         );
 
         await this.loggingService.logStaffMailEvent(
             false,
-            deleted.summary,
-            deleted.type,
-            isAnonymous ? null : deleted.user,
+            staffMail.summary,
+            staffMail.type,
+            isAnonymous ? null : staffMail.user,
             message.author,
             args.join(' '),
             [protocol],
             logNote
         );
 
-        await this.staffmailRepository.deleteStaffMailChannel(message.channelId);
+        // await this.staffmailRepository.deleteStaffMailChannel(message.channelId);
+
+        // await this.staffmailRepository.deleteStaffMail(message.channelId)
 
         return {};
     }
@@ -120,19 +123,35 @@ export class StaffMailCloseCommand implements ICommand {
     }
 
     private async getChannelProtocol(channel: GuildTextBasedChannel, user: User | null): Promise<AttachmentBuilder> {
-        const messages = Array.from((await channel.messages.fetch()).values());
+        let isDone = false;
+        let lastMessageId =
+            channel.messages.cache.last()?.id || (await channel.messages.fetch({ limit: 1 })).last()?.id;
+        let messages: Message[] = [];
+        do {
+            const fetchedMessages = Array.from(
+                (await channel.messages.fetch({ limit: 100, before: lastMessageId })).values()
+            );
+            this.logger.debug(`Fetched ${fetchedMessages.length} messages.`);
+            if (fetchedMessages.length > 0) messages = messages.concat(fetchedMessages);
+            if (fetchedMessages.length < 100) isDone = true;
+            lastMessageId = fetchedMessages[fetchedMessages.length - 1].id;
+        } while (!isDone);
+
         messages.sort((a, b) => (a.createdTimestamp > b.createdTimestamp ? 0 : -1));
+        this.logger.debug(`Writing ${messages.length} messages to the protocol.`);
         let protocol = '';
         messages.forEach((message) => {
-            let sender = `${message.author.username} (ID ${message.author.id})`;
+            const date = moment(message.createdAt).format('YYYY-MM-DD HH:mm:ss');
+            let sender = message.author.username;
             let recipient = '';
-            if (message.author.bot && message.embeds.length > 0) {
+            if (message.author.bot && message.embeds.length == 1) {
+                const footer = message.embeds[0].footer?.text.slice(0, message.embeds[0].footer?.text.indexOf('|') - 1);
                 if (message.embeds[message.embeds.length - 1].title?.startsWith('📥')) {
-                    sender = message.embeds[message.embeds.length - 1].footer?.text ?? '???';
+                    sender = footer ?? '???';
                     recipient = 'Staff';
                 } else {
-                    sender = message.embeds[message.embeds.length - 1].footer?.text ?? '???';
-                    recipient = user ? `${user.username} (ID ${user.id})` : `Anonymous User`;
+                    sender = footer + ' (Staff)' ?? '???';
+                    recipient = user ? user.username : `Anonymous User`;
                 }
             }
             let content = message.content;
@@ -147,7 +166,7 @@ export class StaffMailCloseCommand implements ICommand {
                 content += attachmentUrls.join(' ; ');
                 content += `)`;
             }
-            protocol += `[${sender}${recipient !== '' ? ` -> ${recipient}` : ''}]: ${content}\n`;
+            protocol += `[${date}] ${sender}${recipient !== '' ? ` -> ${recipient}` : ''}: ${content}\n`;
         });
 
         return new AttachmentBuilder(Buffer.Buffer.from(protocol, 'utf-8'), { name: 'protocol.txt' });
