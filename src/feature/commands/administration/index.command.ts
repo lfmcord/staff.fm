@@ -22,8 +22,8 @@ import * as moment from 'moment';
 export class IndexCommand implements ICommand {
     name: string = 'index';
     description: string = 'Indexes a user with a last.fm account.';
-    usageHint: string = '[user mention/ID] [last.fm username]';
-    examples: string[] = ['@haiyn haiyn'];
+    usageHint: string = '[user mention/ID] [last.fm username] [reason]';
+    examples: string[] = ['@haiyn haiyn fmbot login'];
     permissionLevel = CommandPermissionLevel.Helper;
     aliases = ['link'];
     isUsableInDms = false;
