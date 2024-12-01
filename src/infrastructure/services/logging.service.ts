@@ -165,6 +165,41 @@ export class LoggingService {
         await logChannel.send({ embeds: embeds });
     }
 
+    public async logIndex(verification: Verification, reason: string) {
+        const logChannel = await this.getLogChannel(this.env.USER_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const embeds: EmbedBuilder[] = [];
+        const description = `${bold('Indexed user')} ${inlineCode(verification.verifiedUser.username)} ${italic('(ID ' + verification.verifiedUser.id + ')')}`;
+        embeds.push(
+            EmbedHelper.getLogEmbed(verification.verifyingUser, verification.verifiedUser, LogLevel.Info)
+                .setDescription(description)
+                .setFields([
+                    {
+                        name: `Created`,
+                        value: `<t:${moment(verification.verifiedUser.createdAt).unix()}:D> (<t:${moment(verification.verifiedUser.createdAt).unix()}:R>)`,
+                        inline: true,
+                    },
+                    {
+                        name: `Reason`,
+                        value: reason,
+                        inline: false,
+                    },
+                ])
+        );
+
+        embeds.push(
+            EmbedHelper.getLastFmUserEmbed(
+                verification.lastfmUser!.name,
+                verification.lastfmUser!,
+                moment().diff(moment.unix(verification.lastfmUser!.registered), 'days') <
+                    this.env.LASTFM_AGE_ALERT_IN_DAYS
+            )
+        );
+
+        await logChannel.send({ embeds: embeds });
+    }
+
     public async logStaffMailEvent(
         isOpen: boolean,
         summary: string | null,

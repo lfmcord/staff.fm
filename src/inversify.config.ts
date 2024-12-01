@@ -84,6 +84,7 @@ import { DiscussionsTopicCommand } from '@src/feature/commands/administration/di
 import { DiscussionsTopicRemoveInteraction } from '@src/feature/interactions/message-component/discussions-topic-remove.interaction';
 import { DiscussionsTrigger } from '@src/feature/triggers/discussions.trigger';
 import { DiscussionsManageCommand } from '@src/feature/commands/administration/discussions/discussions-manage.command';
+import { IndexCommand } from '@src/feature/commands/administration/index.command';
 
 const container = new Container();
 
@@ -238,6 +239,7 @@ container.bind<ICommand>('Command').to(SetInactiveCommand);
 container.bind<ICommand>('Command').to(SetActiveCommand);
 container.bind<ICommand>('Command').to(DiscussionsTopicCommand);
 container.bind<ICommand>('Command').to(DiscussionsManageCommand);
+container.bind<ICommand>('Command').to(IndexCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
