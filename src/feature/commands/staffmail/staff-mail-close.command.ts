@@ -111,9 +111,9 @@ export class StaffMailCloseCommand implements ICommand {
             logNote
         );
 
-        // await this.staffmailRepository.deleteStaffMailChannel(message.channelId);
+        await this.staffmailRepository.deleteStaffMailChannel(message.channelId);
 
-        // await this.staffmailRepository.deleteStaffMail(message.channelId)
+        await this.staffmailRepository.deleteStaffMail(message.channelId);
 
         return {};
     }
@@ -156,8 +156,8 @@ export class StaffMailCloseCommand implements ICommand {
             }
             let content = message.content;
 
-            if (message.embeds.length > 0) {
-                content = message.embeds[message.embeds.length - 1].description ?? '';
+            if (message.embeds.length == 1) {
+                content = message.embeds[0].description ?? '';
             }
             if (message.attachments.size > 0) {
                 content += ` (Attachments: `;
