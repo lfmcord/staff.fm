@@ -41,7 +41,7 @@ export class WhoknowsTrigger {
     }
 
     async run(message: Message) {
-        this.logger.debug(`Checking if message starting with ! is a relevant WK command...`);
+        this.logger.trace(`Checking if message starting with ! is a relevant WK command...`);
 
         const args = message.content.split(' ');
         if (

@@ -21,9 +21,9 @@ export class DiscussionsManageCommand implements ICommand {
         '-`open` opens a new discussion.\n' +
         '-`close`: closes an open discussions thread\n' +
         '-`auto`: schedules automatic discussion topic posting every 48 hours as long as there are topics.\n' +
-        '-`stop`: stops automatic discussion topic posting' +
+        '-`stop`: stops automatic discussion topic posting\n' +
         '-`active`: shows all discussions that are currently active (scheduled or not).';
-    usageHint: string = 'open  | close [thread or thread ID] | auto | stop ';
+    usageHint: string = 'open  | close [thread or thread ID] | auto | stop | active';
     examples: string[] = ['open', 'close 1115081240165486632', 'auto', 'stop', 'active'];
     permissionLevel = CommandPermissionLevel.Moderator;
     operations = ['open', 'close', 'auto', 'stop', 'active'];

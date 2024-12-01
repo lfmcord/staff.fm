@@ -52,10 +52,14 @@ export class SelfMuteCommand implements ICommand {
 
     async run(message: Message | PartialMessage, args: string[]): Promise<CommandResult> {
         const amount = args[0].match(/[1-9][0-9]{0,2}/)?.pop();
-        const unit = args[0].match(/([smhdw])/)?.pop();
+        const unit = args[0].match(/([mhdw])/)?.pop();
         if (!amount || !unit) {
             throw Error(`Unable to parse duration '${args[0]}'`);
         }
+        if (parseInt(amount) < 5 && unit == 'm') {
+            throw new ValidationError('Duration too short.', 'Your selfmute has to be at least 5 minutes long.');
+        }
+
         this.logger.info(`Creating new selfmute for user ${TextHelper.userLog(message.author!)}...`);
         const now = moment.utc();
         const endDateUtc = now.add(amount, unit as unitOfTime.DurationConstructor);

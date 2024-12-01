@@ -120,7 +120,7 @@ export class DiscussionsTopicCommand implements ICommand {
 
             return {
                 isSuccessful: true,
-                replyToUser: `I've removed the follwoing topic at position ${numberToRemove}:\n- \`${discussionToRemove.topic}\` (added by ${user?.username ?? 'unknown'} at <t:${moment(discussionToRemove.addedAt).unix()}:f>)`,
+                replyToUser: `I've removed the following topic at position ${numberToRemove}:\n- \`${discussionToRemove.topic}\` (added by ${user?.username ?? 'unknown'} at <t:${moment(discussionToRemove.addedAt).unix()}:f>)`,
             };
         }
         this.logger.info(`No number provided, showing remove menu...`);

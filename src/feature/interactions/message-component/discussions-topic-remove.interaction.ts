@@ -46,7 +46,7 @@ export class DiscussionsTopicRemoveInteraction implements IMessageComponentInter
         await interaction.update({
             embeds: [],
             components: [],
-            content: `I've removed the follwoing topic:\n- \`${discussionToDelete.topic}\` (added by ${user?.username ?? 'unknown'} at <t:${moment(discussionToDelete.addedAt).unix()}:f>)`,
+            content: `I've removed the following topic:\n- \`${discussionToDelete.topic}\` (added by ${user?.username ?? 'unknown'} at <t:${moment(discussionToDelete.addedAt).unix()}:f>)`,
             attachments: [],
         });
     }

@@ -89,11 +89,14 @@ export class OkBuddyCommand implements ICommand {
         context.font = '20pt Calibri';
         context.textBaseline = 'middle';
         text = TextHelper.wordWrap(text);
+        this.logger.debug(`Text after word wrap: ${text}`);
 
         // TODO: Text is currently not rendered
 
         const lines = text.split('\n');
+        this.logger.debug(`Lines: ${lines}`);
         for (let i = 0; i < lines.length; i++) {
+            this.logger.debug(`Line ${i}: ${lines[i]}`);
             if (i >= 12) break;
             context.fillText(lines[i], 150, 85 + i * 20);
         }
@@ -104,6 +107,6 @@ export class OkBuddyCommand implements ICommand {
         context.drawImage(avatar, 55, 412, 85, 85);
         context.drawImage(avatar, 60, 750, 85, 85);
 
-        return new AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'profile-image.png' });
+        return new AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'ok-buddy.png' });
     }
 }
