@@ -69,12 +69,8 @@ export class StaffMailRepository {
         await staffMailInstance.save();
     }
 
-    public async deleteStaffMail(channelId: string): Promise<StaffMail | null> {
-        const deletedStaffMail = await StaffMailInstanceModel.findOneAndDelete({ channelId: channelId }).exec();
-        if (!deletedStaffMail) {
-            return null;
-        }
-        return await this.mapModelToStaffMail(deletedStaffMail);
+    public async deleteStaffMail(channelId: string) {
+        await StaffMailInstanceModel.deleteOne({ channelId: channelId }).exec();
     }
 
     public async deleteStaffMailChannel(channelId: string) {
