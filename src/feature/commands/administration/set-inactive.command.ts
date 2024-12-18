@@ -21,7 +21,7 @@ export class SetInactiveCommand implements ICommand {
     permissionLevel = CommandPermissionLevel.Helper;
     aliases = ['inactive'];
     isUsableInDms = false;
-    isUsableInServer = true;
+    isUsableInServer = false;
 
     private logger: Logger<SetInactiveCommand>;
     memberService: MemberService;

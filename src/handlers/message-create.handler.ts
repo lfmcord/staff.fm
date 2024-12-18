@@ -73,8 +73,9 @@ export class MessageCreateHandler implements IHandler {
                     (message.channel as GuildTextBasedChannel)?.parentId ?? message.channelId
                 )
             )
-        )
-            void this.cachingRepository.cacheMessage(message);
+        ) {
+            // void this.cachingRepository.cacheMessage(message);
+        }
     }
 
     private async handleCommand(message: Message) {

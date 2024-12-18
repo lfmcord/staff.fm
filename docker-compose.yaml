@@ -9,7 +9,7 @@ services:
     expose:
       - "27018"
     volumes:
-      - mongodb:/data/mongodb
+      - stafffm_mongodb:/data/mongodb
       - ./database/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${DB_ROOT_USER}
@@ -55,4 +55,5 @@ networks:
     driver: bridge
 
 volumes:
-  mongodb:
+  stafffm_mongodb:
+    external: true

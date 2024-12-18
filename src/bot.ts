@@ -60,7 +60,7 @@ export class Bot {
 
     private async init() {
         await this.mongoDbConnector.connect();
-        await this.redisConnector.connect();
+        // await this.redisConnector.connect();
         this.listen();
         this.apiListen();
         await this.client.login(this.env.TOKEN);
@@ -95,7 +95,7 @@ export class Bot {
             try {
                 await this.handlerFactory.createHandler('messageDelete').handle(message);
             } catch (e) {
-                this.logger.fatal(`Unhandled exception while trying to handle Message Delete`, e);
+                // this.logger.fatal(`Unhandled exception while trying to handle Message Delete`, e);
             }
         });
 
@@ -103,7 +103,7 @@ export class Bot {
             Events.MessageBulkDelete,
             async (messages: Collection<string, Message | PartialMessage>, channel: GuildTextBasedChannel) => {
                 try {
-                    await this.handlerFactory.createHandler(Events.MessageBulkDelete).handle({ messages, channel });
+                    // await this.handlerFactory.createHandler(Events.MessageBulkDelete).handle({ messages, channel });
                 } catch (e) {
                     this.logger.fatal(`Unhandled exception while trying to handle Message Bulk Delete`, e);
                 }

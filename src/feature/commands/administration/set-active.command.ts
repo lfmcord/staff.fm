@@ -23,7 +23,7 @@ export class SetActiveCommand implements ICommand {
     permissionLevel = CommandPermissionLevel.Helper;
     aliases = ['active'];
     isUsableInDms = false;
-    isUsableInServer = true;
+    isUsableInServer = false;
 
     private logger: Logger<SetActiveCommand>;
     usersRepository: UsersRepository;

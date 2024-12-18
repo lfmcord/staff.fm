@@ -20,7 +20,7 @@ export class IsInactiveCommand implements ICommand {
     permissionLevel = CommandPermissionLevel.Helper;
     aliases = [];
     isUsableInDms = false;
-    isUsableInServer = true;
+    isUsableInServer = false;
 
     private logger: Logger<IsInactiveCommand>;
     cachingRepository: CachingRepository;
