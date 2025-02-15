@@ -12,15 +12,16 @@ if __name__ == "__main__":
     count = 0
     with open(FLAGS_TXT_PATH, "r") as file:
         for line in file:
-            match = re.match(r"^\d+\.\s([\w\-\.]+):\s(.+)\(", line)
+            match = re.match(r"^\d+\.\s([\w\-\.]+):\s(.+)\s\(", line)
             document = {
-                "term": match.group(0),
-                "reason": match.group(1),
+                "term": match.group(1),
+                "reason": match.group(2),
                 "createdAt": datetime.now(),
-                "createdBy": "1236098444532125756"
+                "createdById": STAFF_FM_USER_ID
             }
-            print("Importing", match.group(0))
-            mongodb["Flags"].insert_one(document)
-            count = count + 1
+            print("Checking", match.group(1))
+            result = mongodb["Flags"].update_one({"term": match.group(0)}, {"$setOnInsert": document}, upsert=True )
+            if result.upserted_id is not None:
+                count = count + 1
 
     print("Imported", count, "flags.")

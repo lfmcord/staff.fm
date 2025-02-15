@@ -44,3 +44,18 @@ staff.fm is a custom moderation and server management bot for Lastcord.
     ```
    
 
+
+
+## Operations
+
+### Deployment
+1. ssh into your server
+2. (if first time) run `docker compose volume create stafffm_mongodb` to create the external volume
+3. run `sh deploy.sh`
+
+### Database backup
+
+1. (if first time) install the (MongoDB Database Tools)[https://www.mongodb.com/docs/database-tools/installation/]
+2. dump the database with `mongodump --uri="mongodb://staff-fm-admin:dev-admin@localhost:27018/staff-fm?authSource=admin"`
+3. back up the database dump on your host machine with `scp`, e.g. `scp -r user@127.0.0.1:~/staff.fm/dump/staff-fm ./backup` 
+4. to restore the database, use `mongodump --uri="mongodb://staff-fm-admin:dev-admin@localhost:27018/staff-fm?authSource=admin" ./path/to/dump`
