@@ -74,7 +74,7 @@ export class MessageCreateHandler implements IHandler {
                 )
             )
         ) {
-            // void this.cachingRepository.cacheMessage(message);
+            void this.cachingRepository.cacheMessage(message);
         }
     }
 
