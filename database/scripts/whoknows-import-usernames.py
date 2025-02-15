@@ -3,7 +3,7 @@ from pymongo import MongoClient
 import dateutil
 
 MONGODB_CONNECTION_STRING = "mongodb://staff-fm-admin:dev-admin@localhost:27018/staff-fm?authSource=admin"
-SQLITE_FILE_PATH = "~/whoknows/database.sqlite"
+SQLITE_FILE_PATH = "./whoknows/database.sqlite"
 WHOKNOWS_USER_ID = "1197999321589743706"
 
 if __name__ == "__main__":

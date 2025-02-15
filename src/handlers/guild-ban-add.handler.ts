@@ -57,7 +57,7 @@ export class GuildBanAddHandler implements IHandler {
 
             const flag: Flag = {
                 term: verification.username.toLowerCase(),
-                reason: 'Ban evasion',
+                reason: `Ban evasion (user ID: ${user.userId}, ban date: ${new Date().toISOString()})`,
                 createdAt: moment.utc().toDate(),
                 createdBy: this.client.user!,
             };

@@ -1,2 +1,2 @@
-dateutil==2.9.0
+python-dateutil==2.9.0
 pymongo==4.7.1
