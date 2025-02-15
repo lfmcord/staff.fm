@@ -17,7 +17,7 @@ if __name__ == "__main__":
         print("Importing", row[0], row[1])
         mongodb["Users"].update_one(
            filter = { "userId": row[0] },
-           update = { "$setOnInsert": { 'verifications': [{"username": row[1], "verifiedOn": dateutil.parser.parse(row[2]), "verifiedById": WHOKNOWS_USER_ID}] } },
+           update = { "$setOnInsert": { 'verifications': [{"username": row[1].lower(), "verifiedOn": dateutil.parser.parse(row[2]), "verifiedById": WHOKNOWS_USER_ID}] } },
            upsert = True
         )
         count = count + 1
