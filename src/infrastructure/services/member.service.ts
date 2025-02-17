@@ -221,8 +221,10 @@ export class MemberService {
 
         const highestScrobbleRoleId = this.getHighestScrobbleRoleId(member);
         if (!highestScrobbleRoleId) {
-            this.logger.warn(`Could not find highest scrobble role for member ${member.displayName}`);
-            return [];
+            this.logger.info(
+                `Could not find highest scrobble role for member ${member.displayName}. Updating everything`
+            );
+            return await this.assignScrobbleRoles(member, scrobbleCount);
         }
         const nextIndex = this.env.SCROBBLE_MILESTONE_ROLE_IDS.indexOf(highestScrobbleRoleId!) + 1;
         const nextScrobbleRoleId = this.env.SCROBBLE_MILESTONE_ROLE_IDS[nextIndex];

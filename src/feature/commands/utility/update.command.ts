@@ -53,7 +53,8 @@ export class UpdateCommand implements ICommand {
         const member = (await this.memberService.getGuildMemberFromUserId(message.author!.id))!;
         let result: CommandResult;
         if (args.length >= 1) {
-            result = await this.privilegedUpdate(member, args);
+            if (TextHelper.getDiscordUserId(args[0]) == message.author?.id) result = await this.selfUpdate(member);
+            else result = await this.privilegedUpdate(member, args);
         } else {
             result = await this.selfUpdate(member);
         }
