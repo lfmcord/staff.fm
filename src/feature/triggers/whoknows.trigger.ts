@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 import { TYPES } from '@src/types';
-import { GuildTextBasedChannel, Message } from 'discord.js';
+import { GuildTextBasedChannel, Message, User } from 'discord.js';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { MemberService } from '@src/infrastructure/services/member.service';
@@ -51,6 +51,7 @@ export class WhoknowsTrigger {
             await this.handleCrownsCommand(message, args);
 
         if (message.content.startsWith('!login')) await this.handleLoginCommand(message, args.slice(1));
+        if (message.content.startsWith('!username')) await this.handleUsernameCommand(message, args.slice(1));
     }
 
     private async handleCrownsCommand(message: Message, args: string[]) {
@@ -108,30 +109,46 @@ export class WhoknowsTrigger {
             this.logger.info(`'${args[0]}' is most likely not a valid last.fm name, skipping verification`);
             return;
         }
-        const indexedUser = await this.usersRepository.getUserByUserId(message.author.id);
+
+        await this.addVerification(message, message.author, args[0], 'User used `!login` command');
+    }
+
+    private async handleUsernameCommand(message: Message, args: string[]) {
+        const userId = TextHelper.getDiscordUserId(args[0]);
+        const user = userId ? await this.memberService.fetchUser(userId) : null;
+        if (!user) {
+            this.logger.info(`'${args[0]}' is not a Discord user ID, I am skipping this indexing.`);
+            return;
+        }
+
+        await this.addVerification(message, user, args[1], 'Moderator used `!username` command');
+    }
+
+    private async addVerification(message: Message, subject: User, lastFmUsername: string, reason: string) {
+        const indexedUser = await this.usersRepository.getUserByUserId(subject.id);
         if (!indexedUser) {
             this.logger.warn(
-                `Cannot find indexed user for user ID ${message.author.id}, so I cannot add this login to their verifications`
+                `Cannot find indexed user for user ID ${subject.id}, so I cannot add this login to their verifications`
             );
             return;
         }
         const lastUsedLastFmUsername = indexedUser.verifications.sort((a, b) =>
             a.verifiedOn > b.verifiedOn ? -1 : 1
         )[0].username;
-        if (lastUsedLastFmUsername == args[0].toLowerCase()) {
+        if (lastUsedLastFmUsername == lastFmUsername.toLowerCase()) {
             this.logger.info(
-                `User ${TextHelper.userLog(message.author)} latest verification is already for username ${args[0].toLowerCase()}. Skipping.`
+                `User ${TextHelper.userLog(subject)} latest verification is already for username ${lastFmUsername.toLowerCase()}. Skipping.`
             );
             return;
         }
 
         let lastfmUser;
         try {
-            lastfmUser = await this.lastFmClient.user.getInfo({ username: args[0] });
+            lastfmUser = await this.lastFmClient.user.getInfo({ username: lastFmUsername });
         } catch (e) {
             if ((e as LastfmError).code == '6') {
                 this.logger.info(
-                    `Last.fm user with name '${args[0]}' could not be found, I am not adding this verification.`
+                    `Last.fm user with name '${lastFmUsername}' could not be found, I am not adding this verification.`
                 );
             } else {
                 this.logger.error('Last.fm returned an error that is not code 6 (not found)', e);
@@ -139,18 +156,18 @@ export class WhoknowsTrigger {
             return;
         }
 
-        const member = await this.memberService.getGuildMemberFromUserId(message.author.id);
+        const member = await this.memberService.getGuildMemberFromUserId(subject.id);
         const wk = await this.memberService.fetchUser(this.env.WHOKNOWS_USER_ID);
         const newVerification: Verification = {
             verificationMessage: message,
             lastfmUser: lastfmUser,
-            discordAccountCreated: message.author.createdTimestamp,
+            discordAccountCreated: subject.createdTimestamp,
             isReturningUser: false,
             lastfmAccountCreated: lastfmUser.registered,
             verifiedUser: member!.user,
             verifyingUser: wk!,
         };
         await this.usersRepository.addVerificationToUser(newVerification);
-        await this.loggingService.logVerification(newVerification);
+        await this.loggingService.logIndex(newVerification, reason);
     }
 }
