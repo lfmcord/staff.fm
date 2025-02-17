@@ -406,6 +406,21 @@ export class LoggingService {
         await logChannel.send({ embeds: [embed] });
     }
 
+    async logScrobbleCap(subject: User, actor: User, reason: string, message: Message, capRoleId?: string) {
+        const logChannel = await this.getLogChannel(this.env.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        let description = `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}`;
+        if (capRoleId) description += `\n:billed_cap: ${bold('Cap:')} <@&${capRoleId}>`;
+        description += `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
+
+        const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
+        embed.setTitle(capRoleId ? '🚫 Scrobble Cap Set' : '☑️ Scrobble Cap Removed');
+        embed.setURL(TextHelper.getDiscordMessageLink(message));
+        
+        await logChannel.send({ embeds: [embed] });
+    }
+
     private async getLogChannel(channelId: string): Promise<GuildTextBasedChannel | null> {
         const logChannel = await this.channelService.getGuildChannelById(channelId);
         if (!logChannel) {

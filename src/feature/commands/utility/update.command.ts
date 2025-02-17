@@ -17,9 +17,9 @@ import { LastFmService } from '@src/infrastructure/services/lastfm.service';
 export class UpdateCommand implements ICommand {
     name: string = 'update';
     description: string =
-        'Updates your scrobble role. If you are a privileged user, you can also update other scrobble roles.';
+        "Updates your scrobble role. If you are a privileged user, you can also update other peoples' scrobble roles.";
     usageHint: string = '[(optional) user ID/mention]';
-    examples: string[] = ['', '356178941913858049', '@haiyn @aethelic'];
+    examples: string[] = ['', '356178941913858049', '@haiyn'];
     permissionLevel = CommandPermissionLevel.Helper;
     aliases = [];
     isUsableInDms = true;
@@ -166,7 +166,7 @@ export class UpdateCommand implements ICommand {
         }
 
         const highestMilestone = assignedRoles[assignedRoles.length - 1];
-        let reply = `:tada: I've updated your scrobble roles to ${highestMilestone}! `;
+        let reply = `:tada: I've updated your scrobble roles to ${TextHelper.numberWithCommas(highestMilestone)}! `;
         switch (highestMilestone) {
             case 10000:
                 reply += `10k, congrats! This is just the start of your scrobbling journey! 🎶`;

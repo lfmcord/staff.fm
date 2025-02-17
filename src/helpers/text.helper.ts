@@ -54,4 +54,8 @@ export class TextHelper {
     static getDiscordMessageLink(message: Message): string {
         return `https://discord.com/channels/${message.guild ? message.guild.id : '@me'}/${message.channelId}/${message.id}`;
     }
+
+    static numberWithCommas(x: number | string): string {
+        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
 }

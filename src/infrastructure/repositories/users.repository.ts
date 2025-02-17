@@ -19,6 +19,12 @@ export class UsersRepository {
         return user.verifications.sort((a, b) => (a.verifiedOn < b.verifiedOn ? 0 : -1))[0];
     }
 
+    async getScrobbleCapOfUser(userId: string): Promise<IScrobbleCapModel | null> {
+        const user = await UsersModelInstance.findOne({ userId: userId }).exec();
+        if (!user || !user.scrobbleCap) return null;
+        return user.scrobbleCap;
+    }
+
     async addUser(verification: Verification) {
         const userInstance = new UsersModelInstance({
             userId: verification.verifiedUser.id,
@@ -58,15 +64,6 @@ export class UsersRepository {
         );
     }
 
-    async removeImportsFlagDateFromUser(userId: string): Promise<void> {
-        await UsersModelInstance.updateOne(
-            { userId: userId },
-            {
-                importsFlagDate: null,
-            }
-        );
-    }
-
     async addCrownBanToUser(actorId: string, subjectId: string, reason?: string): Promise<void> {
         const now = moment.utc().toDate();
         await UsersModelInstance.updateOne(
@@ -81,6 +78,20 @@ export class UsersRepository {
         );
     }
 
+    async addScrobbleCapToUser(userId: string, actorId: string, roleId: string, reason: string): Promise<void> {
+        await UsersModelInstance.updateOne(
+            { userId: userId },
+            {
+                scrobbleCap: {
+                    roleId: roleId,
+                    reason: reason,
+                    setOn: moment.utc().toDate(),
+                    setBy: actorId,
+                },
+            }
+        );
+    }
+
     async removeCrownsBanFromUser(userId: string): Promise<void> {
         await UsersModelInstance.updateOne(
             { userId: userId },
@@ -90,8 +101,21 @@ export class UsersRepository {
         );
     }
 
+    async removeImportsFlagDateFromUser(userId: string): Promise<void> {
+        await UsersModelInstance.updateOne(
+            { userId: userId },
+            {
+                importsFlagDate: null,
+            }
+        );
+    }
+
     async removeVerificationFromUser(userId: string, _id: string) {
         return UsersModelInstance.updateOne({ userId: userId }, { $pull: { verifications: { _id: _id } } });
+    }
+
+    async removeScrobbleCapFromUser(userId: string) {
+        return UsersModelInstance.updateOne({ userId: userId }, { $unset: { scrobbleCap: 1 } });
     }
 }
 
@@ -114,10 +138,24 @@ export interface ICrownsBanModel {
     bannedById: string;
 }
 
+export interface IScrobbleCapModel {
+    roleId: string;
+    reason: string;
+    setOn: Date;
+    setBy: string;
+}
+
 const crownsBanSchema = new Schema<ICrownsBanModel>({
     reason: { type: String, required: false },
     bannedOn: { type: Date, required: true },
     bannedById: { type: String, required: true },
+});
+
+const scrobbleCapSchema = new Schema<IScrobbleCapModel>({
+    roleId: { type: String, required: false },
+    reason: { type: String, required: false },
+    setOn: { type: Date, required: true },
+    setBy: { type: String, required: true },
 });
 
 export interface IUserModel {
@@ -125,6 +163,7 @@ export interface IUserModel {
     verifications: IVerificationModel[];
     importsFlagDate: Date;
     crownsBan?: ICrownsBanModel;
+    scrobbleCap?: IScrobbleCapModel;
 }
 
 const usersSchema = new Schema<IUserModel>(
@@ -133,6 +172,7 @@ const usersSchema = new Schema<IUserModel>(
         verifications: { type: [verificationSchema], required: true },
         importsFlagDate: { type: Date, required: false },
         crownsBan: { type: crownsBanSchema, required: false },
+        scrobbleCap: { type: scrobbleCapSchema, required: false },
     },
     { collection: 'Users' }
 );

@@ -87,6 +87,7 @@ import { DiscussionsManageCommand } from '@src/feature/commands/administration/d
 import { IndexCommand } from '@src/feature/commands/administration/index.command';
 import { LastFmService } from '@src/infrastructure/services/lastfm.service';
 import { UpdateCommand } from '@src/feature/commands/utility/update.command';
+import { ScrobbleCapCommand } from '@src/feature/commands/administration/scrobble-cap.command';
 
 const container = new Container();
 
@@ -243,6 +244,7 @@ container.bind<ICommand>('Command').to(DiscussionsTopicCommand);
 container.bind<ICommand>('Command').to(DiscussionsManageCommand);
 container.bind<ICommand>('Command').to(IndexCommand);
 container.bind<ICommand>('Command').to(UpdateCommand);
+container.bind<ICommand>('Command').to(ScrobbleCapCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);

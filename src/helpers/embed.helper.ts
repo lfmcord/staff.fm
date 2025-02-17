@@ -623,30 +623,35 @@ export class EmbedHelper {
             .setFooter({ text: `User ID: ${member.id}` });
     }
 
-    static getCrownsEmbed(indexedUser?: IUserModel): EmbedBuilder {
-        if (!indexedUser)
+    static getCrownsEmbed(user?: IUserModel): EmbedBuilder {
+        if (!user)
             return new EmbedBuilder()
-                .setTitle(`Crowns Game`)
+                .setTitle(`Crowns Game & Miscellaneous`)
                 .setColor(EmbedHelper.orange)
-                .setDescription('No crowns data available.');
+                .setDescription('No data available.');
 
         return new EmbedBuilder()
-            .setTitle(`Crowns Game`)
+            .setTitle(`Crowns Game & Miscellaneous`)
             .setColor(EmbedHelper.blue)
             .setFields(
                 {
-                    name: 'Status',
-                    value: indexedUser.crownsBan
-                        ? `<:nocrown:816944519924809779> Banned on <t:${moment(indexedUser.crownsBan.bannedOn).unix()}:d>`
+                    name: 'Crowns Status',
+                    value: user.crownsBan
+                        ? `<:nocrown:816944519924809779> Banned on <t:${moment(user.crownsBan.bannedOn).unix()}:d>`
                         : `👑 No Crowns Ban`,
                     inline: true,
                 },
                 {
                     name: 'Imported?',
-                    value: indexedUser.importsFlagDate
-                        ? `✅ <t:${moment(indexedUser.importsFlagDate).unix()}:f>`
-                        : `❌ No`,
+                    value: user.importsFlagDate ? `📈 <t:${moment(user.importsFlagDate).unix()}:f>` : `📉 No Imports`,
                     inline: true,
+                },
+                {
+                    name: 'Scrobble Cap',
+                    value: user.scrobbleCap
+                        ? `🚫 <@&${user.scrobbleCap.roleId}> on <t:${moment(user.scrobbleCap.setOn).unix()}:d> by <@!${user.scrobbleCap.setBy}> (${user.scrobbleCap.reason.substring(0, 50)}${user.scrobbleCap.reason.length > 50 ? '...' : ''})`
+                        : `☑️ No Scrobble Cap`,
+                    inline: false,
                 }
             );
     }
@@ -663,6 +668,7 @@ export class EmbedHelper {
             .setColor(EmbedHelper.blue)
             .setDescription(description != '' ? description : 'No Verifications');
     }
+
     static getUserNotIndexedEmbed(userId?: string): EmbedBuilder {
         return new EmbedBuilder()
             .setTitle(`User not indexed`)
