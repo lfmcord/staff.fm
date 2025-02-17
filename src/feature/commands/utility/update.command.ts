@@ -20,7 +20,7 @@ export class UpdateCommand implements ICommand {
         'Updates your scrobble role. If you are a privileged user, you can also update other scrobble roles.';
     usageHint: string = '[(optional) user ID/mention]';
     examples: string[] = ['', '356178941913858049', '@haiyn @aethelic'];
-    permissionLevel = CommandPermissionLevel.User;
+    permissionLevel = CommandPermissionLevel.Helper;
     aliases = [];
     isUsableInDms = true;
     isUsableInServer = true;
