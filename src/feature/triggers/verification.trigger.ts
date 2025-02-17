@@ -106,7 +106,7 @@ export class VerificationTrigger {
         }
 
         // check if it's a returning user
-        const returningUser = membersWithSameLastFm.find((m) => m.user.id === message.author.id);
+        const returningUser = membersWithSameLastFm.find((m) => m.user?.id === message.author.id);
         if (returningUser && membersWithSameLastFm.length === 1) {
             const latestVerification = await this.usersRepository.getLatestVerificationOfUser(returningUser.user.id);
             this.logger.debug(

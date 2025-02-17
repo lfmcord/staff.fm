@@ -45,6 +45,7 @@ export const TYPES = {
     LoggingService: Symbol('LoggingService'),
     AuditService: Symbol('AuditService'),
     CommandService: Symbol('CommandService'),
+    LastFmService: Symbol('LastFmService'),
 
     // CONTROLLERS
     UserController: Symbol('UserController'),

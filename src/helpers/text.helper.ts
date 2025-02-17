@@ -5,6 +5,7 @@ export class TextHelper {
     static failure = '❌';
     static lastfm = '<:lastfmred:900551196023083048>';
     static loading = '<a:loading:1221575003041173565>';
+
     static pascalCase(input: string): string {
         return input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
     }
@@ -39,7 +40,7 @@ export class TextHelper {
     }
 
     static isDiscordUser(stringToCheck: string): boolean {
-        return stringToCheck.match(/<@!*[0-9]{17,19}>|[0-9]{17,19}/g)?.length == 1;
+        return stringToCheck.match(/<@!*[0-9]{17,}>|[0-9]{17,}/g)?.length == 1;
     }
 
     static getDiscordUserId(stringToCheck: string): string | null {

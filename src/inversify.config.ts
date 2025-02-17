@@ -85,6 +85,8 @@ import { DiscussionsTopicRemoveInteraction } from '@src/feature/interactions/mes
 import { DiscussionsTrigger } from '@src/feature/triggers/discussions.trigger';
 import { DiscussionsManageCommand } from '@src/feature/commands/administration/discussions/discussions-manage.command';
 import { IndexCommand } from '@src/feature/commands/administration/index.command';
+import { LastFmService } from '@src/infrastructure/services/lastfm.service';
+import { UpdateCommand } from '@src/feature/commands/utility/update.command';
 
 const container = new Container();
 
@@ -240,6 +242,7 @@ container.bind<ICommand>('Command').to(SetActiveCommand);
 container.bind<ICommand>('Command').to(DiscussionsTopicCommand);
 container.bind<ICommand>('Command').to(DiscussionsManageCommand);
 container.bind<ICommand>('Command').to(IndexCommand);
+container.bind<ICommand>('Command').to(UpdateCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
@@ -279,6 +282,7 @@ container.bind<ChannelService>(TYPES.ChannelService).to(ChannelService);
 container.bind<LoggingService>(TYPES.LoggingService).to(LoggingService);
 container.bind<AuditService>(TYPES.AuditService).to(AuditService);
 container.bind<CommandService>(TYPES.CommandService).to(CommandService);
+container.bind<LastFmService>(TYPES.LastFmService).to(LastFmService);
 
 // CONTROLLERS
 container.bind<UserController>(TYPES.UserController).to(UserController);
