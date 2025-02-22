@@ -22,8 +22,8 @@ import * as moment from 'moment';
 export class IndexCommand implements ICommand {
     name: string = 'index';
     description: string = 'Indexes a user with a last.fm account.';
-    usageHint: string = '[user mention/ID] [last.fm username] [reason]';
-    examples: string[] = ['@haiyn haiyn fmbot login'];
+    usageHint: string = '<user mention/ID> <last.fm username> [reason]';
+    examples: string[] = ['@haiyn haiyn fmbot login', '@haiyn haiyn'];
     permissionLevel = CommandPermissionLevel.Helper;
     aliases = ['link'];
     isUsableInDms = false;
@@ -36,11 +36,9 @@ export class IndexCommand implements ICommand {
     private usersRepository: UsersRepository;
     private env: Environment;
     private memberService: MemberService;
-    private messageService: MessageService;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<IndexCommand>,
-        @inject(TYPES.MessageService) messageService: MessageService,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.LastFmClient) lastFmClient: LastFM,
         @inject(TYPES.LoggingService) loggingService: LoggingService,
@@ -55,20 +53,13 @@ export class IndexCommand implements ICommand {
         this.lastFmClient = lastFmClient;
         this.logger = logger;
         this.memberService = memberService;
-        this.messageService = messageService;
     }
 
     validateArgs(args: string[]): Promise<void> {
-        if (args.length < 1)
+        if (args.length < 2)
             throw new ValidationError(
-                `args length is ${args.length}, expected length 3+.`,
-                `You must give me a discord user, last.fm username and a reason for the indexing!`
-            );
-
-        if (args.length == 2)
-            throw new ValidationError(
-                `args length is ${args.length}, expected length 3+.`,
-                `You must give me a reason for the indexing so it's understandable in the future!`
+                `args length is ${args.length}, expected length 2+.`,
+                `You must give me a discord user, last.fm username and an optional reason for the indexing!`
             );
 
         const userId = TextHelper.getDiscordUserId(args[0]);
