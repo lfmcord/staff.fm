@@ -126,20 +126,18 @@ export class WhoknowsTrigger {
 
     private async addVerification(message: Message, subject: User, lastFmUsername: string, reason: string) {
         const indexedUser = await this.usersRepository.getUserByUserId(subject.id);
-        if (!indexedUser) {
-            this.logger.warn(
-                `Cannot find indexed user for user ID ${subject.id}, so I cannot add this login to their verifications`
-            );
-            return;
-        }
-        const lastUsedLastFmUsername = indexedUser.verifications.sort((a, b) =>
-            a.verifiedOn > b.verifiedOn ? -1 : 1
-        )[0].username;
-        if (lastUsedLastFmUsername == lastFmUsername.toLowerCase()) {
-            this.logger.info(
-                `User ${TextHelper.userLog(subject)} latest verification is already for username ${lastFmUsername.toLowerCase()}. Skipping.`
-            );
-            return;
+
+        // if user is already indexed, make sure the login isn't already the latest verification
+        if (indexedUser) {
+            const lastUsedLastFmUsername = indexedUser.verifications.sort((a, b) =>
+                a.verifiedOn > b.verifiedOn ? -1 : 1
+            )[0].username;
+            if (lastUsedLastFmUsername == lastFmUsername.toLowerCase()) {
+                this.logger.info(
+                    `User ${TextHelper.userLog(subject)} latest verification is already for username ${lastFmUsername.toLowerCase()}. Skipping.`
+                );
+                return;
+            }
         }
 
         let lastfmUser;
@@ -167,7 +165,9 @@ export class WhoknowsTrigger {
             verifiedUser: member!.user,
             verifyingUser: wk!,
         };
-        await this.usersRepository.addVerificationToUser(newVerification);
+        !indexedUser
+            ? await this.usersRepository.addUser(newVerification)
+            : await this.usersRepository.addVerificationToUser(newVerification);
         await this.loggingService.logIndex(newVerification, reason);
     }
 }
