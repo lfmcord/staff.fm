@@ -182,7 +182,7 @@ export class LoggingService {
                     },
                     {
                         name: `Reason`,
-                        value: reason,
+                        value: reason == '' ? 'No reason provided.' : reason,
                         inline: false,
                     },
                 ])
@@ -303,19 +303,32 @@ export class LoggingService {
         logChannel.send({ embeds: [logEmbed] });
     }
 
-    async logReturningUserNote(user: User, lastFmUsername: string, isUsingDifferentLastfm: boolean): Promise<void> {
+    async logReturningUserNote(
+        user: User,
+        lastFmUsername: string,
+        isUsingDifferentLastfm: boolean,
+        otherDiscordUsers: User[] = []
+    ): Promise<void> {
         const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
         if (!logChannel) return;
 
+        const isCertain = otherDiscordUsers.length > 0;
+
         let description =
-            `${TextHelper.userDisplay(user, true)} is a returning member.\n\n` +
+            `${TextHelper.userDisplay(user, true)} ${isCertain ? 'most likely ' : ''}is a returning member.\n\n` +
             `${bold(`Last.fm Link:`)} https://last.fm/user/${lastFmUsername}`;
-        if (!isUsingDifferentLastfm) description += ` (⚠️ verifying with different account)`;
+        if (isUsingDifferentLastfm) description += ` (⚠️ verifying with different last.fm account)`;
+        if (otherDiscordUsers.length > 0) {
+            description += `\n\nPrevious Discord accounts:`;
+            otherDiscordUsers.forEach((user) => {
+                description += `\n- ${TextHelper.userDisplay(user, false)}`;
+            });
+        }
 
         const logEmbed = EmbedHelper.getLogEmbed(this.client.user, user, LogLevel.Info)
-            .setTitle(`ℹ️ Returning member`)
+            .setTitle(`ℹ️ Returning member${isCertain ? '?' : ''}`)
             .setDescription(description)
-            .setFooter({ text: `Welcome back! 🎉` });
+            .setFooter({ text: `Welcome back${isCertain ? '?' : '! 🎉'}` });
         logChannel.send({ embeds: [logEmbed] });
     }
 
@@ -417,7 +430,7 @@ export class LoggingService {
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
         embed.setTitle(capRoleId ? '🚫 Scrobble Cap Set' : '☑️ Scrobble Cap Removed');
         embed.setURL(TextHelper.getDiscordMessageLink(message));
-        
+
         await logChannel.send({ embeds: [embed] });
     }
 

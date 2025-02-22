@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 import { TYPES } from '@src/types';
 import LastFM from 'lastfm-typed';
-import { GuildMember, inlineCode, italic, Message } from 'discord.js';
+import { GuildMember, inlineCode, italic, Message, User } from 'discord.js';
 import { TextHelper } from '@src/helpers/text.helper';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import * as moment from 'moment';
@@ -95,46 +95,61 @@ export class VerificationTrigger {
 
         const usersWithSameLastFm = await Promise.all(
             (await this.usersRepository.getUsersByLastFmUsername(lastFmUsername)).map(
-                async (user) => (await this.memberService.getGuildMemberFromUserId(user.userId)) ?? user.userId
+                async (user) =>
+                    (await this.memberService.getGuildMemberFromUserId(user.userId)) ??
+                    (await this.memberService.fetchUser(user.userId))
             )
         );
-        const membersWithSameLastFm: GuildMember[] = usersWithSameLastFm.filter((m): m is GuildMember => m !== null);
-        this.logger.debug(`${membersWithSameLastFm.length} other guild members with this account.`);
-        if (membersWithSameLastFm.length === 0) {
-            this.logger.info(`No other members for username '${lastFmUsername}'`);
+        if (usersWithSameLastFm.length == 0) {
+            this.logger.info(`No other users using the last.fm username ${lastFmUsername}`);
             return;
         }
-
-        // check if it's a returning user
-        const returningUser = membersWithSameLastFm.find((m) => m.user?.id === message.author.id);
-        if (returningUser && membersWithSameLastFm.length === 1) {
-            const latestVerification = await this.usersRepository.getLatestVerificationOfUser(returningUser.user.id);
-            this.logger.debug(
-                `Member ${TextHelper.userLog(returningUser.user)} is using last.fm account '${lastFmUsername}' vs lastfm username in database '${latestVerification?.username}'`
-            );
-            await this.loggingService.logReturningUserNote(
-                message.author,
-                lastFmUsername,
-                latestVerification?.username.toLowerCase() === lastFmUsername.toLowerCase()
-            );
-            return;
-        }
-
-        // log a warning if there's more than 1 other member that isn't a returning user
         this.logger.info(
             `There are ${usersWithSameLastFm.length} other users with this lastfm username (${lastFmUsername}).`
         );
-        const memberStrings: string[] = [];
-        for (const memberOrId of usersWithSameLastFm) {
-            if (memberOrId instanceof String) {
-                this.logger.debug(`${memberOrId} is not in guild.`);
-                memberStrings.push(`${inlineCode('unknown')} ${italic(`(ID ${memberOrId}) - not in server`)}`);
-            } else if (memberOrId instanceof GuildMember) {
-                this.logger.debug(`${memberOrId?.user?.id} is in guild.`);
-                if (memberOrId && memberOrId.user.id === message.member?.user.id) continue;
-                memberStrings.push(`${TextHelper.userDisplay(memberOrId.user)}`);
-            }
+
+        const membersWithSameLastFm: GuildMember[] = usersWithSameLastFm
+            .filter((m) => m instanceof GuildMember)
+            .map((m) => m as GuildMember);
+        this.logger.debug(`${membersWithSameLastFm.length} other guild members with this account.`);
+
+        // if there are other users on Discord using the same last.fm that are not in the server, log an info
+        if (membersWithSameLastFm.length == 1 && membersWithSameLastFm[0].user.id == message.author.id) {
+            this.logger.debug(`Member in server with same last.fm is message author, welcome back!`);
+            const returningMember = membersWithSameLastFm[0];
+            const latestVerification = await this.usersRepository.getLatestVerificationOfUser(returningMember.user.id);
+            await this.loggingService.logReturningUserNote(
+                message.author,
+                lastFmUsername,
+                latestVerification?.username.toLowerCase() !== lastFmUsername.toLowerCase()
+            );
+            return;
         }
-        await this.loggingService.logDuplicateLastFmUsername(message, memberStrings);
+
+        // If there are other members in the server using the same last.fm, log a warning
+        if (membersWithSameLastFm.length >= 1) {
+            this.logger.debug(
+                `Member in server with same last.fm is not message author or there are multiple members!`
+            );
+            const memberStrings: string[] = [];
+            for (const memberOrUser of usersWithSameLastFm) {
+                if (memberOrUser == null) continue;
+                const isMember = memberOrUser instanceof GuildMember;
+                let line = `${TextHelper.userDisplay(isMember ? memberOrUser.user : memberOrUser, isMember)}`;
+                if (!isMember) line += ` ${italic(`- not in server`)}`;
+                memberStrings.push(line);
+            }
+            await this.loggingService.logDuplicateLastFmUsername(message, memberStrings);
+            return;
+        }
+
+        // no other members in the server but other users use this last.fm, log a returning user info
+        this.logger.debug(`No other members in server, fetching other Discord users.`);
+        await this.loggingService.logReturningUserNote(
+            message.author,
+            lastFmUsername,
+            false,
+            usersWithSameLastFm.filter((u) => u instanceof User && u.id != message.author.id).map((u) => u as User)
+        );
     }
 }
