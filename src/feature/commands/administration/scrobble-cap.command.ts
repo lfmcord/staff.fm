@@ -120,6 +120,11 @@ export class ScrobbleCapCommand implements ICommand {
     }
 
     async getScrobbleCap(indexedUser: IUserModel): Promise<CommandResult> {
+        if (!indexedUser.scrobbleCap)
+            return {
+                isSuccessful: true,
+                replyToUser: `This user has no scrobble cap set.`,
+            };
         const index = this.env.SCROBBLE_MILESTONE_ROLE_IDS.findIndex((x) => x == indexedUser.scrobbleCap!.roleId);
         const scrobbleRoleNumber = this.env.SCROBBLE_MILESTONE_NUMBERS[index];
         return {

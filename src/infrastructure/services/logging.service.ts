@@ -424,7 +424,7 @@ export class LoggingService {
         if (!logChannel) return;
 
         let description = `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}`;
-        if (capRoleId) description += `\n:billed_cap: ${bold('Cap:')} <@&${capRoleId}>`;
+        if (capRoleId) description += `\n:1234: ${bold('Cap:')} <@&${capRoleId}>`;
         description += `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
 
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
