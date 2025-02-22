@@ -420,7 +420,7 @@ export class LoggingService {
     }
 
     async logScrobbleCap(subject: User, actor: User, reason: string, message: Message, capRoleId?: string) {
-        const logChannel = await this.getLogChannel(this.env.SELFMUTE_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CROWNS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         let description = `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}`;
