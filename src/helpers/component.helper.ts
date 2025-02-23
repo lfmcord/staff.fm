@@ -265,11 +265,4 @@ export class ComponentHelper {
             .setPlaceholder('Select the topic to remove')
             .addOptions(options);
     }
-
-    static updateScrobbleRolesButton = (userId: string) =>
-        new ButtonBuilder()
-            .setCustomId(`defer-update-roles-${userId}`)
-            .setLabel('Update Roles')
-            .setStyle(ButtonStyle.Secondary)
-            .setEmoji({ name: '🔃' });
 }

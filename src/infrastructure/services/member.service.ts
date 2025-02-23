@@ -174,10 +174,10 @@ export class MemberService {
      * @param {number} scrobbleCount - The scrobble count of the member, used to determine which roles to assign.
      * @return {Promise<number[]>} A promise that resolves to an array of scrobble milestone numbers that were newly assigned as roles.
      */
-    async assignScrobbleRoles(member: GuildMember, scrobbleCount: number, isDryRun = false): Promise<number[]> {
+    async assignScrobbleRoles(member: GuildMember, scrobbleCount: number): Promise<number[]> {
         if (scrobbleCount < this.env.SCROBBLE_MILESTONE_NUMBERS[1]) {
             if (!member.roles.cache.has(this.env.SCROBBLE_MILESTONE_ROLE_IDS[0])) {
-                if (!isDryRun) await member.roles.add(this.env.SCROBBLE_MILESTONE_ROLE_IDS[0]);
+                await member.roles.add(this.env.SCROBBLE_MILESTONE_ROLE_IDS[0]);
                 return [this.env.SCROBBLE_MILESTONE_NUMBERS[1]];
             }
             return [];
@@ -190,7 +190,7 @@ export class MemberService {
             if (index === 0) continue; // we skip the lowest scrobble role
             if (scrobbleCount >= num) {
                 if (!member.roles.cache.has(roleIdToAdd)) {
-                    if (!isDryRun) await member.roles.add(this.env.SCROBBLE_MILESTONE_ROLE_IDS[index]);
+                    await member.roles.add(this.env.SCROBBLE_MILESTONE_ROLE_IDS[index]);
                     addedScrobbleRoles.push(num);
                 }
             } else break;
@@ -198,11 +198,10 @@ export class MemberService {
         return addedScrobbleRoles;
     }
 
-    // TODO: rewrite this and dont delete 1000 role if its only one
-    async updateScrobbleRoles(member: GuildMember, scrobbleCount: number, isDryRun = false): Promise<number[]> {
+    async updateScrobbleRoles(member: GuildMember, scrobbleCount: number): Promise<number[]> {
         if (scrobbleCount < this.env.SCROBBLE_MILESTONE_NUMBERS[1]) {
             if (!member.roles.cache.has(this.env.SCROBBLE_MILESTONE_ROLE_IDS[0])) {
-                if (!isDryRun) await member.roles.add(this.env.SCROBBLE_MILESTONE_ROLE_IDS[0]);
+                await member.roles.add(this.env.SCROBBLE_MILESTONE_ROLE_IDS[0]);
                 return [this.env.SCROBBLE_MILESTONE_NUMBERS[1]];
             }
             return [];
@@ -216,7 +215,7 @@ export class MemberService {
 
         if (roleCount > 1) {
             this.logger.debug(`User has multiple scrobble milestone roles, adding new ones.`);
-            return await this.assignScrobbleRoles(member, scrobbleCount, isDryRun);
+            return await this.assignScrobbleRoles(member, scrobbleCount);
         }
         this.logger.debug(`User has only one scrobble milestone role, adding new one and removing old one.`);
 
@@ -225,19 +224,14 @@ export class MemberService {
             this.logger.info(
                 `Could not find highest scrobble role for member ${member.displayName}. Updating everything`
             );
-            return await this.assignScrobbleRoles(member, scrobbleCount, isDryRun);
+            return await this.assignScrobbleRoles(member, scrobbleCount);
         }
-        const nextNumber = this.getHighestPossibleScrobbleRoleNumber(scrobbleCount);
-        if (!nextNumber) return [];
-        if (nextNumber === this.getHighestScrobbleRoleNumber(member)) return [];
-        const nextIndex = this.env.SCROBBLE_MILESTONE_NUMBERS.indexOf(nextNumber);
+        const nextIndex = this.env.SCROBBLE_MILESTONE_ROLE_IDS.indexOf(highestScrobbleRoleId!) + 1;
         const nextScrobbleRoleId = this.env.SCROBBLE_MILESTONE_ROLE_IDS[nextIndex];
         const nextScrobbleRoleNumber = this.env.SCROBBLE_MILESTONE_NUMBERS[nextIndex];
         if (scrobbleCount >= nextScrobbleRoleNumber) {
-            if (!isDryRun) {
-                await member.roles.add(nextScrobbleRoleId);
-                await member.roles.remove(highestScrobbleRoleId!);
-            }
+            await member.roles.add(nextScrobbleRoleId);
+            await member.roles.remove(highestScrobbleRoleId!);
             return [nextScrobbleRoleNumber];
         }
         return [];
@@ -256,14 +250,5 @@ export class MemberService {
         if (!highestScrobbleRoleId) return null;
         const index = this.env.SCROBBLE_MILESTONE_ROLE_IDS.indexOf(highestScrobbleRoleId);
         return this.env.SCROBBLE_MILESTONE_NUMBERS[index];
-    }
-
-    getHighestPossibleScrobbleRoleNumber(scrobbleCount: number) {
-        let milestone;
-        for (const num of this.env.SCROBBLE_MILESTONE_NUMBERS) {
-            if (num <= scrobbleCount) milestone = num;
-            else break;
-        }
-        return milestone;
     }
 }

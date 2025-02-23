@@ -88,7 +88,6 @@ import { IndexCommand } from '@src/feature/commands/administration/index.command
 import { LastFmService } from '@src/infrastructure/services/lastfm.service';
 import { UpdateCommand } from '@src/feature/commands/utility/update.command';
 import { ScrobbleCapCommand } from '@src/feature/commands/administration/scrobble-cap.command';
-import { UpdateScrobbleRolesInteraction } from '@src/feature/interactions/message-component/update-scrobble-roles.interaction';
 
 const container = new Container();
 
@@ -267,7 +266,6 @@ container
     .bind<IMessageComponentInteraction>('MessageComponentInteraction')
     .to(VerifyDismissPlaycountWarningInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(DiscussionsTopicRemoveInteraction);
-container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(UpdateScrobbleRolesInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);
