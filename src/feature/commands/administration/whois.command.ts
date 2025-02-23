@@ -1,6 +1,6 @@
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { Client, EmbedBuilder, Message, MessageCreateOptions } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, Client, EmbedBuilder, Message, MessageCreateOptions } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
@@ -11,6 +11,7 @@ import { MemberService } from '@src/infrastructure/services/member.service';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import LastFM from 'lastfm-typed';
 import { Logger } from 'tslog';
+import { ComponentHelper } from '@src/helpers/component.helper';
 
 @injectable()
 export class WhoisCommand implements ICommand {
@@ -138,7 +139,12 @@ export class WhoisCommand implements ICommand {
         // Crowns
         embeds.push(EmbedHelper.getCrownsEmbed(indexedUser));
 
-        return { embeds: embeds };
+        const buttons = [];
+        if (lastFmUser) buttons.push(ComponentHelper.updateScrobbleRolesButton(indexedUser.userId));
+        let components: ActionRowBuilder<ButtonBuilder>[] = [];
+        if (buttons.length > 0) components = [new ActionRowBuilder<ButtonBuilder>().addComponents(buttons)];
+
+        return { embeds: embeds, components: components };
     }
 
     validateArgs(args: string[]): Promise<void> {

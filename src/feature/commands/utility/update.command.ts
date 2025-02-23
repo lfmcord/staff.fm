@@ -1,6 +1,6 @@
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { GuildMember, Message, PartialMessage } from 'discord.js';
+import { ButtonInteraction, GuildMember, Message, PartialMessage } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import { MemberService } from '@src/infrastructure/services/member.service';
@@ -12,6 +12,7 @@ import { ValidationError } from '@src/feature/commands/models/validation-error.m
 import { TextHelper } from '@src/helpers/text.helper';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { LastFmService } from '@src/infrastructure/services/lastfm.service';
+import { CommandService } from '@src/infrastructure/services/command.service';
 
 @injectable()
 export class UpdateCommand implements ICommand {
@@ -31,6 +32,7 @@ export class UpdateCommand implements ICommand {
     private logger: Logger<UpdateCommand>;
     private memberService: MemberService;
     private lastFmService: LastFmService;
+    private commandService: CommandService;
 
     constructor(
         @inject(TYPES.ENVIRONMENT) env: Environment,
@@ -38,7 +40,8 @@ export class UpdateCommand implements ICommand {
         @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.LoggingService) loggingService: LoggingService,
-        @inject(TYPES.LastFmService) lastFmService: LastFmService
+        @inject(TYPES.LastFmService) lastFmService: LastFmService,
+        @inject(TYPES.CommandService) commandService: CommandService
     ) {
         this.env = env;
         this.loggingService = loggingService;
@@ -46,6 +49,27 @@ export class UpdateCommand implements ICommand {
         this.memberService = memberService;
         this.usersRepository = usersRepository;
         this.lastFmService = lastFmService;
+        this.commandService = commandService;
+    }
+
+    async runInteraction(interaction: ButtonInteraction) {
+        this.logger.info(`New update button interaction`);
+        const member = interaction.member;
+        if (!member) {
+            await interaction.reply(`I can't determine if you are allowed to use this.`);
+            return;
+        }
+
+        try {
+            const result = await this.privilegedUpdate(interaction.member as GuildMember, [
+                interaction.customId.split('-')[3],
+            ]);
+            await interaction.reply(result.replyToUser ?? 'Something happened, but I have no idea what. Oops.');
+        } catch (e) {
+            if (e instanceof ValidationError) await interaction.reply(e.messageToUser);
+            else await interaction.reply(`Teehee... I fucky-uppy! <@${this.env.BOT_OWNER_ID}> pls fixy!! (◕‿◕✿)`);
+            return;
+        }
     }
 
     async run(message: Message | PartialMessage, args: string[]): Promise<CommandResult> {
@@ -72,8 +96,7 @@ export class UpdateCommand implements ICommand {
     }
 
     private async privilegedUpdate(member: GuildMember, args: string[]): Promise<CommandResult> {
-        const permissionLevel = await this.memberService.getMemberPermissionLevel(member!);
-        if (permissionLevel < CommandPermissionLevel.Helper) {
+        if (!(await this.commandService.isPermittedToRun(member, this))) {
             throw new ValidationError(
                 'Insufficient permissions.',
                 "You do not have the required permissions to update other users' scrobble roles."
@@ -106,6 +129,14 @@ export class UpdateCommand implements ICommand {
             return {
                 isSuccessful: false,
                 replyToUser: `This user has no scrobbles or last.fm gave me a wrong playcount of 0.`,
+            };
+        }
+
+        const isAllowed = await this.isAllowedToGetNewRoles(member, lastFmUser.playcount);
+        if (!isAllowed) {
+            return {
+                isSuccessful: false,
+                replyToUser: `This user has a scrobble cap and isn't allowed to get a higher role.`,
             };
         }
 
@@ -147,6 +178,14 @@ export class UpdateCommand implements ICommand {
             return {
                 isSuccessful: false,
                 replyToUser: `It looks like you have no scrobbles yet! Check back once you've reached 1000.\n-# Please try again if this is a mistake.`,
+            };
+        }
+
+        const isAllowed = await this.isAllowedToGetNewRoles(member, lastFmUser.playcount);
+        if (!isAllowed) {
+            return {
+                isSuccessful: false,
+                replyToUser: `It looks like you are not allowed to get a higher scrobble role! If you think this is a mistake, please reach out to staff.`,
             };
         }
 
@@ -203,5 +242,10 @@ export class UpdateCommand implements ICommand {
             isSuccessful: true,
             replyToUser: reply,
         };
+    }
+
+    private async isAllowedToGetNewRoles(member: GuildMember, scrobbleCount: number) {
+        // TODO: Implement scrobble cap
+        return true;
     }
 }

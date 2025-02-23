@@ -17,9 +17,11 @@ import { IMessageContextMenuInteraction } from '@src/feature/interactions/abstra
 export class InteractionCreateHandler implements IHandler {
     eventType = 'interactionCreate';
     private logger: Logger<InteractionCreateHandler>;
+
     constructor(@inject(TYPES.BotLogger) logger: Logger<InteractionCreateHandler>) {
         this.logger = logger;
     }
+
     async handle(interaction: Interaction) {
         if (interaction.isMessageContextMenuCommand()) {
             await this.handleMessageContextMenuCommandInteraction(interaction as MessageContextMenuCommandInteraction);
@@ -66,8 +68,10 @@ export class InteractionCreateHandler implements IHandler {
             return;
         }
         const interactions = container.getAll<IMessageComponentInteraction>('MessageComponentInteraction');
-        const foundInteraction = interactions.find((i: IMessageComponentInteraction) =>
-            i.customIds.includes(interaction.customId)
+        const foundInteraction = interactions.find(
+            (i: IMessageComponentInteraction) =>
+                i.customIds.includes(interaction.customId) ||
+                i.customIds.find((id) => interaction.customId.startsWith(id))
         );
         if (!foundInteraction) {
             this.logger.error(
