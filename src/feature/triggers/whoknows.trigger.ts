@@ -41,7 +41,7 @@ export class WhoknowsTrigger {
     }
 
     async run(message: Message) {
-        this.logger.trace(`Checking if message starting with ! is a relevant WK command...`);
+        this.logger.trace(`Checking if message is a relevant WK command...`);
 
         const args = message.content.split(' ');
         if (
@@ -50,8 +50,12 @@ export class WhoknowsTrigger {
         )
             await this.handleCrownsCommand(message, args);
 
-        if (message.content.startsWith('!login')) await this.handleLoginCommand(message, args.slice(1));
         if (message.content.startsWith('!username')) await this.handleUsernameCommand(message, args.slice(1));
+
+        const loginMessageMatch = message.content.match(/<@([0-9]{17,})>.*`(.*)`/);
+        if (loginMessageMatch) {
+            await this.handleLoginMessage(message, loginMessageMatch[1], loginMessageMatch[2]);
+        }
     }
 
     private async handleCrownsCommand(message: Message, args: string[]) {
@@ -104,13 +108,15 @@ export class WhoknowsTrigger {
         await this.loggingService.logCrownsBan(message.author, subject, reason, message, !isBan);
     }
 
-    private async handleLoginCommand(message: Message, args: string[]) {
-        if (args.length == 0 || args[0].startsWith('[')) {
-            this.logger.info(`'${args[0]}' is most likely not a valid last.fm name, skipping verification`);
+    private async handleLoginMessage(message: Message, userId: string, username: string) {
+        const user = await this.memberService.fetchUser(userId);
+        if (!user) {
+            this.logger.info(`Could not find user with ID ${userId}, skipping login message.`);
             return;
         }
+        this.logger.info(`User logged in with username '${username}', adding verification...`);
 
-        await this.addVerification(message, message.author, args[0], 'User used `!login` command');
+        await this.addVerification(message, user, username, 'User used `!login` command');
     }
 
     private async handleUsernameCommand(message: Message, args: string[]) {
