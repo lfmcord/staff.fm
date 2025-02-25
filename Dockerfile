@@ -11,7 +11,7 @@ RUN yarn install
 
 ADD src /usr/staff-fm/src
 COPY tsconfig.json /usr/staff-fm
-COPY .env /usr/staff-fm
+COPY environment.json /usr/staff-fm
 
 RUN yarn build
 
