@@ -1,4 +1,5 @@
-import { inject, injectable } from 'inversify';
+import { Environment } from '@models/environment';
+import { TYPES } from '@src/types';
 import {
     CategoryChannel,
     CategoryChildChannel,
@@ -11,15 +12,15 @@ import {
     TextChannel,
     ThreadChannel,
 } from 'discord.js';
-import { TYPES } from '@src/types';
+import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
-import { Environment } from '@models/environment';
 
 @injectable()
 export class ChannelService {
     private client: Client;
     logger: Logger<ChannelService>;
     private environment: Environment;
+
     constructor(
         @inject(TYPES.Client) client: Client,
         @inject(TYPES.ENVIRONMENT) environment: Environment,
@@ -32,7 +33,7 @@ export class ChannelService {
 
     async getGuildChannelById(channelId: string): Promise<GuildTextBasedChannel | null> {
         try {
-            const guild = await this.client.guilds.fetch(this.environment.GUILD_ID);
+            const guild = await this.client.guilds.fetch(this.environment.CORE.GUILD_ID);
             return (await guild.channels.fetch(channelId)) as GuildTextBasedChannel | null;
         } catch (e) {
             this.logger.warn(`Failed while trying to get guild channel for ID ${channelId}.`, e);
@@ -41,7 +42,7 @@ export class ChannelService {
     }
 
     async getGuildThreadById(channelId: string, threadId: string): Promise<ThreadChannel | null> {
-        const guild = await this.client.guilds.fetch(this.environment.GUILD_ID);
+        const guild = await this.client.guilds.fetch(this.environment.CORE.GUILD_ID);
         const channel = await guild.channels.fetch(channelId);
         try {
             const thread = await (channel as TextChannel).threads.fetch(threadId);
@@ -54,7 +55,7 @@ export class ChannelService {
 
     async getGuildCategoryById(categoryId: string): Promise<CategoryChannel | null> {
         try {
-            const guild = await this.client.guilds.fetch(this.environment.GUILD_ID);
+            const guild = await this.client.guilds.fetch(this.environment.CORE.GUILD_ID);
             return (await guild.channels.fetch(categoryId)) as CategoryChannel | null;
         } catch (e) {
             this.logger.warn(`Failed while trying to get guild category for ID ${categoryId}.`, e);
@@ -81,7 +82,7 @@ export class ChannelService {
         channelName: string,
         category: CategoryChannel
     ): Promise<GuildTextBasedChannel> {
-        const guild = await this.client.guilds.fetch(this.environment.GUILD_ID);
+        const guild = await this.client.guilds.fetch(this.environment.CORE.GUILD_ID);
         return await guild.channels.create({
             name: channelName,
             type: ChannelType.GuildText,
@@ -100,7 +101,7 @@ export class ChannelService {
     }
 
     async getGuildTextChannelById(id: string) {
-        const guild = await this.client.guilds.fetch(this.environment.GUILD_ID);
+        const guild = await this.client.guilds.fetch(this.environment.CORE.GUILD_ID);
         return await guild.channels.fetch(id);
     }
 }

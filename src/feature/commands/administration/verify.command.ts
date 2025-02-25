@@ -1,6 +1,19 @@
+import { Environment } from '@models/environment';
+import { LastfmError } from '@models/lastfm-error.model';
+import { Verification } from '@src/feature/commands/administration/models/verification.model';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { ComponentHelper } from '@src/helpers/component.helper';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { TextHelper } from '@src/helpers/text.helper';
+import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { MessageService } from '@src/infrastructure/services/message.service';
+import { TYPES } from '@src/types';
 import {
     ActionRowBuilder,
     ButtonBuilder,
@@ -16,21 +29,8 @@ import {
     User,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
-import { MessageService } from '@src/infrastructure/services/message.service';
-import { TYPES } from '@src/types';
-import { MemberService } from '@src/infrastructure/services/member.service';
-import { Logger } from 'tslog';
-import { Verification } from '@src/feature/commands/administration/models/verification.model';
-import { TextHelper } from '@src/helpers/text.helper';
 import LastFM from 'lastfm-typed';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
-import { EmbedHelper } from '@src/helpers/embed.helper';
-import { ComponentHelper } from '@src/helpers/component.helper';
-import { Environment } from '@models/environment';
-import { ValidationError } from '@src/feature/commands/models/validation-error.model';
-import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
-import { LastfmError } from '@models/lastfm-error.model';
-import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
+import { Logger } from 'tslog';
 
 @injectable()
 export class VerifyCommand implements ICommand {
@@ -169,7 +169,9 @@ export class VerifyCommand implements ICommand {
                 await verificationMessage.reactions.removeAll();
                 return {
                     isSuccessful: false,
-                    replyToUser: `I cannot verify a user that isn't on the server without a last.fm account. If you know a last.fm account for this user, please link it with \`${this.env.PREFIX}verify ${userToVerify.id}\`.`,
+                    replyToUser:
+                        `I cannot verify a user that isn't on the server without a last.fm account. ` +
+                        `If you know a last.fm account for this user, please link it with \`${this.env.CORE.PREFIX}verify ${userToVerify.id}\`.`,
                 };
             }
             const wasVerified = await this.tryToVerifyUserWithoutLastfm(trigger, memberToVerify);
@@ -226,7 +228,7 @@ export class VerifyCommand implements ICommand {
             await this.usersRepository.addVerificationToUser(verification);
         }
 
-        if (memberToVerify) await memberToVerify.roles.remove(this.env.UNVERIFIED_ROLE_ID as RoleResolvable);
+        if (memberToVerify) await memberToVerify.roles.remove(this.env.ROLES.UNVERIFIED_ROLE_ID as RoleResolvable);
 
         try {
             await verificationMessage.reactions.removeAll();
@@ -239,7 +241,7 @@ export class VerifyCommand implements ICommand {
         return {
             isSuccessful: true,
             replyToUser: `I've verified the user <@!${userToVerify.id}>.`,
-            shouldDelete: trigger.channel?.id == this.env.VERIFICATION_CHANNEL_ID,
+            shouldDelete: trigger.channel?.id == this.env.CHANNELS.VERIFICATION_CHANNEL_ID,
         };
     }
 
@@ -254,7 +256,9 @@ export class VerifyCommand implements ICommand {
                     .setColor(EmbedHelper.blue)
                     .setTitle('No Last.fm Account?')
                     .setDescription(
-                        `It looks like you are trying to verify someone without a last.fm account. Please confirm this choice below.\n\nIf you wish to verify them with an account, run \`${this.env.PREFIX}${this.name} ${this.usageHint}\`.`
+                        `It looks like you are trying to verify someone without a last.fm account. ` +
+                            `Please confirm this choice below.\n\n` +
+                            `If you wish to verify them with an account, run \`${this.env.CORE.PREFIX}${this.name} ${this.usageHint}\`.`
                     ),
             ],
             components: [
@@ -291,7 +295,7 @@ export class VerifyCommand implements ICommand {
             return false;
         } else {
             this.logger.info(`Verifying user '${memberToVerify.user.username}' without last.fm.`);
-            await memberToVerify.roles.add(this.env.NO_LASTFM_ACCOUNT_ROLE_ID as RoleResolvable);
+            await memberToVerify.roles.add(this.env.ROLES.NO_LASTFM_ACCOUNT_ROLE_ID as RoleResolvable);
             if (!isInteraction) {
                 await noLastFmVerificationMessage?.delete();
             }

@@ -104,7 +104,7 @@ export class MuteRndCommand implements ICommand {
         const players = await this.muteRndRepository.getOptedInUsers();
         if (players.length === 0)
             return {
-                content: `:disappointed: Nobody is playing the mute game at the moment. Opt in with ${inlineCode(this.env.PREFIX + this.name + ' ' + 'optin')}!`,
+                content: `:disappointed: Nobody is playing the mute game at the moment. Opt in with ${inlineCode(this.env.CORE.PREFIX + this.name + ' ' + 'optin')}!`,
             };
 
         this.logger.debug(`Found ${players.length} players. Preparing random player...`);
@@ -140,7 +140,7 @@ export class MuteRndCommand implements ICommand {
     private async leaderboard(message: Message): Promise<MessageCreateOptions> {
         const users = await this.muteRndRepository.getAllUsers();
         if (users.length === 0)
-            return { content: `No players yet... Opt in with ${this.env.PREFIX + this.name + ' ' + 'optin'}!` };
+            return { content: `No players yet... Opt in with ${this.env.CORE.PREFIX + this.name + ' ' + 'optin'}!` };
         users.sort((a, b) => (a.winCount > b.winCount ? 1 : -1));
         const authorInLeaderboard = users.find((u) => u.member.id === message.author.id);
         let authorPosition;

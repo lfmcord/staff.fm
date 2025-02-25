@@ -1,17 +1,18 @@
-import { inject, injectable } from 'inversify';
-import Redis from 'ioredis';
+import { Environment } from '@models/environment';
+import { CachedAttachmentModel } from '@src/infrastructure/repositories/models/cached-attachment.model';
+import { CachedMessageModel } from '@src/infrastructure/repositories/models/cached-message.model';
 import { TYPES } from '@src/types';
 import { Message } from 'discord.js';
-import { CachedMessageModel } from '@src/infrastructure/repositories/models/cached-message.model';
-import { Environment } from '@models/environment';
+import { inject, injectable } from 'inversify';
+import Redis from 'ioredis';
 import { Logger } from 'tslog';
-import { CachedAttachmentModel } from '@src/infrastructure/repositories/models/cached-attachment.model';
 
 @injectable()
 export class CachingRepository {
     redis: Redis;
     logger: Logger<CachingRepository>;
     env: Environment;
+
     constructor(
         @inject(TYPES.Redis) redis: Redis,
         @inject(TYPES.InfrastructureLogger) logger: Logger<CachingRepository>,
@@ -100,7 +101,7 @@ export class CachingRepository {
         }
 
         await this.redis.hset(keyV2, valueV2);
-        await this.redis.expire(keyV2, this.env.MESSAGE_CACHING_DURATION_IN_SECONDS);
+        await this.redis.expire(keyV2, this.env.MISC.MESSAGE_CACHING_DURATION_IN_SECONDS);
         this.logger.trace(`Stored ${keyV2} with value ${JSON.stringify(valueV2)} and ${responses.length} attachments.`);
         let index = 0;
         for (const response of responses) {
@@ -109,9 +110,9 @@ export class CachingRepository {
             const buffer = Buffer.from(await response.arrayBuffer());
             const mimeType = response.headers.get('content-type');
             await this.redis.hset(keyV2, attachmentKey, buffer);
-            await this.redis.expire(attachmentKey, this.env.MESSAGE_CACHING_DURATION_IN_SECONDS);
+            await this.redis.expire(attachmentKey, this.env.MISC.MESSAGE_CACHING_DURATION_IN_SECONDS);
             await this.redis.hset(keyV2, attachmentTypeKey, mimeType ?? 'image/jpg');
-            await this.redis.expire(attachmentTypeKey, this.env.MESSAGE_CACHING_DURATION_IN_SECONDS);
+            await this.redis.expire(attachmentTypeKey, this.env.MISC.MESSAGE_CACHING_DURATION_IN_SECONDS);
 
             this.logger.trace(
                 `Stored ${attachmentKey} with buffer size ${buffer.length} and MIME type '${mimeType}' in ${keyV2}.`

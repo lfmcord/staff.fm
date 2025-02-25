@@ -1,3 +1,17 @@
+import { Environment } from '@models/environment';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
+import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
+import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { TextHelper } from '@src/helpers/text.helper';
+import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { TYPES } from '@src/types';
 import {
     bold,
     ButtonInteraction,
@@ -11,21 +25,7 @@ import {
     MessageReplyOptions,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
-import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
-import { EmbedHelper } from '@src/helpers/embed.helper';
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
-import { Environment } from '@models/environment';
-import { MemberService } from '@src/infrastructure/services/member.service';
-import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
-import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
-import { TextHelper } from '@src/helpers/text.helper';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
-import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
-import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 
 @injectable()
 export class StaffMailReportCommand implements ICommand {
@@ -193,7 +193,7 @@ export class StaffMailReportCommand implements ICommand {
             : reportedMessage.content.slice(reportedMessage.content.indexOf(' '));
 
         let rolePings = '';
-        this.env.STAFFMAIL_PING_ROLE_IDS.forEach((id) => (rolePings += `<@&${id}> `));
+        this.env.STAFFMAIL.PING_ROLE_IDS.forEach((id) => (rolePings += `<@&${id}> `));
         const embeds: EmbedBuilder[] = [];
         embeds.push(
             EmbedHelper.getStaffMailStaffViewNewEmbed(
@@ -201,7 +201,7 @@ export class StaffMailReportCommand implements ICommand {
                 isAnonymous ? null : reporter.user,
                 category,
                 null,
-                this.env.PREFIX
+                this.env.CORE.PREFIX
             )
         );
         if (!isAnonymous) {

@@ -1,15 +1,15 @@
-import { inject, injectable } from 'inversify';
-import { Logger } from 'tslog';
-import { TYPES } from '@src/types';
-import LastFM from 'lastfm-typed';
-import { GuildMember, inlineCode, italic, Message, User } from 'discord.js';
-import { TextHelper } from '@src/helpers/text.helper';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
-import * as moment from 'moment';
 import { Environment } from '@models/environment';
+import { TextHelper } from '@src/helpers/text.helper';
 import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
+import { TYPES } from '@src/types';
+import { GuildMember, Message, User, italic } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import LastFM from 'lastfm-typed';
+import * as moment from 'moment';
+import { Logger } from 'tslog';
 
 @injectable()
 export class VerificationTrigger {
@@ -40,7 +40,7 @@ export class VerificationTrigger {
     }
 
     async run(message: Message) {
-        if (message.content.startsWith(this.env.PREFIX)) return;
+        if (message.content.startsWith(this.env.CORE.PREFIX)) return;
 
         const discordUsername = message.author.username.toLowerCase();
         const discordDisplayname = message.author.displayName.toLowerCase();
@@ -83,14 +83,14 @@ export class VerificationTrigger {
 
         // check for account age
         const accountAgeInDays = moment().diff(moment.unix(lastFmUser.registered), 'days');
-        if (accountAgeInDays <= this.env.LASTFM_AGE_ALERT_IN_DAYS) {
+        if (accountAgeInDays <= this.env.MISC.LASTFM_AGE_ALERT_IN_DAYS) {
             this.logger.info(
-                `Last.fm link in verification channel points to new last.fm account (Age: ${accountAgeInDays}d, alert threshold: ${this.env.LASTFM_AGE_ALERT_IN_DAYS}d)`
+                `Last.fm link in verification channel points to new last.fm account (Age: ${accountAgeInDays}d, alert threshold: ${this.env.MISC.LASTFM_AGE_ALERT_IN_DAYS}d)`
             );
             await this.loggingService.logLastFmAgeAlert(message, lastFmUser);
         }
         this.logger.debug(
-            `Last.fm link in verification channel is not a new account (Age: ${accountAgeInDays}d, alert threshold: ${this.env.LASTFM_AGE_ALERT_IN_DAYS}d)`
+            `Last.fm link in verification channel is not a new account (Age: ${accountAgeInDays}d, alert threshold: ${this.env.MISC.LASTFM_AGE_ALERT_IN_DAYS}d)`
         );
 
         const usersWithSameLastFm = await Promise.all(

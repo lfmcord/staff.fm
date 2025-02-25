@@ -1,18 +1,16 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { ActionRowBuilder, Client, Message, StringSelectMenuBuilder } from 'discord.js';
-import { inject, injectable } from 'inversify';
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { ValidationError } from '@src/feature/commands/models/validation-error.model';
-import { TYPES } from '@src/types';
-import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
-import { MemberService } from '@src/infrastructure/services/member.service';
-import LastFM from 'lastfm-typed';
-import { Logger } from 'tslog';
-import { TextHelper } from '@src/helpers/text.helper';
 import { Environment } from '@models/environment';
-import { EmbedHelper } from '@src/helpers/embed.helper';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { ComponentHelper } from '@src/helpers/component.helper';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { TextHelper } from '@src/helpers/text.helper';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { TYPES } from '@src/types';
+import { ActionRowBuilder, Message, StringSelectMenuBuilder } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import { Logger } from 'tslog';
 
 @injectable()
 export class VerifyRemoveCommand implements ICommand {
@@ -26,26 +24,16 @@ export class VerifyRemoveCommand implements ICommand {
     isUsableInServer = true;
     logger: Logger<VerifyRemoveCommand>;
     env: Environment;
-
-    private lastFmClient: LastFM;
-    private memberService: MemberService;
     private usersRepository: UsersRepository;
-    private client: Client;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<VerifyRemoveCommand>,
         @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
-        @inject(TYPES.MemberService) memberService: MemberService,
-        @inject(TYPES.LastFmClient) lastFmClient: LastFM,
-        @inject(TYPES.Client) client: Client,
         @inject(TYPES.ENVIRONMENT) env: Environment
     ) {
         this.env = env;
         this.logger = logger;
-        this.lastFmClient = lastFmClient;
-        this.memberService = memberService;
         this.usersRepository = usersRepository;
-        this.client = client;
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
@@ -54,14 +42,14 @@ export class VerifyRemoveCommand implements ICommand {
         if (!indexedUser) {
             return {
                 isSuccessful: false,
-                replyToUser: `This user is not indexed yet. If you know their last.fm username, please verify them with \`${this.env.PREFIX}verify ${userId} [last.fm username]\`.`,
+                replyToUser: `This user is not indexed yet. If you know their last.fm username, please verify them with \`${this.env.CORE.PREFIX}verify ${userId} [last.fm username]\`.`,
             };
         }
 
         if (indexedUser.verifications.length == 0) {
             return {
                 isSuccessful: false,
-                replyToUser: `This user has no verifications I can remove. If you know their last.fm username, please verify them with \`${this.env.PREFIX}verify ${userId} [last.fm username]\`.`,
+                replyToUser: `This user has no verifications I can remove. If you know their last.fm username, please verify them with \`${this.env.CORE.PREFIX}verify ${userId} [last.fm username]\`.`,
             };
         }
 

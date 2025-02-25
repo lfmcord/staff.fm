@@ -1,3 +1,10 @@
+import { Environment } from '@models/environment';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { TYPES } from '@src/types';
 import {
     ButtonInteraction,
     Client,
@@ -8,14 +15,7 @@ import {
     StringSelectMenuInteraction,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
-import { TYPES } from '@src/types';
 import { Logger } from 'tslog';
-import { EmbedHelper } from '@src/helpers/embed.helper';
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
-import { Environment } from '@models/environment';
 
 @injectable()
 export class StaffMailCreateCommand implements ICommand {
@@ -185,7 +185,7 @@ export class StaffMailCreateCommand implements ICommand {
     private async timeout(message: Message | ButtonInteraction) {
         this.logger.info(`Staff mail creation has timed out.`);
         const content = {
-            content: `Request timed out after 2 minutes. If you'd still like to message, simply type ${inlineCode(`${this.env.PREFIX}${this.name}`)} here.`,
+            content: `Request timed out after 2 minutes. If you'd still like to message, simply type ${inlineCode(`${this.env.CORE.PREFIX}${this.name}`)} here.`,
             components: [],
             embeds: [],
         };

@@ -1,17 +1,17 @@
-import { inject, injectable } from 'inversify';
-import { ICommand } from '@src/feature/commands/models/command.interface';
+import { Environment } from '@models/environment';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { Logger } from 'tslog';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { DiscussionsTrigger } from '@src/feature/triggers/discussions.trigger';
+import { TextHelper } from '@src/helpers/text.helper';
+import { DiscussionsRepository, IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
+import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { TYPES } from '@src/types';
 import { Message } from 'discord.js';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { DiscussionsTrigger } from '@src/feature/triggers/discussions.trigger';
-import { ValidationError } from '@src/feature/commands/models/validation-error.model';
-import { TextHelper } from '@src/helpers/text.helper';
-import { ChannelService } from '@src/infrastructure/services/channel.service';
-import { Environment } from '@models/environment';
-import { DiscussionsRepository, IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
+import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
+import { Logger } from 'tslog';
 
 @injectable()
 export class DiscussionsManageCommand implements ICommand {
@@ -107,7 +107,7 @@ export class DiscussionsManageCommand implements ICommand {
                 replyToUser:
                     `There is an automatic discussion schedule running:\n` +
                     `- "${discussions[0].topic}" (closes <t:${moment(discussions[0].scheduledToCloseAt).unix()}:f>)\n` +
-                    `-# Stop it with \`${this.environment.PREFIX}stop\` if you want to manually start a new discussion!`,
+                    `-# Stop it with \`${this.environment.CORE.PREFIX}stop\` if you want to manually start a new discussion!`,
             };
         }
 
@@ -118,7 +118,7 @@ export class DiscussionsManageCommand implements ICommand {
             if (!discussion) {
                 return {
                     isSuccessful: false,
-                    replyToUser: `There are no discussion topics to open a thread for. Add more with \`${this.environment.PREFIX}dtopic add [topic]\``,
+                    replyToUser: `There are no discussion topics to open a thread for. Add more with \`${this.environment.CORE.PREFIX}dtopic add [topic]\``,
                 };
             }
             thread = await this.discussionsTrigger.scheduleDiscussionOnce(discussion);
@@ -147,7 +147,7 @@ export class DiscussionsManageCommand implements ICommand {
             );
         }
 
-        const thread = await this.channelService.getGuildThreadById(this.environment.DISCUSSIONS_CHANNEL_ID, threadId);
+        const thread = await this.channelService.getGuildThreadById(this.environment.DISCUSSIONS.CHANNEL_ID, threadId);
 
         if (!thread) {
             throw new ValidationError(
@@ -196,7 +196,7 @@ export class DiscussionsManageCommand implements ICommand {
                 replyToUser:
                     `There is already an automatic discussion schedule running:\n` +
                     `- "${discussions[0].topic}" (closes <t:${moment(discussions[0].scheduledToCloseAt).unix()}:f>)\n` +
-                    `-# Stop it with \`${this.environment.PREFIX}stop if this is wrong.`,
+                    `-# Stop it with \`${this.environment.CORE.PREFIX}stop if this is wrong.`,
             };
         }
 

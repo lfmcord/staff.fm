@@ -1,14 +1,14 @@
-import { Channel, GuildTextBasedChannel, Message, User } from 'discord.js';
-import { inject, injectable } from 'inversify';
-import { TYPES } from '@src/types';
-import { model, Schema } from 'mongoose';
+import { faker } from '@faker-js/faker';
+import { Environment } from '@models/environment';
 import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
 import { StaffMail } from '@src/infrastructure/repositories/models/staff-mail.model';
-import { faker } from '@faker-js/faker';
-import moment = require('moment');
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
-import { Environment } from '@models/environment';
+import { TYPES } from '@src/types';
+import { Channel, GuildTextBasedChannel, Message, User } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import { Schema, model } from 'mongoose';
+import moment = require('moment');
 
 @injectable()
 export class StaffMailRepository {
@@ -91,8 +91,8 @@ export class StaffMailRepository {
     }
 
     public async createStaffMailChannel(user: User, mode: StaffMailModeEnum): Promise<GuildTextBasedChannel> {
-        const category = await this.channelService.getGuildCategoryById(this.env.STAFFMAIL_CATEGORY_ID);
-        if (!category) throw Error(`Cannot find staff mail category with ID ${this.env.STAFFMAIL_CATEGORY_ID}`);
+        const category = await this.channelService.getGuildCategoryById(this.env.STAFFMAIL.CATEGORY_ID);
+        if (!category) throw Error(`Cannot find staff mail category with ID ${this.env.STAFFMAIL.CATEGORY_ID}`);
         let channelName: string | null = null;
         if (mode === StaffMailModeEnum.ANONYMOUS) {
             // If the user wants to remain anonymous, we generate a random channel name and check for conflicts

@@ -1,12 +1,12 @@
-import { inject, injectable } from 'inversify';
-import { Embed, inlineCode, Message } from 'discord.js';
-import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
-import { TYPES } from '@src/types';
-import { EmbedHelper } from '@src/helpers/embed.helper';
-import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
-import { Logger } from 'tslog';
-import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { Environment } from '@models/environment';
+import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
+import { ChannelService } from '@src/infrastructure/services/channel.service';
+import { TYPES } from '@src/types';
+import { Embed, Message, inlineCode } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import { Logger } from 'tslog';
 
 @injectable()
 export class StaffMailDmTrigger {
@@ -30,7 +30,10 @@ export class StaffMailDmTrigger {
     public async run(message: Message): Promise<void> {
         if (!message.reference) {
             await message.reply(
-                `It looks like you are trying to chat with me.\n- If you want to reply to an existing StaffMail, please check your pinned messages for instructions.\n- If you want to report a message, you can report it with ${inlineCode(this.env.PREFIX + 'report')}. You can also right-click/tap-and-hold the message in the server you want to report and select Apps -> Report Message.\n- If you do not have any open StaffMails, you can create a new one with ${inlineCode(this.env.PREFIX + 'staffmail')}!`
+                `It looks like you are trying to chat with me.\n` +
+                    `- If you want to reply to an existing StaffMail, please check your pinned messages for instructions.\n` +
+                    `- If you want to report a message, you can report it with ${inlineCode(this.env.CORE.PREFIX + 'report')}. You can also right-click/tap-and-hold the message in the server you want to report and select Apps -> Report Message.\n` +
+                    `- If you do not have any open StaffMails, you can create a new one with ${inlineCode(this.env.CORE.PREFIX + 'staffmail')}!`
             );
             return;
         }

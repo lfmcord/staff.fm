@@ -135,7 +135,7 @@ dist
 .idea
 
 *.sqlite
-*.env
+environment.json
 
 development.md
 dump

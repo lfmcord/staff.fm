@@ -40,7 +40,7 @@ export class UserController {
             if (!member) throw new ApiError(`User with user ID ${request.body.userId} was not found.`, 409);
             const existingUser = await this.userRepository.getUserByUserId(request.body.userId);
 
-            const whoknowsUser = await this.memberService.getGuildMemberFromUserId(this.env.WHOKNOWS_USER_ID);
+            const whoknowsUser = await this.memberService.getGuildMemberFromUserId(this.env.CORE.WHOKNOWS_USER_ID);
             if (!whoknowsUser) throw new ApiError(`WhoKnows user was not found.`, 409);
 
             let lastFmUser;

@@ -1,5 +1,12 @@
-import { inject, injectable } from 'inversify';
-import { Logger } from 'tslog';
+import { Environment } from '@models/environment';
+import { ApiRouter } from '@src/api/api-router';
+import { IMessageContextMenuInteraction } from '@src/feature/interactions/abstractions/message-context-menu-interaction.interface';
+import { IHandlerFactory } from '@src/handlers/models/handler-factory.interface';
+import { TextHelper } from '@src/helpers/text.helper';
+import { MongoDbConnector } from '@src/infrastructure/connectors/mongo-db.connector';
+import { RedisConnector } from '@src/infrastructure/connectors/redis.connector';
+import container from '@src/inversify.config';
+import { TYPES } from '@src/types';
 import {
     ActivityType,
     Client,
@@ -15,15 +22,8 @@ import {
     REST,
     Routes,
 } from 'discord.js';
-import { TYPES } from '@src/types';
-import { IHandlerFactory } from '@src/handlers/models/handler-factory.interface';
-import { MongoDbConnector } from '@src/infrastructure/connectors/mongo-db.connector';
-import { TextHelper } from '@src/helpers/text.helper';
-import { RedisConnector } from '@src/infrastructure/connectors/redis.connector';
-import { Environment } from '@models/environment';
-import container from '@src/inversify.config';
-import { IMessageContextMenuInteraction } from '@src/feature/interactions/abstractions/message-context-menu-interaction.interface';
-import { ApiRouter } from '@src/api/api-router';
+import { inject, injectable } from 'inversify';
+import { Logger } from 'tslog';
 
 @injectable()
 export class Bot {
@@ -44,6 +44,7 @@ export class Bot {
         @inject(TYPES.RedisConnector) redisConnector: RedisConnector,
         @inject(TYPES.ApiRouter) apiRouter: ApiRouter
     ) {
+        setTimeout(() => {}, 2000);
         this.apiRouter = apiRouter;
         this.redisConnector = redisConnector;
         this.mongoDbConnector = mongoDbConnector;
@@ -63,7 +64,7 @@ export class Bot {
         // await this.redisConnector.connect();
         this.listen();
         this.apiListen();
-        await this.client.login(this.env.TOKEN);
+        await this.client.login(this.env.SECRETS.TOKEN);
         await this.registerInteractions();
     }
 
@@ -165,7 +166,7 @@ export class Bot {
             try {
                 await this.handlerFactory.createHandler('ready').handle(null);
                 this.client.user?.setActivity({
-                    name: `DM ${this.env.PREFIX}staffmail or ${this.env.PREFIX}report to contact staff!`,
+                    name: `DM ${this.env.CORE.PREFIX}staffmail or ${this.env.CORE.PREFIX}report to contact staff!`,
                     type: ActivityType.Playing,
                 });
             } catch (e) {
@@ -188,10 +189,10 @@ export class Bot {
             jsonObjects.push(messageContextMenuInteraction.data.toJSON());
         }
 
-        const rest = new REST().setToken(this.env.TOKEN);
+        const rest = new REST().setToken(this.env.SECRETS.TOKEN);
         this.logger.info(`Registering ${jsonObjects.length} interaction commands...`);
         try {
-            await rest.put(Routes.applicationGuildCommands(this.client.user!.id, this.env.GUILD_ID), {
+            await rest.put(Routes.applicationGuildCommands(this.client.user!.id, this.env.CORE.GUILD_ID), {
                 body: jsonObjects,
             });
         } catch (e) {

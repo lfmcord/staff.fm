@@ -1,16 +1,16 @@
-import { inject, injectable } from 'inversify';
-import { Logger } from 'tslog';
+import { Environment } from '@models/environment';
+import { LastfmError } from '@models/lastfm-error.model';
+import { Verification } from '@src/feature/commands/administration/models/verification.model';
+import { TextHelper } from '@src/helpers/text.helper';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { MessageService } from '@src/infrastructure/services/message.service';
 import { TYPES } from '@src/types';
 import { GuildTextBasedChannel, Message, User } from 'discord.js';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
-import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
-import { MemberService } from '@src/infrastructure/services/member.service';
-import { TextHelper } from '@src/helpers/text.helper';
-import { Environment } from '@models/environment';
-import { MessageService } from '@src/infrastructure/services/message.service';
-import { LastfmError } from '@models/lastfm-error.model';
+import { inject, injectable } from 'inversify';
 import LastFM from 'lastfm-typed';
-import { Verification } from '@src/feature/commands/administration/models/verification.model';
+import { Logger } from 'tslog';
 
 @injectable()
 export class WhoknowsTrigger {
@@ -64,7 +64,7 @@ export class WhoknowsTrigger {
             this.logger.info(`'${args[2]}' is not a Discord user ID`);
             await message.reply(
                 `I've not ${isBan ? 'added' : 'removed'} the crowns ban flag to the user because I couldn't recognize this user. ` +
-                    `If this is wrong, please use the \`${this.env.PREFIX}crowns ${isBan ? 'ban' : 'unban'}\` command.`
+                    `If this is wrong, please use the \`${this.env.CORE.PREFIX}crowns ${isBan ? 'ban' : 'unban'}\` command.`
             );
             return;
         }
@@ -155,7 +155,7 @@ export class WhoknowsTrigger {
         }
 
         const member = await this.memberService.getGuildMemberFromUserId(subject.id);
-        const wk = await this.memberService.fetchUser(this.env.WHOKNOWS_USER_ID);
+        const wk = await this.memberService.fetchUser(this.env.CORE.WHOKNOWS_USER_ID);
         const newVerification: Verification = {
             verificationMessage: message,
             lastfmUser: lastfmUser,

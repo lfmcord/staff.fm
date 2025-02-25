@@ -13,9 +13,29 @@
     "plugin:prettier/recommended"
   ],
   "rules": {
-    "comma-spacing": [ "warn", { "before": false, "after": true }],
-    "semi-spacing": [ "warn", { "before": false, "after":  true }],
-    "spaced-comment": [ "warn", "always", { "block": {"balanced": true }}],
+    "comma-spacing": [
+      "warn",
+      {
+        "before": false,
+        "after": true
+      }
+    ],
+    "semi-spacing": [
+      "warn",
+      {
+        "before": false,
+        "after": true
+      }
+    ],
+    "spaced-comment": [
+      "warn",
+      "always",
+      {
+        "block": {
+          "balanced": true
+        }
+      }
+    ],
     "no-trailing-spaces": "warn",
     "accessor-pairs": "error",
     "no-useless-escape": "off",
@@ -24,7 +44,12 @@
     "unused-imports/no-unused-imports": "error",
     "unused-imports/no-unused-vars": [
       "warn",
-      { "vars": "all", "varsIgnorePattern": "^_", "args": "after-used", "argsIgnorePattern": "^_" }
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "after-used",
+        "argsIgnorePattern": "^_"
+      }
     ]
   }
 }

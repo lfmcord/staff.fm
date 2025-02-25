@@ -1,27 +1,27 @@
+import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
+import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
+import { ComponentHelper } from '@src/helpers/component.helper';
+import { CountryCodeHelper } from '@src/helpers/country-code.helper';
+import { LogLevel } from '@src/helpers/models/LogLevel';
+import { TextHelper } from '@src/helpers/text.helper';
+import { IUserModel, IVerificationModel } from '@src/infrastructure/repositories/users.repository';
 import {
     ActionRowBuilder,
     Attachment,
-    bold,
     ButtonBuilder,
     Client,
-    codeBlock,
     EmbedBuilder,
     GuildMember,
-    inlineCode,
     Message,
     MessageCreateOptions,
     MessageEditOptions,
     StringSelectMenuBuilder,
     User,
+    bold,
+    codeBlock,
+    inlineCode,
 } from 'discord.js';
-import { LogLevel } from '@src/helpers/models/LogLevel';
-import { TextHelper } from '@src/helpers/text.helper';
-import { ComponentHelper } from '@src/helpers/component.helper';
-import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
-import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
 import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
-import { CountryCodeHelper } from '@src/helpers/country-code.helper';
-import { IUserModel, IVerificationModel } from '@src/infrastructure/repositories/users.repository';
 import * as moment from 'moment';
 
 export class EmbedHelper {

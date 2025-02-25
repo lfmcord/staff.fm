@@ -1,14 +1,14 @@
-import { inject, injectable } from 'inversify';
-import { Logger } from 'tslog';
-import { MemberService } from '@src/infrastructure/services/member.service';
 import { Environment } from '@models/environment';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
-import { TYPES } from '@src/types';
 import { DiscussionsRepository, IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
-import { BaseGuildTextChannel, TextBasedChannel, ThreadAutoArchiveDuration } from 'discord.js';
-import * as moment from 'moment';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
+import { TYPES } from '@src/types';
+import { BaseGuildTextChannel, TextBasedChannel, ThreadAutoArchiveDuration } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import * as moment from 'moment';
+import { Logger } from 'tslog';
 
 @injectable()
 export class DiscussionsTrigger {
@@ -60,7 +60,7 @@ export class DiscussionsTrigger {
 
         const nextTopicPostDate = moment()
             .set({ hour: 14, minute: 0, second: 0, millisecond: 0 })
-            .add(this.environment.DISCUSSIONS_AUTO_INTERVAL_IN_DAYS, 'days')
+            .add(this.environment.DISCUSSIONS.AUTO_INTERVAL_IN_DAYS, 'days')
             .toDate();
 
         newDiscussion.scheduledToCloseAt = nextTopicPostDate;
@@ -97,7 +97,7 @@ export class DiscussionsTrigger {
 
         const closeDate = moment()
             .set({ hour: 14, minute: 0, second: 0, millisecond: 0 })
-            .add(this.environment.DISCUSSIONS_AUTO_INTERVAL_IN_DAYS, 'days')
+            .add(this.environment.DISCUSSIONS.AUTO_INTERVAL_IN_DAYS, 'days')
             .toDate();
 
         discussion.scheduledToCloseAt = closeDate;
@@ -137,16 +137,16 @@ export class DiscussionsTrigger {
         this.logger.info(`Opening discussion with topic '${discussion.topic}'.`);
 
         const channel = (await this.channelService.getGuildTextChannelById(
-            this.environment.DISCUSSIONS_CHANNEL_ID
+            this.environment.DISCUSSIONS.CHANNEL_ID
         )) as TextBasedChannel;
 
         if (!channel) {
-            this.logger.error(`Can't find discussions channel with ID ${this.environment.DISCUSSIONS_CHANNEL_ID}.`);
+            this.logger.error(`Can't find discussions channel with ID ${this.environment.DISCUSSIONS.CHANNEL_ID}.`);
             return;
         }
 
         const startMessage = await channel.send(
-            `# ${moment().format('YYYY-MM-DD')}: ${discussion.topic}\n<@&${this.environment.DISCUSSIONS_PING_ROLE_ID}>`
+            `# ${moment().format('YYYY-MM-DD')}: ${discussion.topic}\n<@&${this.environment.DISCUSSIONS.PING_ROLE_ID}>`
         );
 
         const createdThread = await (channel as BaseGuildTextChannel).threads.create({
@@ -180,7 +180,7 @@ export class DiscussionsTrigger {
             return false;
         }
         const thread = await this.channelService.getGuildThreadById(
-            this.environment.DISCUSSIONS_CHANNEL_ID,
+            this.environment.DISCUSSIONS.CHANNEL_ID,
             discussion.threadId
         );
 
@@ -203,7 +203,7 @@ export class DiscussionsTrigger {
         }
 
         await thread.send(
-            `## This discussion has been closed.\nStay up-to-date with the latest discussions in <#${this.environment.DISCUSSIONS_CHANNEL_ID}> and by grabbing the Discussions ping role!`
+            `## This discussion has been closed.\nStay up-to-date with the latest discussions in <#${this.environment.DISCUSSIONS.CHANNEL_ID}> and by grabbing the Discussions ping role!`
         );
         await thread.setLocked(true, isAutomatic ? 'Automatic' : 'Manually closed by moderator.');
 

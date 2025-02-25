@@ -1,13 +1,13 @@
+import { Environment } from '@models/environment';
 import { IHandler } from '@src/handlers/models/handler.interface';
-import { Logger } from 'tslog';
-import { inject, injectable } from 'inversify';
+import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
+import { AuditService } from '@src/infrastructure/services/audit.service';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
 import { TYPES } from '@src/types';
 import { Message, PartialMessage } from 'discord.js';
-import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
-import { MemberService } from '@src/infrastructure/services/member.service';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
-import { AuditService } from '@src/infrastructure/services/audit.service';
-import { Environment } from '@models/environment';
+import { inject, injectable } from 'inversify';
+import { Logger } from 'tslog';
 
 @injectable()
 export class MessageDeleteHandler implements IHandler {
@@ -34,8 +34,9 @@ export class MessageDeleteHandler implements IHandler {
         this.cachingRepository = cachingRepository;
         this.logger = logger;
     }
+
     async handle(message: Message | PartialMessage) {
-        if (message.guild?.id !== this.env.GUILD_ID) return;
+        if (message.guild?.id !== this.env.CORE.GUILD_ID) return;
         this.logger.info(`Message with message ID ${message.id} was deleted. Trying to fetch contents...`);
         const cachedMessage = await this.cachingRepository.getCachedMessage(message.id);
         if (!cachedMessage) {

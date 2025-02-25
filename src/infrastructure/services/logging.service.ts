@@ -1,34 +1,34 @@
-import { inject, injectable } from 'inversify';
+import { Environment } from '@models/environment';
+import { Verification } from '@src/feature/commands/administration/models/verification.model';
+import { Flag } from '@src/feature/commands/moderation/models/flag.model';
+import { SelfMute } from '@src/feature/commands/utility/models/self-mute.model';
+import { ComponentHelper } from '@src/helpers/component.helper';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { LogLevel } from '@src/helpers/models/LogLevel';
+import { TextHelper } from '@src/helpers/text.helper';
+import { IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
+import { CachedAttachmentModel } from '@src/infrastructure/repositories/models/cached-attachment.model';
+import { CachedMessageModel } from '@src/infrastructure/repositories/models/cached-message.model';
+import { ChannelService } from '@src/infrastructure/services/channel.service';
+import { TYPES } from '@src/types';
 import {
     AttachmentBuilder,
-    bold,
     Client,
-    codeBlock,
     EmbedBuilder,
     GuildMember,
     GuildTextBasedChannel,
-    inlineCode,
-    italic,
     Message,
     User,
+    bold,
+    codeBlock,
+    inlineCode,
+    italic,
 } from 'discord.js';
-import { TYPES } from '@src/types';
-import { ChannelService } from '@src/infrastructure/services/channel.service';
-import { CachedMessageModel } from '@src/infrastructure/repositories/models/cached-message.model';
-import { EmbedHelper } from '@src/helpers/embed.helper';
-import { LogLevel } from '@src/helpers/models/LogLevel';
-import { SelfMute } from '@src/feature/commands/utility/models/self-mute.model';
-import { Logger } from 'tslog';
-import { Verification } from '@src/feature/commands/administration/models/verification.model';
-import { TextHelper } from '@src/helpers/text.helper';
-import { Environment } from '@models/environment';
+import { inject, injectable } from 'inversify';
 import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
-import { Flag } from '@src/feature/commands/moderation/models/flag.model';
-import moment = require('moment');
-import { ComponentHelper } from '@src/helpers/component.helper';
-import { CachedAttachmentModel } from '@src/infrastructure/repositories/models/cached-attachment.model';
 import { extension } from 'mime-types';
-import { IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
+import { Logger } from 'tslog';
+import moment = require('moment');
 
 @injectable()
 export class LoggingService {
@@ -50,7 +50,7 @@ export class LoggingService {
     }
 
     public async logDeletedMessage(deletedMessage: CachedMessageModel, author: User | null, actor: User | null) {
-        const logChannel = await this.getLogChannel(this.env.DELETED_MESSAGE_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.DELETED_MESSAGE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const logEmbed = new EmbedBuilder()
@@ -90,7 +90,7 @@ export class LoggingService {
         actor: GuildMember | null,
         attachment: AttachmentBuilder
     ) {
-        const logChannel = await this.getLogChannel(this.env.DELETED_MESSAGE_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.DELETED_MESSAGE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const logEmbed = new EmbedBuilder()
@@ -108,7 +108,7 @@ export class LoggingService {
     }
 
     public async logSelfmute(selfMute: SelfMute, muteDuration?: string) {
-        const logChannel = await this.getLogChannel(this.env.SELFMUTE_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const description = muteDuration
@@ -122,7 +122,7 @@ export class LoggingService {
     }
 
     public async logVerification(verification: Verification) {
-        const logChannel = await this.getLogChannel(this.env.USER_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.USER_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const embeds: EmbedBuilder[] = [];
@@ -155,7 +155,7 @@ export class LoggingService {
                     verification.lastfmUser.name,
                     verification.lastfmUser,
                     moment().diff(moment.unix(verification.lastfmUser.registered), 'days') <
-                        this.env.LASTFM_AGE_ALERT_IN_DAYS
+                        this.env.MISC.LASTFM_AGE_ALERT_IN_DAYS
                 )
             );
         } else {
@@ -166,7 +166,7 @@ export class LoggingService {
     }
 
     public async logIndex(verification: Verification, reason: string) {
-        const logChannel = await this.getLogChannel(this.env.USER_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.USER_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const embeds: EmbedBuilder[] = [];
@@ -193,7 +193,7 @@ export class LoggingService {
                 verification.lastfmUser!.name,
                 verification.lastfmUser!,
                 moment().diff(moment.unix(verification.lastfmUser!.registered), 'days') <
-                    this.env.LASTFM_AGE_ALERT_IN_DAYS
+                    this.env.MISC.LASTFM_AGE_ALERT_IN_DAYS
             )
         );
 
@@ -210,7 +210,7 @@ export class LoggingService {
         attachments: AttachmentBuilder[] = [],
         logNote: string = ''
     ) {
-        const logChannel = await this.getLogChannel(this.env.STAFFMAIL_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.STAFFMAIL_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const humanReadableType = EmbedHelper.getHumanReadableStaffMailType(type);
@@ -238,7 +238,7 @@ export class LoggingService {
     }
 
     async logLastFmAgeAlert(message: Message, lastFmUser: getInfo) {
-        const logChannel = await this.getLogChannel(this.env.USER_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.USER_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const logEmbed = EmbedHelper.getLogEmbed(message.author, message.author, LogLevel.Warning).setDescription(
@@ -248,7 +248,7 @@ export class LoggingService {
     }
 
     async logLastFmFlagAlert(message: Message, flag: Flag) {
-        const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.BACKSTAGE_CHANNEL_ID);
         if (!logChannel) return;
 
         const lastFmUsername = TextHelper.getLastfmUsername(message.content);
@@ -270,7 +270,7 @@ export class LoggingService {
     }
 
     async logDiscordFlagAlert(message: Message, flag: Flag) {
-        const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.BACKSTAGE_CHANNEL_ID);
         if (!logChannel) return;
 
         let description = `${TextHelper.userDisplay(message.author, true)} is trying to verify with a Discord account that was flagged as suspicious or malicious by staff.\n\n`;
@@ -286,7 +286,7 @@ export class LoggingService {
     }
 
     async logDuplicateLastFmUsername(message: Message, otherMembers: string[]) {
-        const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.BACKSTAGE_CHANNEL_ID);
         if (!logChannel) return;
 
         let description =
@@ -309,7 +309,7 @@ export class LoggingService {
         isUsingDifferentLastfm: boolean,
         otherDiscordUsers: User[] = []
     ): Promise<void> {
-        const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.BACKSTAGE_CHANNEL_ID);
         if (!logChannel) return;
 
         const isCertain = otherDiscordUsers.length > 0;
@@ -333,7 +333,7 @@ export class LoggingService {
     }
 
     async logZeroPlaycountVerification(user: User, lastFmUsername: string) {
-        const logChannel = await this.getLogChannel(this.env.BACKSTAGE_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.BACKSTAGE_CHANNEL_ID);
         if (!logChannel) return;
 
         const description =
@@ -353,7 +353,7 @@ export class LoggingService {
     }
 
     async logFlag(flag: Flag, isUnflag: boolean = false) {
-        const logChannel = await this.getLogChannel(this.env.SELFMUTE_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         let description = isUnflag
@@ -369,7 +369,7 @@ export class LoggingService {
     }
 
     async logImports(actor: User, subject: User, isDeletion: boolean = false) {
-        const logChannel = await this.getLogChannel(this.env.CROWNS_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.CROWNS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const description = `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}`;
@@ -379,7 +379,7 @@ export class LoggingService {
     }
 
     async logCrownsBan(actor: User, subject: User, reason: string, message: Message, isUnban: boolean = false) {
-        const logChannel = await this.getLogChannel(this.env.CROWNS_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.CROWNS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const description =
@@ -392,10 +392,10 @@ export class LoggingService {
     }
 
     async logNoDiscussionTopicsAlert() {
-        const logChannel = await this.getLogChannel(this.env.HELPERS_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.HELPERS_CHANNEL_ID);
         if (!logChannel) return;
 
-        const description = `Discussions are scheduled but there are no more topics available. Please add more topics using \`${this.env.PREFIX}dtopic add\`. Automatic posting of discussions is disabled, enable it again with \`${this.env.PREFIX}dtopic auto\` once there are topics available.`;
+        const description = `Discussions are scheduled but there are no more topics available. Please add more topics using \`${this.env.CORE.PREFIX}dtopic add\`. Automatic posting of discussions is disabled, enable it again with \`${this.env.CORE.PREFIX}dtopic auto\` once there are topics available.`;
         const embed = new EmbedBuilder()
             .setColor(EmbedHelper.orange)
             .setTitle(`⚠️ No Discussion Topics Available`)
@@ -406,7 +406,7 @@ export class LoggingService {
     }
 
     async logDiscussionStillActiveAlert(discussion: IDiscussionsModel) {
-        const logChannel = await this.getLogChannel(this.env.HELPERS_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.HELPERS_CHANNEL_ID);
         if (!logChannel) return;
 
         const description = `The previous discussion in <#${discussion.threadId}> still active and has not been closed. Please close it manually once it's not active anymore.`;
@@ -420,7 +420,7 @@ export class LoggingService {
     }
 
     async logScrobbleCap(subject: User, actor: User, reason: string, message: Message, capRoleId?: string) {
-        const logChannel = await this.getLogChannel(this.env.CROWNS_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.CROWNS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         let description = `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}`;

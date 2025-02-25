@@ -72,7 +72,7 @@ export class SetActiveCommand implements ICommand {
             };
         }
 
-        if (!member.roles.cache.has(this.env.INACTIVE_ROLE_ID)) {
+        if (!member.roles.cache.has(this.env.ROLES.INACTIVE_ROLE_ID)) {
             return {
                 isSuccessful: false,
                 replyToUser: `This user is not inactive!`,
@@ -83,7 +83,7 @@ export class SetActiveCommand implements ICommand {
         if (!indexedUser) {
             return {
                 isSuccessful: false,
-                replyToUser: `This user is not indexed yet, so I can't set them active. If you know their last.fm account, please verify them with \`${this.env.PREFIX}verify ${userId} [last.fm username/link]\`.`,
+                replyToUser: `This user is not indexed yet, so I can't set them active. If you know their last.fm account, please verify them with \`${this.env.CORE.PREFIX}verify ${userId} [last.fm username/link]\`.`,
             };
         }
         const lastFmUsername = indexedUser.verifications.sort((a, b) => (a.verifiedOn > b.verifiedOn ? -1 : 1))[0]
@@ -114,7 +114,7 @@ export class SetActiveCommand implements ICommand {
 
         await message.react(TextHelper.loading);
         await this.memberService.assignScrobbleRoles(member, lastfmUser.playcount);
-        await member.roles.remove(this.env.INACTIVE_ROLE_ID);
+        await member.roles.remove(this.env.ROLES.INACTIVE_ROLE_ID);
         await message.reactions.removeAll();
 
         return {

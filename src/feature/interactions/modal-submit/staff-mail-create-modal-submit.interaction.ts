@@ -1,16 +1,16 @@
-import { inject, injectable } from 'inversify';
-import { EmbedBuilder, ModalSubmitInteraction } from 'discord.js';
-import { EmbedHelper } from '@src/helpers/embed.helper';
-import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
-import { TYPES } from '@src/types';
-import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
-import { Logger } from 'tslog';
-import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Environment } from '@models/environment';
 import { IModalSubmitInteraction } from '@src/feature/interactions/abstractions/modal-submit-interaction.interface';
-import { MemberService } from '@src/infrastructure/services/member.service';
+import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
+import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { TYPES } from '@src/types';
+import { EmbedBuilder, ModalSubmitInteraction } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import { Logger } from 'tslog';
 
 @injectable()
 export class StaffMailCreateModalSubmitInteraction implements IModalSubmitInteraction {
@@ -78,7 +78,7 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
         const staffMailChannel = await this.staffMailRepository.createStaffMailChannel(interaction.user, mode);
 
         let rolePings = '';
-        this.env.STAFFMAIL_PING_ROLE_IDS.forEach((id) => (rolePings += `<@&${id}> `));
+        this.env.STAFFMAIL.PING_ROLE_IDS.forEach((id) => (rolePings += `<@&${id}> `));
         const embeds: EmbedBuilder[] = [];
         embeds.push(
             EmbedHelper.getStaffMailStaffViewNewEmbed(
@@ -86,7 +86,7 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
                 isAnonymous ? null : interaction.user,
                 category,
                 summary,
-                this.env.PREFIX
+                this.env.CORE.PREFIX
             )
         );
 

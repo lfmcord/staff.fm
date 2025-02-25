@@ -1,19 +1,19 @@
-import { Logger } from 'tslog';
-import { GuildTextBasedChannel, inlineCode, Message } from 'discord.js';
-import { inject, injectable } from 'inversify';
-import { TYPES } from '@src/types';
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import container from '../inversify.config';
+import { Environment } from '@models/environment';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { IHandler } from '@src/handlers/models/handler.interface';
-import { MemberService } from '@src/infrastructure/services/member.service';
-import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { StaffMailDmTrigger } from '@src/feature/triggers/staff-mail-dm.trigger';
-import { Environment } from '@models/environment';
 import { VerificationTrigger } from '@src/feature/triggers/verification.trigger';
-import { CommandService } from '@src/infrastructure/services/command.service';
 import { WhoknowsTrigger } from '@src/feature/triggers/whoknows.trigger';
+import { IHandler } from '@src/handlers/models/handler.interface';
+import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
+import { CommandService } from '@src/infrastructure/services/command.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { TYPES } from '@src/types';
+import { GuildTextBasedChannel, inlineCode, Message } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import { Logger } from 'tslog';
+import container from '../inversify.config';
 
 @injectable()
 export class MessageCreateHandler implements IHandler {
@@ -49,10 +49,10 @@ export class MessageCreateHandler implements IHandler {
     }
 
     public async handle(message: Message) {
-        const isCommand = message.content.match(`^${this.env.PREFIX}[A-z]+.*`)?.length != null;
+        const isCommand = message.content.match(`^${this.env.CORE.PREFIX}[A-z]+.*`)?.length != null;
         const isBot = message.author.bot;
         const isDms = message.channel.isDMBased();
-        const isVerification = message.channelId === this.env.VERIFICATION_CHANNEL_ID;
+        const isVerification = message.channelId === this.env.CHANNELS.VERIFICATION_CHANNEL_ID;
         const isWhoKnowsCommand = message.content.startsWith('!');
 
         if (isWhoKnowsCommand) await this.whoknowsTrigger.run(message);
@@ -68,8 +68,8 @@ export class MessageCreateHandler implements IHandler {
         if (
             !isDms &&
             !(
-                this.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS.includes(message.channelId) ||
-                this.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS.includes(
+                this.env.CHANNELS.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS.includes(message.channelId) ||
+                this.env.CHANNELS.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS.includes(
                     (message.channel as GuildTextBasedChannel)?.parentId ?? message.channelId
                 )
             )
@@ -125,7 +125,7 @@ export class MessageCreateHandler implements IHandler {
                 await this.commandService.handleCommandErrorForMessage(
                     message,
                     error.messageToUser +
-                        ` For more details, use ${inlineCode(this.env.PREFIX + 'help ' + command.name.toLowerCase())}.`
+                        ` For more details, use ${inlineCode(this.env.CORE.PREFIX + 'help ' + command.name.toLowerCase())}.`
                 );
                 return;
             }
@@ -142,7 +142,7 @@ export class MessageCreateHandler implements IHandler {
     private async resolveCommand(message: Message): Promise<ICommand | null> {
         const commandName = message.content
             .slice(
-                this.env.PREFIX.length,
+                this.env.CORE.PREFIX.length,
                 message.content.indexOf(' ') == -1 ? undefined : message.content.indexOf(' ')
             )
             .toLowerCase();
@@ -157,7 +157,7 @@ export class MessageCreateHandler implements IHandler {
             await this.commandService.handleCommandErrorForMessage(
                 message,
                 `I could not find a command called '${commandName}'. ` +
-                    `Use \`${this.env.PREFIX}help\` to see a list of all commands.`
+                    `Use \`${this.env.CORE.PREFIX}help\` to see a list of all commands.`
             );
             return null;
         }

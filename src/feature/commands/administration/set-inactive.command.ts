@@ -1,16 +1,16 @@
-import { inject, injectable } from 'inversify';
-import { ICommand } from '@src/feature/commands/models/command.interface';
+import { Environment } from '@models/environment';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { Logger } from 'tslog';
-import { TYPES } from '@src/types';
-import { Message } from 'discord.js';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { TextHelper } from '@src/helpers/text.helper';
-import moment = require('moment');
 import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
 import { MemberService } from '@src/infrastructure/services/member.service';
-import { Environment } from '@models/environment';
+import { TYPES } from '@src/types';
+import { Message } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import { Logger } from 'tslog';
+import moment = require('moment');
 
 @injectable()
 export class SetInactiveCommand implements ICommand {
@@ -64,7 +64,7 @@ export class SetInactiveCommand implements ICommand {
             };
         }
 
-        if (member.roles.cache.has(this.env.INACTIVE_ROLE_ID)) {
+        if (member.roles.cache.has(this.env.ROLES.INACTIVE_ROLE_ID)) {
             return {
                 isSuccessful: false,
                 replyToUser: 'This user is already inactive!',
@@ -90,10 +90,7 @@ export class SetInactiveCommand implements ICommand {
         }
 
         await message.react(TextHelper.loading);
-        for (const roleId of this.env.SCROBBLE_MILESTONE_ROLE_IDS) {
-            if (member.roles.cache.has(roleId)) await member.roles.remove(roleId);
-        }
-        await member.roles.add(this.env.INACTIVE_ROLE_ID);
+        await member.roles.add(this.env.ROLES.INACTIVE_ROLE_ID);
         await message.reactions.removeAll();
 
         return {

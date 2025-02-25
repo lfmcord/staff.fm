@@ -1,5 +1,19 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
+import { Environment } from '@models/environment';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
+import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
+import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
+import { ComponentHelper } from '@src/helpers/component.helper';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { TextHelper } from '@src/helpers/text.helper';
+import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
+import { ChannelService } from '@src/infrastructure/services/channel.service';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { TYPES } from '@src/types';
 import {
     ActionRowBuilder,
     bold,
@@ -10,21 +24,7 @@ import {
     MessageComponentInteraction,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { TYPES } from '@src/types';
-import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { Logger } from 'tslog';
-import { TextHelper } from '@src/helpers/text.helper';
-import { MemberService } from '@src/infrastructure/services/member.service';
-import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
-import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
-import { EmbedHelper } from '@src/helpers/embed.helper';
-import { ComponentHelper } from '@src/helpers/component.helper';
-import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
-import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
-import { ChannelService } from '@src/infrastructure/services/channel.service';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
-import { Environment } from '@models/environment';
 
 @injectable()
 export class StaffMailContactCommand implements ICommand {
@@ -158,7 +158,7 @@ export class StaffMailContactCommand implements ICommand {
                     message.author,
                     StaffMailType.Staff,
                     'Manually contacted member',
-                    this.environment.PREFIX
+                    this.environment.CORE.PREFIX
                 ),
             ],
         });

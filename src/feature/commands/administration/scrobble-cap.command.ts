@@ -1,17 +1,18 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { Message } from 'discord.js';
-import { inject, injectable } from 'inversify';
-import { TYPES } from '@src/types';
-import { MemberService } from '@src/infrastructure/services/member.service';
-import { Logger } from 'tslog';
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Environment } from '@models/environment';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { findValueInMap } from '@src/helpers/map.helper';
 import { TextHelper } from '@src/helpers/text.helper';
 import { IUserModel, UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { TYPES } from '@src/types';
+import { Message } from 'discord.js';
+import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
+import { Logger } from 'tslog';
 
 @injectable()
 export class ScrobbleCapCommand implements ICommand {
@@ -43,8 +44,7 @@ export class ScrobbleCapCommand implements ICommand {
         this.logger = logger;
         this.memberService = memberService;
         this.usersRepository = usersRepository;
-
-        this.description += `\nAvailable scrobble caps are: ${this.env.SCROBBLE_MILESTONE_NUMBERS.join(', ')}.`;
+        this.description += `\nAvailable scrobble caps are: ${[...this.env.ROLES.SCROBBLE_MILESTONES.keys()].join(',')}.`;
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
@@ -57,7 +57,7 @@ export class ScrobbleCapCommand implements ICommand {
         if (indexedUser == null) {
             return {
                 isSuccessful: false,
-                replyToUser: `I can't find any information on this user. Please index them with \`${this.env.PREFIX}link ${userId} [last.fm username]\`.`,
+                replyToUser: `I can't find any information on this user. Please index them with \`${this.env.CORE.PREFIX}link ${userId} [last.fm username]\`.`,
             };
         }
 
@@ -96,12 +96,12 @@ export class ScrobbleCapCommand implements ICommand {
             if (!TextHelper.isDiscordUser(args[1]))
                 throw new ValidationError('Invalid user ID.', `\`${args[1]}\` is not a valid Discord user ID.`);
 
-            if (!this.env.SCROBBLE_MILESTONE_NUMBERS.find((x) => x == parseInt(args[2])))
+            if (!this.env.ROLES.SCROBBLE_MILESTONES.has(parseInt(args[2])))
                 throw new ValidationError(
                     'Invalid scrobble role number.',
-                    `\`${args[2]}\` is not a valid scrobble role number. Available scrobble caps are: ${this.env.SCROBBLE_MILESTONE_NUMBERS.join(
-                        ', '
-                    )}.`
+                    `\`${args[2]}\` is not a valid scrobble role number. Available scrobble caps are: ${[
+                        ...this.env.ROLES.SCROBBLE_MILESTONES.keys(),
+                    ].join(', ')}.`
                 );
         } else if (args[0] == 'unset') {
             if (args.length < 3) {
@@ -125,8 +125,13 @@ export class ScrobbleCapCommand implements ICommand {
                 isSuccessful: true,
                 replyToUser: `This user has no scrobble cap set.`,
             };
-        const index = this.env.SCROBBLE_MILESTONE_ROLE_IDS.findIndex((x) => x == indexedUser.scrobbleCap!.roleId);
-        const scrobbleRoleNumber = this.env.SCROBBLE_MILESTONE_NUMBERS[index];
+        const scrobbleRoleNumber = findValueInMap(
+            this.env.ROLES.SCROBBLE_MILESTONES,
+            indexedUser.scrobbleCap.roleId
+        ) as number;
+        if (!scrobbleRoleNumber) {
+            throw new Error(`Scrobble role number not found for role ID ${indexedUser.scrobbleCap!.roleId}.`);
+        }
         return {
             isSuccessful: true,
             replyToUser: indexedUser.scrobbleCap
@@ -142,13 +147,15 @@ export class ScrobbleCapCommand implements ICommand {
         reason: string
     ): Promise<CommandResult> {
         if (indexedUser.scrobbleCap) {
-            const index = this.env.SCROBBLE_MILESTONE_ROLE_IDS.findIndex((x) => x == indexedUser.scrobbleCap!.roleId);
-            const scrobbleRoleNumber = this.env.SCROBBLE_MILESTONE_NUMBERS[index];
+            const scrobbleRoleNumber = findValueInMap(
+                this.env.ROLES.SCROBBLE_MILESTONES,
+                indexedUser.scrobbleCap.roleId
+            ) as number;
             return {
                 isSuccessful: false,
                 replyToUser:
                     `🚫 <@!${indexedUser.userId}> already has a scrobble cap set at ${TextHelper.numberWithCommas(scrobbleRoleNumber)} scrobbles on <t:${moment(indexedUser.scrobbleCap.setOn).unix()}:d> by <@!${indexedUser.scrobbleCap.setBy}>: ${indexedUser.scrobbleCap.reason}.` +
-                    `\nPlease unset it first with \`${this.env.PREFIX}scrobblecap unset ${indexedUser.userId}\`.`,
+                    `\nPlease unset it first with \`${this.env.CORE.PREFIX}scrobblecap unset ${indexedUser.userId}\`.`,
             };
         }
 
@@ -160,8 +167,8 @@ export class ScrobbleCapCommand implements ICommand {
             };
 
         this.logger.info(`Setting scrobble cap of user ${indexedUser.userId}.`);
-        const index = this.env.SCROBBLE_MILESTONE_NUMBERS.findIndex((x) => x == cap);
-        const scrobbleRoleId = this.env.SCROBBLE_MILESTONE_ROLE_IDS[index];
+        const scrobbleRoleId = this.env.ROLES.SCROBBLE_MILESTONES.get(cap);
+        if (!scrobbleRoleId) throw new Error(`Scrobble role ID not found for role number ${cap}.`);
         await this.usersRepository.addScrobbleCapToUser(indexedUser.userId, message.author.id, scrobbleRoleId, reason);
         await this.loggingService.logScrobbleCap(discordUser, message.author, reason, message, scrobbleRoleId);
 

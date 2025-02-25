@@ -1,20 +1,20 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
+import { Environment } from '@models/environment';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { inlineCode, Message, PartialMessage } from 'discord.js';
-import { inject, injectable } from 'inversify';
-import { unitOfTime } from 'moment';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { SelfMute } from '@src/feature/commands/utility/models/self-mute.model';
+import { TextHelper } from '@src/helpers/text.helper';
 import { SelfMutesRepository } from '@src/infrastructure/repositories/self-mutes.repository';
-import { TYPES } from '@src/types';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
-import { Logger } from 'tslog';
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { TextHelper } from '@src/helpers/text.helper';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
-import { Environment } from '@models/environment';
-import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { TYPES } from '@src/types';
+import { inlineCode, Message, PartialMessage } from 'discord.js';
+import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
-import { SelfMute } from '@src/feature/commands/utility/models/self-mute.model';
+import { unitOfTime } from 'moment';
+import { Logger } from 'tslog';
 
 @injectable()
 export class SelfMuteCommand implements ICommand {
@@ -77,9 +77,10 @@ export class SelfMuteCommand implements ICommand {
         await this.selfMutesRepository.createSelfMute(member.user, selfMute.createdAt, selfMute.endsAt, roles);
 
         try {
+            // TODO: Add unmute button component
             await this.memberService.muteGuildMember(
                 member,
-                `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>). You can prematurely end it by sending me ${inlineCode(this.env.PREFIX + 'unmute')} here.`,
+                `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>). You can prematurely end it by sending me ${inlineCode(this.env.CORE.PREFIX + 'unmute')} here.`,
                 true
             );
             this.scheduleService.scheduleJob(

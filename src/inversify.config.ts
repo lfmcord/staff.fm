@@ -88,84 +88,48 @@ import { IndexCommand } from '@src/feature/commands/administration/index.command
 import { LastFmService } from '@src/infrastructure/services/lastfm.service';
 import { UpdateCommand } from '@src/feature/commands/utility/update.command';
 import { ScrobbleCapCommand } from '@src/feature/commands/administration/scrobble-cap.command';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 const container = new Container();
 
 // ENVIRONMENT
-container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue({
-    TOKEN: process.env.TOKEN ?? '',
-    LASTFM_API_KEY: process.env.LASTFM_API_KEY ?? '',
-    LASTFM_SHARED_SECRET: process.env.LASTFM_SHARED_SECRET ?? '',
-    DB_CONNECTION_STRING: process.env.DB_CONNECTION_STRING ?? '',
-    DB_ROOT_USER: process.env.DB_ROOT_USER ?? '',
-    DB_ROOT_PASS: process.env.DB_ROOT_PASS ?? '',
-    DB_ROOT_NAME: process.env.DB_ROOT_NAME ?? '',
-    DB_USER: process.env.DB_USER ?? '',
-    DB_PASS: process.env.DB_PASS ?? '',
-    DB_NAME: process.env.DB_NAME ?? '',
-    PREFIX: process.env.PREFIX ?? '',
-    BOT_OWNER_ID: process.env.BOT_OWNER_ID ?? '',
-    GUILD_ID: process.env.GUILD_ID ?? '',
-    MUTED_ROLE_ID: process.env.MUTED_ROLE_ID ?? '',
-    BACKSTAGER_ROLE_IDS: process.env.BACKSTAGER_ROLE_IDS?.split(',') ?? [],
-    HELPER_ROLE_IDS: process.env.HELPER_ROLE_IDS?.split(',') ?? [],
-    ADMIN_ROLE_IDS: process.env.ADMIN_ROLE_IDS?.split(',') ?? [],
-    MODERATOR_ROLE_IDS: process.env.MODERATOR_ROLE_IDS?.split(',') ?? [],
-    UNVERIFIED_ROLE_ID: process.env.UNVERIFIED_ROLE_ID ?? '',
-    NO_LASTFM_ACCOUNT_ROLE_ID: process.env.NO_LASTFM_ACCOUNT_ROLE_ID ?? '',
-    SCROBBLE_MILESTONE_ROLE_IDS: process.env.SCROBBLE_MILESTONE_ROLE_IDS?.split(',') ?? [],
-    SCROBBLE_MILESTONE_NUMBERS:
-        process.env.SCROBBLE_MILESTONE_NUMBERS?.split(',').map((n) => Number.parseInt(n ?? 0)) ?? [],
-    VERIFICATION_CHANNEL_ID: process.env.VERIFICATION_CHANNEL_ID ?? '',
-    BACKSTAGE_CHANNEL_ID: process.env.BACKSTAGE_CHANNEL_ID ?? '',
-    STAFFMAIL_CATEGORY_ID: process.env.STAFFMAIL_CATEGORY_ID ?? '',
-    STAFFMAIL_PING_ROLE_IDS: process.env.STAFFMAIL_PING_ROLE_IDS?.split(',') ?? [],
-    STAFFMAIL_LOG_CHANNEL_ID: process.env.STAFFMAIL_LOG_CHANNEL_ID ?? '',
-    SELFMUTE_LOG_CHANNEL_ID: process.env.SELFMUTE_LOG_CHANNEL_ID ?? '',
-    USER_LOG_CHANNEL_ID: process.env.USER_LOG_CHANNEL_ID ?? '',
-    DELETED_MESSAGE_LOG_CHANNEL_ID: process.env.DELETED_MESSAGE_LOG_CHANNEL_ID ?? '',
-    DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS: process.env.DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS?.split(',') ?? [],
-    LASTFM_AGE_ALERT_IN_DAYS: parseInt(process.env.LASTFM_AGE_ALERT_IN_DAYS || '30', 10),
-    LOG_LEVEL: parseInt(process.env.LOG_LEVEL ?? '1') ?? 1,
-    MESSAGE_CACHING_DURATION_IN_SECONDS: parseInt(process.env.MESSAGE_CACHING_DURATION_IN_SECONDS || '86400', 10),
-    REDIS_HOST: process.env.REDIS_HOST ?? 'localhost',
-    REDIS_PORT: parseInt(process.env.REDIS_PORT || '6380', 10),
-    SELFMUTED_ROLE_ID: process.env.SELFMUTED_ROLE_ID ?? '',
-    WHOKNOWS_USER_ID: process.env.WHOKNOWS_USER_ID ?? '',
-    CROWNS_LOG_CHANNEL_ID: process.env.CROWNS_LOG_CHANNEL_ID ?? '',
-    INACTIVE_ROLE_ID: process.env.INACTIVE_ROLE_ID ?? '',
-    DISCUSSIONS_CHANNEL_ID: process.env.DISCUSSIONS_CHANNEL_ID ?? '',
-    HELPERS_CHANNEL_ID: process.env.HELPERS_CHANNEL_ID ?? '',
-    DISCUSSIONS_AUTO_INTERVAL_IN_DAYS: parseInt(process.env.DISCUSSIONS_AUTO_INTERVAL_IN_DAYS || '2', 10),
-    DISCUSSIONS_PING_ROLE_ID: process.env.DISCUSSIONS_PING_ROLE_ID ?? '',
-});
+const environmentFilePath = path.resolve(__dirname, '../environment.json');
+const environmentData = JSON.parse(fs.readFileSync(environmentFilePath, 'utf-8')) as Environment;
+// because JSON.parse does not speak TS, it parses the map as an object, we need to manually convert it.
+const scrobbleMilestones = new Map<number, string>();
+for (const [k, v] of Object.entries(environmentData.ROLES.SCROBBLE_MILESTONES)) {
+    scrobbleMilestones.set(parseInt(k), v);
+}
+environmentData.ROLES.SCROBBLE_MILESTONES = scrobbleMilestones;
+container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue(environmentData);
 
 // CORE
 container.bind<Logger<ILogObj>>(TYPES.BotLogger).toConstantValue(
     new Logger({
         name: 'Bot Runtime',
-        minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOG_LEVEL,
+        minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOGGING.LOG_LEVEL,
         type: 'pretty',
     })
 );
 container.bind<Logger<ILogObj>>(TYPES.JobLogger).toConstantValue(
     new Logger({
         name: 'Job Runtime',
-        minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOG_LEVEL,
+        minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOGGING.LOG_LEVEL,
         type: 'pretty',
     })
 );
 container.bind<Logger<ILogObj>>(TYPES.InfrastructureLogger).toConstantValue(
     new Logger({
         name: 'Infrastructure Runtime',
-        minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOG_LEVEL,
+        minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOGGING.LOG_LEVEL,
         type: 'pretty',
     })
 );
 container.bind<Logger<ILogObj>>(TYPES.ApiLogger).toConstantValue(
     new Logger({
         name: 'API',
-        minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOG_LEVEL,
+        minLevel: container.get<Environment>(TYPES.ENVIRONMENT).LOGGING.LOG_LEVEL,
         type: 'pretty',
     })
 );
@@ -189,8 +153,8 @@ container.bind<Client>(TYPES.Client).toConstantValue(
     })
 );
 container.bind<LastFM>(TYPES.LastFmClient).toConstantValue(
-    new LastFM(container.get<Environment>(TYPES.ENVIRONMENT).LASTFM_API_KEY, {
-        apiSecret: container.get<Environment>(TYPES.ENVIRONMENT).LASTFM_SHARED_SECRET,
+    new LastFM(container.get<Environment>(TYPES.ENVIRONMENT).SECRETS.LASTFM_API_KEY, {
+        apiSecret: container.get<Environment>(TYPES.ENVIRONMENT).SECRETS.LASTFM_SHARED_SECRET,
     })
 );
 container.bind<Redis>(TYPES.Redis).toConstantValue(

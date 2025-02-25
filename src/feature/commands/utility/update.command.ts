@@ -1,17 +1,17 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { GuildMember, Message, PartialMessage } from 'discord.js';
-import { inject, injectable } from 'inversify';
-import { TYPES } from '@src/types';
-import { MemberService } from '@src/infrastructure/services/member.service';
-import { Logger } from 'tslog';
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Environment } from '@models/environment';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { TextHelper } from '@src/helpers/text.helper';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { LastFmService } from '@src/infrastructure/services/lastfm.service';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { TYPES } from '@src/types';
+import { GuildMember, Message, PartialMessage } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import { Logger } from 'tslog';
 
 @injectable()
 export class UpdateCommand implements ICommand {
@@ -92,7 +92,7 @@ export class UpdateCommand implements ICommand {
         if (lastFmUser === null) {
             return {
                 isSuccessful: false,
-                replyToUser: `I cannot find any information on this user. Please index them with \`${this.env.PREFIX}link ${memberToUpdateId} [last.fm username]\`.`,
+                replyToUser: `I cannot find any information on this user. Please index them with \`${this.env.CORE.PREFIX}link ${memberToUpdateId} [last.fm username]\`.`,
             };
         }
         if (lastFmUser === undefined) {
@@ -109,17 +109,20 @@ export class UpdateCommand implements ICommand {
             };
         }
 
-        const assignedRoles = await this.memberService.updateScrobbleRoles(memberToUpdate!, lastFmUser.playcount);
-        if (assignedRoles.length == 0) {
+        const rolesToAssign = this.memberService.getScrobbleRolesToAssign(memberToUpdate!, lastFmUser.playcount);
+        if (rolesToAssign.size == 0) {
             return {
                 isSuccessful: true,
                 replyToUser: `This user is already up-to-date.`,
             };
         }
+        for (const role of rolesToAssign.values()) {
+            await memberToUpdate!.roles.add(role);
+        }
 
         return {
             isSuccessful: true,
-            replyToUser: `I've updated the scrobble roles of <@!${memberToUpdateId}>. Added roles: ${assignedRoles.join(', ')}`,
+            replyToUser: `I've updated the scrobble roles of <@!${memberToUpdateId}>. Added roles: ${[...rolesToAssign.keys()].join(', ')}`,
         };
     }
 
@@ -150,24 +153,26 @@ export class UpdateCommand implements ICommand {
             };
         }
 
-        const assignedRoles = await this.memberService.updateScrobbleRoles(member!, lastFmUser.playcount);
-        if (assignedRoles.length == 0) {
-            const highestMilestone = this.memberService.getHighestScrobbleRoleNumber(member);
-            this.logger.trace(`Highest milestone is ${highestMilestone}`);
-            const nextIndex = this.env.SCROBBLE_MILESTONE_NUMBERS.indexOf(highestMilestone!) + 1;
-            this.logger.trace(`Next index is ${nextIndex}`);
-            const nextMilestone = this.env.SCROBBLE_MILESTONE_NUMBERS[nextIndex];
+        const rolesToAssign = this.memberService.getScrobbleRolesToAssign(member, lastFmUser.playcount);
+        if (rolesToAssign.size == 0) {
+            const nextMilestone = this.memberService.getNextHighestScrobbleRole(lastFmUser.playcount);
             return {
                 isSuccessful: true,
-                replyToUser:
-                    `Looks like you already have the highest scrobble role you can get! ` +
-                    `The next one you can get is at ${nextMilestone} scrobbles. Happy scrobbling! :musical_note:`,
+                replyToUser: `You already have the highest scrobble role you can get! Check back again once you've reached ${TextHelper.numberWithCommas(nextMilestone[0])} scrobbles.`,
             };
         }
 
-        const highestMilestone = assignedRoles[assignedRoles.length - 1];
-        let reply = `:tada: I've updated your scrobble roles to ${TextHelper.numberWithCommas(highestMilestone)}! `;
-        switch (highestMilestone) {
+        const currentRoles = this.memberService.getScrobbleRoles(member);
+        if (currentRoles.size == 1) {
+            await member.roles.remove(currentRoles.values().next().value);
+        }
+        for (const role of rolesToAssign.values()) {
+            await member.roles.add(role);
+        }
+
+        const highestReachedMilestone = [...rolesToAssign][rolesToAssign.size - 1];
+        let reply = `:tada: I've updated your scrobble roles to ${TextHelper.numberWithCommas(highestReachedMilestone[0])}! `;
+        switch (highestReachedMilestone[0]) {
             case 10000:
                 reply += `10k, congrats! This is just the start of your scrobbling journey! 🎶`;
                 break;
