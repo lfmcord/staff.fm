@@ -127,11 +127,23 @@ export class StaffMailContactCommand implements ICommand {
             summary,
             StaffMailType.Staff
         );
-        // TODO: Catch 403 case
-        const messageToUser = await member.send({
-            content: `📫 You've received a new message from staff!`,
-            embeds: [EmbedHelper.getStaffMailOpenEmbed(true), EmbedHelper.getStaffMailLinkToLatestMessage()],
-        });
+
+        let messageToUser;
+        try {
+            messageToUser = await member.send({
+                content: `📫 You've received a new message from staff!`,
+                embeds: [EmbedHelper.getStaffMailOpenEmbed(true), EmbedHelper.getStaffMailLinkToLatestMessage()],
+            });
+        } catch (e) {
+            this.logger.warn(`Could not send message to user ${TextHelper.userLog(member.user)}.`, e);
+            await response.edit({
+                content: `I could not send a message to the user. They most likely have their DMs turned off.`,
+                embeds: [],
+                components: [],
+            });
+            return {};
+        }
+
         await messageToUser.pin();
         const incomingMessage = await member.send({ embeds: [embed], files: Array.from(message.attachments.values()) });
         const newStaffMailChannel = await this.staffMailRepository.createStaffMailChannel(

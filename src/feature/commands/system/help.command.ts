@@ -97,6 +97,7 @@ export class HelpCommand implements ICommand {
 
         description =
             `${bold('Description:')} ${command.description}\n\n` +
+            `${bold('Permission Level:')} ${CommandPermissionLevel[command.permissionLevel]}\n\n` +
             `${bold('Usage:')} ${inlineCode(this.env.CORE.PREFIX + command.name.toLowerCase() + ' ' + command.usageHint)}\n\n`;
 
         if (command.examples.length > 0) {

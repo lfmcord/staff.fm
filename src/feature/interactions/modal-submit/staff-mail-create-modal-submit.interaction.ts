@@ -56,6 +56,17 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
             await interaction.deferReply({
                 ephemeral: true,
             });
+
+        try {
+            await interaction.user.send(`I see you'd like to open a staff mail report. Give me a moment...`);
+        } catch (e) {
+            this.logger.warn(`Failed to send initial DM to user ${interaction.user.id}`, e);
+            await interaction.editReply(
+                `I'm sorry, I couldn't send you a DM. Please make sure your DMs are open and try again.`
+            );
+            return;
+        }
+
         this.logger.debug(`Compiling information to create staff mail from customId ${interaction.customId}`);
         const isCrownsModal = interaction.customId.includes('crowns');
         const isUrgent = interaction.customId.includes('urgent');
@@ -98,6 +109,7 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
             embeds.push(EmbedHelper.getVerificationHistoryEmbed(indexedUser?.verifications ?? []));
             embeds.push(EmbedHelper.getCrownsEmbed(indexedUser ?? undefined));
         }
+        embeds.push(new EmbedBuilder().setTitle(summary).setColor(EmbedHelper.blue));
 
         await staffMailChannel!.send({
             content: `${rolePings} New StaffMail: ${humanReadableCategory}`,

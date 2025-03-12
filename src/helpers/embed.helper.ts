@@ -262,7 +262,7 @@ export class EmbedHelper {
     ): EmbedBuilder {
         let name = staffMember.username;
         if (isAnonymousReply) name += ` (Anonymous)`;
-        recipient ? (name += ` (Staff) -> ${recipient.username}`) : ` -> Anonymous User`;
+        recipient ? (name += ` (Staff) -> ${recipient.username}`) : ` (Staff) -> Anonymous User`;
         const embed = new EmbedBuilder()
             .setAuthor({
                 name: name,

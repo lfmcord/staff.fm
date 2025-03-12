@@ -1,17 +1,17 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { TextHelper } from '@src/helpers/text.helper';
+import { StaffMail } from '@src/infrastructure/repositories/models/staff-mail.model';
+import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
+import { ChannelService } from '@src/infrastructure/services/channel.service';
+import { TYPES } from '@src/types';
 import { Embed, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { Logger } from 'tslog';
-import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
-import { TYPES } from '@src/types';
-import { TextHelper } from '@src/helpers/text.helper';
-import { ValidationError } from '@src/feature/commands/models/validation-error.model';
-import { EmbedHelper } from '@src/helpers/embed.helper';
-import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
-import { ChannelService } from '@src/infrastructure/services/channel.service';
-import { StaffMail } from '@src/infrastructure/repositories/models/staff-mail.model';
 
 @injectable()
 export class StaffMailReplyCommand implements ICommand {
@@ -65,18 +65,28 @@ export class StaffMailReplyCommand implements ICommand {
         this.logger.debug(
             `Preparing message to user ${staffMail.mode != StaffMailModeEnum.ANONYMOUS ? TextHelper.userLog(staffMail.user) : ''}.`
         );
-        const messageToUser = await staffMail.user?.send({
-            embeds: [
-                EmbedHelper.getStaffMailUserViewIncomingEmbed(
-                    isAnonReply ? null : message.author,
-                    staffMail.mode === StaffMailModeEnum.ANONYMOUS,
-                    args.join(' '),
-                    staffMail.summary,
-                    staffMail.type
-                ),
-            ],
-            files: message.attachments.map((a) => a.proxyURL),
-        });
+
+        let messageToUser;
+        try {
+            messageToUser = await staffMail.user?.send({
+                embeds: [
+                    EmbedHelper.getStaffMailUserViewIncomingEmbed(
+                        isAnonReply ? null : message.author,
+                        staffMail.mode === StaffMailModeEnum.ANONYMOUS,
+                        args.join(' '),
+                        staffMail.summary,
+                        staffMail.type
+                    ),
+                ],
+                files: message.attachments.map((a) => a.proxyURL),
+            });
+        } catch (e) {
+            this.logger.warn(`Could not send message to user ${TextHelper.userLog(staffMail.user)}.`, e);
+            return {
+                isSuccessful: false,
+                replyToUser: `I could not send a message to the user. They most likely have their DMs turned off.`,
+            };
+        }
 
         try {
             let mainMessage =
