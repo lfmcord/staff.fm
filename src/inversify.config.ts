@@ -17,7 +17,6 @@ import { MongoDbConnector } from '@src/infrastructure/connectors/mongo-db.connec
 import { StaffMailCreateCommand } from '@src/feature/commands/staffmail/staff-mail-create.command';
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { MessageService } from '@src/infrastructure/services/message.service';
-import { SelfMutesRepository } from '@src/infrastructure/repositories/self-mutes.repository';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { SelfMuteCommand } from '@src/feature/commands/utility/self-mute.command';
@@ -90,6 +89,10 @@ import { UpdateCommand } from '@src/feature/commands/utility/update.command';
 import { ScrobbleCapCommand } from '@src/feature/commands/administration/scrobble-cap.command';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { MutesRepository } from '@src/infrastructure/repositories/mutes.repository';
+import { MutesTrigger } from '@src/feature/triggers/mutes.trigger';
+import { ModerationService } from '@src/infrastructure/services/moderation.service';
+import { EndSelfmuteButtonInteraction } from '@src/feature/interactions/message-component/end-selfmute-button.interaction';
 
 const container = new Container();
 
@@ -215,6 +218,7 @@ container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigg
 container.bind<VerificationTrigger>(TYPES.VerificationLastFmTrigger).to(VerificationTrigger);
 container.bind<WhoknowsTrigger>(TYPES.WhoknowsTrigger).to(WhoknowsTrigger);
 container.bind<DiscussionsTrigger>(TYPES.DiscussionsTrigger).to(DiscussionsTrigger);
+container.bind<MutesTrigger>(TYPES.MutesTrigger).to(MutesTrigger);
 
 // INTERACTIONS
 container.bind<IModalSubmitInteraction>('ModalSubmitInteraction').to(StaffMailCreateModalSubmitInteraction);
@@ -230,15 +234,16 @@ container
     .bind<IMessageComponentInteraction>('MessageComponentInteraction')
     .to(VerifyDismissPlaycountWarningInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(DiscussionsTopicRemoveInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(EndSelfmuteButtonInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);
-container.bind<SelfMutesRepository>(TYPES.SelfMutesRepository).to(SelfMutesRepository);
 container.bind<CachingRepository>(TYPES.CachingRepository).to(CachingRepository).inSingletonScope();
 container.bind<MuteRndRepository>(TYPES.MuteRndRepository).to(MuteRndRepository);
 container.bind<FlagsRepository>(TYPES.FlagsRepository).to(FlagsRepository);
 container.bind<UsersRepository>(TYPES.UsersRepository).to(UsersRepository);
 container.bind<DiscussionsRepository>(TYPES.DiscussionsRepository).to(DiscussionsRepository);
+container.bind<MutesRepository>(TYPES.MutesRepository).to(MutesRepository);
 
 // SERVICES
 container.bind<MessageService>(TYPES.MessageService).to(MessageService);
@@ -249,6 +254,7 @@ container.bind<LoggingService>(TYPES.LoggingService).to(LoggingService);
 container.bind<AuditService>(TYPES.AuditService).to(AuditService);
 container.bind<CommandService>(TYPES.CommandService).to(CommandService);
 container.bind<LastFmService>(TYPES.LastFmService).to(LastFmService);
+container.bind<ModerationService>(TYPES.ModerationService).to(ModerationService);
 
 // CONTROLLERS
 container.bind<UserController>(TYPES.UserController).to(UserController);

@@ -1,3 +1,8 @@
+import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
+import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
+import { TextHelper } from '@src/helpers/text.helper';
+import { IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
+import { IUserModel } from '@src/infrastructure/repositories/users.repository';
 import {
     ActionRowBuilder,
     ButtonBuilder,
@@ -8,12 +13,7 @@ import {
     TextInputBuilder,
     TextInputStyle,
 } from 'discord.js';
-import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
-import { TextHelper } from '@src/helpers/text.helper';
-import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
-import { IUserModel } from '@src/infrastructure/repositories/users.repository';
 import * as moment from 'moment';
-import { IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
 
 export class ComponentHelper {
     public static cancelButton = (customId: string) =>
@@ -265,4 +265,7 @@ export class ComponentHelper {
             .setPlaceholder('Select the topic to remove')
             .addOptions(options);
     }
+
+    static endSelfmuteButton = () =>
+        new ButtonBuilder().setCustomId('defer-end-selfmute').setLabel('End Selfmute').setStyle(ButtonStyle.Secondary);
 }
