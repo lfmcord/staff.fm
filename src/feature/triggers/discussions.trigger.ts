@@ -39,12 +39,13 @@ export class DiscussionsTrigger {
     }
 
     public async scheduleDiscussion(previousDiscussion?: IDiscussionsModel) {
-        this.logger.info(`Trying to schedule a new discussion.`);
-
         if (this.scheduleService.jobExists(`DISCUSSIONS_AUTO}`)) {
-            this.logger.info(`Discussion is already scheduled. I am not starting a new discussion.`);
+            this.logger.info(
+                `Discussion is already scheduled. Next discussion is scheduled to be opened at <t:${moment(this.scheduleService.getJob(`DISCUSSIONS_AUTO`)?.nextInvocation()).unix()}:f>.`
+            );
             return null;
         }
+        this.logger.info(`Trying to schedule a new discussion.`);
 
         if (previousDiscussion) {
             await this.closeDiscussion(previousDiscussion, true, true);
@@ -59,8 +60,8 @@ export class DiscussionsTrigger {
         }
 
         const nextTopicPostDate = moment()
-            .set({ hour: 14, minute: 0, second: 0, millisecond: 0 })
-            .add(this.environment.DISCUSSIONS.AUTO_INTERVAL_IN_DAYS, 'days')
+            .set({ minute: 0, second: 0, millisecond: 0 })
+            .add(this.environment.DISCUSSIONS.AUTO_INTERVAL_IN_HOURS, 'seconds')
             .toDate();
 
         newDiscussion.scheduledToCloseAt = nextTopicPostDate;
@@ -68,7 +69,7 @@ export class DiscussionsTrigger {
         const thread = await this.openDiscussion(newDiscussion!);
 
         if (!thread) {
-            this.logger.error(`Couldn't open discussion thread. I am not starting a new discussion.`);
+            this.logger.error(`Couldn't open discussion thread. Ask Haiyn why.`);
             return null;
         }
 
@@ -96,8 +97,8 @@ export class DiscussionsTrigger {
         }
 
         const closeDate = moment()
-            .set({ hour: 14, minute: 0, second: 0, millisecond: 0 })
-            .add(this.environment.DISCUSSIONS.AUTO_INTERVAL_IN_DAYS, 'days')
+            .set({ minute: 0, second: 0, millisecond: 0 })
+            .add(this.environment.DISCUSSIONS.AUTO_INTERVAL_IN_HOURS, 'seconds')
             .toDate();
 
         discussion.scheduledToCloseAt = closeDate;

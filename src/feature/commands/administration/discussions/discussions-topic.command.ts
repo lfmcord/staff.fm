@@ -1,16 +1,16 @@
-import { inject, injectable } from 'inversify';
-import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { Logger } from 'tslog';
-import { TYPES } from '@src/types';
-import { ActionRowBuilder, AttachmentBuilder, Message, StringSelectMenuBuilder } from 'discord.js';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { ComponentHelper } from '@src/helpers/component.helper';
+import { DiscussionsRepository } from '@src/infrastructure/repositories/discussions.repository';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
-import { DiscussionsRepository } from '@src/infrastructure/repositories/discussions.repository';
+import { TYPES } from '@src/types';
+import { ActionRowBuilder, AttachmentBuilder, Message, StringSelectMenuBuilder } from 'discord.js';
+import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
-import { ComponentHelper } from '@src/helpers/component.helper';
+import { Logger } from 'tslog';
 
 @injectable()
 export class DiscussionsTopicCommand implements ICommand {
@@ -98,6 +98,8 @@ export class DiscussionsTopicCommand implements ICommand {
 
         await this.discussionsRepository.addDiscussionTopic(topic, message.author);
 
+        await this.loggingService.logDiscussionTopic(message.author, topic);
+
         return {
             isSuccessful: true,
             replyToUser: `I've added the following topic:\n- \`${topic}\``,
@@ -117,6 +119,8 @@ export class DiscussionsTopicCommand implements ICommand {
             this.logger.info(`Removing '${discussionToRemove.topic}' by ${message.author.username}...`);
             await this.discussionsRepository.removeDiscussionById(discussionToRemove._id);
             const user = await this.memberService.fetchUser(discussionToRemove.addedById);
+
+            await this.loggingService.logDiscussionTopic(message.author, discussionToRemove.topic, true);
 
             return {
                 isSuccessful: true,

@@ -7,6 +7,7 @@ import { DiscussionsTrigger } from '@src/feature/triggers/discussions.trigger';
 import { TextHelper } from '@src/helpers/text.helper';
 import { DiscussionsRepository, IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { TYPES } from '@src/types';
 import { Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
@@ -36,19 +37,22 @@ export class DiscussionsManageCommand implements ICommand {
     private channelService: ChannelService;
     discussionsRepository: DiscussionsRepository;
     environment: Environment;
+    loggingService: LoggingService;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<DiscussionsManageCommand>,
         @inject(TYPES.DiscussionsTrigger) discussionsTrigger: DiscussionsTrigger,
         @inject(TYPES.ChannelService) channelService: ChannelService,
         @inject(TYPES.ENVIRONMENT) environment: Environment,
-        @inject(TYPES.DiscussionsRepository) discussionsRepository: DiscussionsRepository
+        @inject(TYPES.DiscussionsRepository) discussionsRepository: DiscussionsRepository,
+        @inject(TYPES.LoggingService) loggingService: LoggingService
     ) {
         this.discussionsRepository = discussionsRepository;
         this.discussionsTrigger = discussionsTrigger;
         this.logger = logger;
         this.channelService = channelService;
         this.environment = environment;
+        this.loggingService = loggingService;
     }
 
     validateArgs(args: string[]): Promise<void> {
@@ -81,10 +85,10 @@ export class DiscussionsManageCommand implements ICommand {
                 result = await this.closeDiscussionThread(args[1]);
                 break;
             case this.operations[2]:
-                result = await this.startAutomaticDiscussions();
+                result = await this.startAutomaticDiscussions(message);
                 break;
             case this.operations[3]:
-                result = await this.stopAutomaticDiscussions();
+                result = await this.stopAutomaticDiscussions(message);
                 break;
             case this.operations[4]:
                 result = await this.showActiveDiscussions();
@@ -122,6 +126,7 @@ export class DiscussionsManageCommand implements ICommand {
                 };
             }
             thread = await this.discussionsTrigger.scheduleDiscussionOnce(discussion);
+            await this.loggingService.logDiscussion(discussion);
         } catch (e) {
             this.logger.error(`Failed while trying to open a new discussion thread.`, e);
             return {
@@ -182,13 +187,15 @@ export class DiscussionsManageCommand implements ICommand {
             };
         }
 
+        await this.loggingService.logDiscussion(discussion, true);
+
         return {
             isSuccessful: true,
             replyToUser: `I've closed the discussion in <#${threadId}>!`,
         };
     }
 
-    private async startAutomaticDiscussions() {
+    private async startAutomaticDiscussions(message: Message) {
         const discussions: IDiscussionsModel[] = await this.discussionsRepository.getAllScheduledDiscussions();
         if (discussions.length > 0) {
             return {
@@ -209,13 +216,15 @@ export class DiscussionsManageCommand implements ICommand {
             };
         }
 
+        await this.loggingService.logDiscussionSchedule(message.author, true);
+
         return {
             isSuccessful: true,
             replyToUser: `I've started the automatic discussion schedule and opened a new discussion in <#${discussion!.threadId}>. The next topic will be posted at <t:${moment(discussion.scheduledToCloseAt).unix()}:f>.`,
         };
     }
 
-    private async stopAutomaticDiscussions() {
+    private async stopAutomaticDiscussions(message: Message) {
         const cancelledDiscussions = await this.discussionsTrigger.cancelDiscussionSchedule();
         const wasCancelled = cancelledDiscussions.length > 0;
         let reply;
@@ -224,9 +233,11 @@ export class DiscussionsManageCommand implements ICommand {
             for (const discussion of cancelledDiscussions) {
                 reply += `- <#${discussion.threadId}> (scheduled to close at <t:${moment(discussion.scheduledToCloseAt).unix()}:f>)\n`;
             }
+            await this.loggingService.logDiscussionSchedule(message.author);
         } else {
             reply = `There is no automatic discussion schedule running.`;
         }
+
         return {
             isSuccessful: wasCancelled,
             replyToUser: reply,
