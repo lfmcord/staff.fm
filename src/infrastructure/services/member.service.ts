@@ -61,46 +61,6 @@ export class MemberService {
         return await guild.roles.fetch(roleId);
     }
 
-    async muteGuildMember(member: GuildMember, muteMessage: string, isSelfmute = false): Promise<void> {
-        const highestUserRole = await this.getHighestRoleFromGuildMember(member);
-        const botMember = await this.getGuildMemberFromUserId(this.client.user!.id);
-        const highestBotRole = await this.getHighestRoleFromGuildMember(botMember!);
-        const muteRoleId = isSelfmute ? this.env.ROLES.SELFMUTED_ROLE_ID : this.env.ROLES.MUTED_ROLE_ID;
-        const mutedRole = await (await this.client.guilds.fetch(this.env.CORE.GUILD_ID)).roles.fetch(muteRoleId);
-        if (highestUserRole.comparePositionTo(highestBotRole) > 0) {
-            throw Error(`Cannot mute a member with a role higher than the bot role.`);
-        }
-        if (!mutedRole) {
-            throw Error(`Cannot find muted role with role ID ${muteRoleId}`);
-        }
-        if (mutedRole!.comparePositionTo(highestBotRole) > 0) {
-            throw Error(`Cannot assign the muted role because it is higher than the bot role.`);
-        }
-
-        const roles = await this.getRolesFromGuildMember(member);
-        roles.forEach((r) => r.comparePositionTo(botMember!.roles.highest));
-        await member.roles.add(mutedRole);
-        await member.roles.remove(roles);
-
-        try {
-            await member.send({ content: muteMessage });
-        } catch (e) {
-            this.logger.warn(`Could not send mute message to user.`, e);
-        }
-    }
-
-    async unmuteGuildMember(member: GuildMember, rolesToRestore: Role[], unmuteMessage: string, isSelfmute = false) {
-        const mutedRole = isSelfmute ? this.env.ROLES.SELFMUTED_ROLE_ID : this.env.ROLES.MUTED_ROLE_ID;
-        await member.roles.remove(mutedRole);
-        rolesToRestore.forEach((r) => (r.name !== '@everyone' ? member.roles.add(r) : ''));
-
-        try {
-            await member.send(unmuteMessage);
-        } catch (e) {
-            this.logger.warn(`Could not send unmute message to user.`, e);
-        }
-    }
-
     async getMemberPermissionLevel(member: GuildMember): Promise<CommandPermissionLevel> {
         const memberHighestRole = await this.getHighestRoleFromGuildMember(member!);
         const permissionLevelRoles = [

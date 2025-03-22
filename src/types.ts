@@ -27,15 +27,16 @@ export const TYPES = {
     VerificationLastFmTrigger: Symbol('VerificationLastFmTrigger'),
     WhoknowsTrigger: Symbol('WhoknowsTrigger'),
     DiscussionsTrigger: Symbol('DiscussionsTrigger'),
+    MutesTrigger: Symbol('MutesTrigger'),
 
     // REPOSITORIES
     StaffMailRepository: Symbol('StaffMailRepository'),
-    SelfMutesRepository: Symbol('SelfMutesRepository'),
     CachingRepository: Symbol('CachingRepository'),
     MuteRndRepository: Symbol('MuteRndRepository'),
     FlagsRepository: Symbol('FlagsRepository'),
     UsersRepository: Symbol('UsersRepository'),
     DiscussionsRepository: Symbol('DiscussionsRepository'),
+    MutesRepository: Symbol('MutesRepository'),
 
     // SERVICES
     MessageService: Symbol('MessageService'),
@@ -46,6 +47,7 @@ export const TYPES = {
     AuditService: Symbol('AuditService'),
     CommandService: Symbol('CommandService'),
     LastFmService: Symbol('LastFmService'),
+    ModerationService: Symbol('ModerationService'),
 
     // CONTROLLERS
     UserController: Symbol('UserController'),

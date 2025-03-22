@@ -1,17 +1,17 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
+import { Environment } from '@models/environment';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { TextHelper } from '@src/helpers/text.helper';
+import { MuteRndRepository } from '@src/infrastructure/repositories/mute-rnd.repository';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { ScheduleService } from '@src/infrastructure/services/schedule.service';
+import { TYPES } from '@src/types';
 import { bold, EmbedBuilder, inlineCode, Message, MessageCreateOptions } from 'discord.js';
 import { inject, injectable } from 'inversify';
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { MuteRndRepository } from '@src/infrastructure/repositories/mute-rnd.repository';
-import { TYPES } from '@src/types';
-import moment = require('moment');
-import { MemberService } from '@src/infrastructure/services/member.service';
-import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { Logger } from 'tslog';
-import { TextHelper } from '@src/helpers/text.helper';
-import { Environment } from '@models/environment';
-import { ScheduleService } from '@src/infrastructure/services/schedule.service';
+import moment = require('moment');
 
 @injectable()
 export class MuteRndCommand implements ICommand {
@@ -114,20 +114,20 @@ export class MuteRndCommand implements ICommand {
 
         this.logger.debug(`Muting random player ${TextHelper.userLog(randomPlayer.member.user)}...`);
         this.logger.trace(`Random player: ${JSON.stringify(randomPlayer)}`);
-        await this.memberService.muteGuildMember(
-            randomPlayer.member,
-            `🎉🎉 Congratulations! You've won this round of the mute game! You'll be able to celebrate in the server again in ${randomDurationInSeconds} seconds.`
-        );
-        this.scheduleService.scheduleJob(
-            `UNMUTE_${randomPlayer.member.id}`,
-            moment().add(randomDurationInSeconds, 'seconds').toDate(),
-            async () =>
-                await this.memberService.unmuteGuildMember(
-                    randomPlayer.member,
-                    randomPlayer.member.roles.cache.map((r) => r),
-                    `🔊 Your mute game mute has ended and I've unmuted you. Welcome back, go celebrate!`
-                )
-        );
+        // await this.memberService.muteGuildMember(
+        //     randomPlayer.member,
+        //     `🎉🎉 Congratulations! You've won this round of the mute game! You'll be able to celebrate in the server again in ${randomDurationInSeconds} seconds.`
+        // );
+        // this.scheduleService.scheduleJob(
+        //     `UNMUTE_${randomPlayer.member.id}`,
+        //     moment().add(randomDurationInSeconds, 'seconds').toDate(),
+        //     async () =>
+        //         await this.memberService.unmuteGuildMember(
+        //             randomPlayer.member,
+        //             randomPlayer.member.roles.cache.map((r) => r),
+        //             `🔊 Your mute game mute has ended and I've unmuted you. Welcome back, go celebrate!`
+        //         )
+        // );
         await this.muteRndRepository.incrementWinCountForUser(randomPlayer.member.user);
         randomPlayer.winCount++;
         return {

@@ -1,7 +1,6 @@
 import { Environment } from '@models/environment';
 import { Verification } from '@src/feature/commands/administration/models/verification.model';
 import { Flag } from '@src/feature/commands/moderation/models/flag.model';
-import { SelfMute } from '@src/feature/commands/utility/models/self-mute.model';
 import { ComponentHelper } from '@src/helpers/component.helper';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { LogLevel } from '@src/helpers/models/LogLevel';
@@ -107,17 +106,49 @@ export class LoggingService {
         await logChannel.send({ embeds: [logEmbed], files: [attachment] });
     }
 
-    public async logSelfmute(selfMute: SelfMute, muteDuration?: string) {
+    public async logMute(subject: User, actor: User, endsAt: Date, reason?: string) {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
-        const description = muteDuration
-            ? `🔇 ${bold('Selfmute created')} ${inlineCode(selfMute.member.user.username)} ${italic('(ID ' + selfMute.member.user.id + ')')}\n`
-            : `🔊 ${bold('Selfmute ended')} ${inlineCode(selfMute.member.user.username)} ${italic('(ID ' + selfMute.member.user.id + ')')}\n📝 ${bold('Reason:')} ${selfMute.endsAt > moment().utc().toDate() ? 'User used unmute command' : 'Duration expired'}`;
-        const embed = EmbedHelper.getLogEmbed(this.client.user!, selfMute.member.user, LogLevel.Trace).setDescription(
-            description
-        );
-        if (muteDuration) embed.setFooter({ text: `Duration: ${muteDuration}` });
+        const isSelfmute = subject.id === actor.id;
+
+        let embed;
+        if (isSelfmute) {
+            const title = `🔇 Selfmute`;
+            const description =
+                `👤 ${bold('User:')} ${TextHelper.userDisplay(subject)}\n` +
+                `⌛ ${bold('Expires:')} <t:${moment(endsAt).unix()}:R>`;
+            embed = EmbedHelper.getLogEmbed(subject, subject, LogLevel.Trace)
+                .setDescription(description)
+                .setTitle(title);
+        } else {
+            const title = `🔇 Mute`;
+            const description =
+                `👤 ${bold('User:')} ${TextHelper.userDisplay(subject)}\n` +
+                `📝 ${bold('Reason:')} ${reason ?? 'No reason provided.'}\n` +
+                `⌛ ${bold('Expires:')} <t:${moment(endsAt).unix()}:R>`;
+            embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Warning)
+                .setDescription(description)
+                .setTitle(title);
+        }
+
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    public async logUnmute(subject: User, actor?: User, reason?: string) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const isSelfmute = subject.id === actor?.id;
+
+        const title = isSelfmute ? `🔊 Selfmute ended` : `🔊 Unmute`;
+        const description =
+            `👤 ${bold('User:')} ${TextHelper.userDisplay(subject)}\n` +
+            `📝 ${bold('Reason:')} ${reason ?? 'No reason provided.'}\n`;
+        const embed = EmbedHelper.getLogEmbed(actor ?? null, subject, LogLevel.Info)
+            .setDescription(description)
+            .setTitle(title);
+
         await logChannel.send({ embeds: [embed] });
     }
 
