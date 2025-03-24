@@ -136,6 +136,7 @@ dist
 
 *.sqlite
 environment.json
+environment-prod.json
 
 development.md
 dump

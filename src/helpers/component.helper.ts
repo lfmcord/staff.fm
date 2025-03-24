@@ -1,3 +1,4 @@
+import { Strike } from '@src/feature/commands/moderation/models/strike.model';
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
 import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
 import { TextHelper } from '@src/helpers/text.helper';
@@ -268,4 +269,18 @@ export class ComponentHelper {
 
     static endSelfmuteButton = () =>
         new ButtonBuilder().setCustomId('defer-end-selfmute').setLabel('End Selfmute').setStyle(ButtonStyle.Secondary);
+
+    static strikeAppealMenu = (strikes: Strike[]) => {
+        let options = strikes.map((s, idx) =>
+            new StringSelectMenuOptionBuilder()
+                .setLabel(`Appeal strike ${idx + 1}`)
+                .setDescription(`added on ${moment(s.createdAt).format('ddd, MMM Do YYYY, HH:mm')}`)
+                .setValue(`${s.subject.id}_${s._id.toString()}`)
+        );
+        options = options.slice(0, 25);
+        return new StringSelectMenuBuilder()
+            .setCustomId('defer-strike-appeal')
+            .setPlaceholder('Select the strike to appeal')
+            .addOptions(options);
+    };
 }

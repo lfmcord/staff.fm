@@ -465,6 +465,58 @@ export class LoggingService {
         await logChannel.send({ embeds: [embed] });
     }
 
+    async logStrike(
+        subject: User,
+        actor: User,
+        reason: string,
+        activeStrikeCount: number,
+        allStrikesCount: number,
+        action: string
+    ) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description =
+            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}` +
+            `\n\n${action.match(/Ban/) ? '🔨' : '🔇'} User received a **${action}** for this strike.`;
+        const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Failure).setDescription(description);
+        embed.setFooter({ text: TextHelper.strikeCounter(activeStrikeCount, allStrikesCount) });
+        embed.setTitle(`🗯️ Strike Issued`);
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logStrikeAppeal(
+        subject: User,
+        actor: User,
+        reason: string,
+        activeStrikeCount: number,
+        allStrikesCount: number
+    ) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description =
+            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
+        const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Success).setDescription(description);
+        embed.setFooter({ text: TextHelper.strikeCounter(activeStrikeCount, allStrikesCount) });
+        embed.setTitle(`🗯️ Strike Appealed`);
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logBan(subject: User, actor: User, reason?: string) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description =
+            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n📝 ${bold('Reason:')} ${!reason || reason == '' ? 'No reason provided.' : reason}`;
+        const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Failure).setDescription(description);
+        embed.setTitle(`🔨 Ban Issued`);
+        await logChannel.send({ embeds: [embed] });
+    }
+
     private async getLogChannel(channelId: string): Promise<GuildTextBasedChannel | null> {
         const logChannel = await this.channelService.getGuildChannelById(channelId);
         if (!logChannel) {
