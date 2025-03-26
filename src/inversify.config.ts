@@ -99,6 +99,8 @@ import { StrikesCommand } from '@src/feature/commands/moderation/strikes.command
 import { CancelButtonInteraction } from '@src/feature/interactions/message-component/cancel-button.interaction';
 import { StrikeAppealInteraction } from '@src/feature/interactions/message-component/strike-appeal.interaction';
 import { StrikeAppealCommand } from '@src/feature/commands/moderation/strike-appeal.command';
+import { StrikeMuteButtonInteraction } from '@src/feature/interactions/message-component/strike-mute-button.interaction';
+import { StrikeBanButtonInteraction } from '@src/feature/interactions/message-component/strike-ban-button.interaction';
 
 const container = new Container();
 
@@ -111,6 +113,12 @@ for (const [k, v] of Object.entries(environmentData.ROLES.SCROBBLE_MILESTONES)) 
     scrobbleMilestones.set(parseInt(k), v);
 }
 environmentData.ROLES.SCROBBLE_MILESTONES = scrobbleMilestones;
+const strikeMuteDurations = new Map<number, number[]>();
+for (const [k, v] of Object.entries(environmentData.MODERATION.STRIKE_MUTE_DURATIONS)) {
+    const durations = v as number[];
+    strikeMuteDurations.set(parseInt(k), durations);
+}
+environmentData.MODERATION.STRIKE_MUTE_DURATIONS = strikeMuteDurations;
 container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue(environmentData);
 
 // CORE
@@ -231,14 +239,16 @@ container.bind<DiscussionsTrigger>(TYPES.DiscussionsTrigger).to(DiscussionsTrigg
 container.bind<MutesTrigger>(TYPES.MutesTrigger).to(MutesTrigger);
 
 // INTERACTIONS
+container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(VerifyContextMenuInteraction);
+container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(StaffMailReportInteraction);
+
 container.bind<IModalSubmitInteraction>('ModalSubmitInteraction').to(StaffMailCreateModalSubmitInteraction);
+
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateButtonInteraction);
 container
     .bind<IMessageComponentInteraction>('MessageComponentInteraction')
     .to(StaffMailCreateUrgentReportButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateModalShowInteraction);
-container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(VerifyContextMenuInteraction);
-container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(StaffMailReportInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(VerifyRemoveInteraction);
 container
     .bind<IMessageComponentInteraction>('MessageComponentInteraction')
@@ -247,6 +257,8 @@ container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(D
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(EndSelfmuteButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(CancelButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeAppealInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeMuteButtonInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeBanButtonInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);

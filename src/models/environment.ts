@@ -54,7 +54,7 @@ export interface Environment {
         PING_ROLE_IDS: string[];
     };
     MODERATION: {
-        STRIKE_MUTE_DURATIONS_IN_HOURS: number[];
+        STRIKE_MUTE_DURATIONS: Map<number, number[]>;
         STRIKE_EXPIRATION_IN_MONTHS: number;
     };
     LOGGING: {

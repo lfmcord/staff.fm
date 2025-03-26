@@ -17,8 +17,8 @@ import {
 import * as moment from 'moment';
 
 export class ComponentHelper {
-    public static cancelButton = (customId: string) =>
-        new ButtonBuilder().setCustomId(customId).setLabel('Cancel').setStyle(ButtonStyle.Danger);
+    public static cancelButton = (customId: string, style: ButtonStyle = ButtonStyle.Danger) =>
+        new ButtonBuilder().setCustomId(customId).setLabel('Cancel').setStyle(style);
 
     public static sendButton = (customId: string) =>
         new ButtonBuilder()
@@ -282,5 +282,21 @@ export class ComponentHelper {
             .setCustomId('defer-strike-appeal')
             .setPlaceholder('Select the strike to appeal')
             .addOptions(options);
+    };
+
+    static strikeMuteButton = (messageId: string, durationInHours: number) => {
+        return new ButtonBuilder()
+            .setCustomId(`defer-strike-mute-${messageId}-${durationInHours}`)
+            .setEmoji('🔇')
+            .setLabel(`Mute (${durationInHours}h)`)
+            .setStyle(ButtonStyle.Danger);
+    };
+
+    static strikeBanButton = (messageId: string, isAppealable: boolean) => {
+        return new ButtonBuilder()
+            .setCustomId(`defer-strike-ban-${messageId}-${isAppealable}`)
+            .setEmoji('🔨')
+            .setLabel(`Ban ${!isAppealable ? '(permanent)' : ''}`)
+            .setStyle(isAppealable ? ButtonStyle.Primary : ButtonStyle.Danger);
     };
 }

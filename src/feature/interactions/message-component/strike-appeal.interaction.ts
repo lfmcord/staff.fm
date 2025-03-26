@@ -7,7 +7,6 @@ import { UsersRepository } from '@src/infrastructure/repositories/users.reposito
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { ModerationService } from '@src/infrastructure/services/moderation.service';
-import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { TYPES } from '@src/types';
 import { StringSelectMenuInteraction, User } from 'discord.js';
 import { inject, injectable } from 'inversify';
@@ -18,7 +17,6 @@ import { Logger } from 'tslog';
 export class StrikeAppealInteraction implements IMessageComponentInteraction {
     customIds = ['defer-strike-appeal'];
     private logger: Logger<StrikeAppealInteraction>;
-    private scheduleService: ScheduleService;
     private loggingService: LoggingService;
     private moderationService: ModerationService;
     private mutesRepository: MutesRepository;
@@ -31,7 +29,6 @@ export class StrikeAppealInteraction implements IMessageComponentInteraction {
         @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.ENVIRONMENT) env: Environment,
-        @inject(TYPES.ScheduleService) scheduleService: ScheduleService,
         @inject(TYPES.MutesRepository) mutesRepository: MutesRepository,
         @inject(TYPES.ModerationService) moderationService: ModerationService,
         @inject(TYPES.LoggingService) loggingService: LoggingService
@@ -39,7 +36,6 @@ export class StrikeAppealInteraction implements IMessageComponentInteraction {
         this.loggingService = loggingService;
         this.moderationService = moderationService;
         this.mutesRepository = mutesRepository;
-        this.scheduleService = scheduleService;
         this.env = env;
         this.memberService = memberService;
         this.usersRepository = usersRepository;
@@ -89,8 +85,8 @@ export class StrikeAppealInteraction implements IMessageComponentInteraction {
             this.logger.debug(`Sending appeal message to user ${TextHelper.userLog(member.user)}...`);
             try {
                 await member.send(
-                    `🗯️:x: **Your strike from <t:${moment(appealedStrike.createdAt).unix()}:d> has been voided.**\n` +
-                        `You are now at ${activeStrikes.length} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS_IN_HOURS.length} allowed strikes.`
+                    `🗯️✅ **Staff has set your strike from <t:${moment(appealedStrike.createdAt).unix()}:d> to appealed.** It will no longer count towards your active strikes.\n` +
+                        `You are now at ${activeStrikes.length} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size} allowed strikes.`
                 );
             } catch (e) {
                 this.logger.warn(`Failed to send DM to user ID ${userId}.`, e);

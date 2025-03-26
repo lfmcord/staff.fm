@@ -3,6 +3,7 @@ import { CommandPermissionLevel } from '@src/feature/commands/models/command-per
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { ComponentHelper } from '@src/helpers/component.helper';
 import { StrikeHelper } from '@src/helpers/strike.helper';
 import { TextHelper } from '@src/helpers/text.helper';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
@@ -10,9 +11,8 @@ import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { ModerationService } from '@src/infrastructure/services/moderation.service';
 import { TYPES } from '@src/types';
-import { Message, inlineCode } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
-import * as moment from 'moment';
 import { Logger } from 'tslog';
 
 @injectable()
@@ -49,10 +49,10 @@ export class StrikeCommand implements ICommand {
         this.logger = logger;
 
         this.description += `Strike punishments:\n`;
-        this.env.MODERATION.STRIKE_MUTE_DURATIONS_IN_HOURS.forEach((muteDuration, index) => {
-            this.description += ` - ${index + 1} strike${index + 1 > 1 ? 's' : ''}: Mute (${muteDuration}h)\n`;
+        this.env.MODERATION.STRIKE_MUTE_DURATIONS.forEach((muteDurations, index) => {
+            this.description += ` - ${index + 1} strike${index + 1 > 1 ? 's' : ''}: Mute (${muteDurations.join('h, ')}h)\n`;
         });
-        this.description += ` - ${this.env.MODERATION.STRIKE_MUTE_DURATIONS_IN_HOURS.length + 1} strike: Ban\n`;
+        this.description += ` - ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size + 1} strike: Ban\n`;
         this.description += `\nStrikes expire after ${env.MODERATION.STRIKE_EXPIRATION_IN_MONTHS} months.`;
     }
 
@@ -74,96 +74,50 @@ export class StrikeCommand implements ICommand {
         const allStrikes = indexedUser?.strikes ?? [];
         const activeStrikes = StrikeHelper.getActiveStrikes(allStrikes);
         this.logger.info(
-            `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} non-expired strikes. Striking...`
+            `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} non-expired strikes. Showing information...`
         );
 
-        const muteDuration =
-            activeStrikes.length <= this.env.MODERATION.STRIKE_MUTE_DURATIONS_IN_HOURS.length
-                ? this.env.MODERATION.STRIKE_MUTE_DURATIONS_IN_HOURS[activeStrikes.length]
+        const muteDurations =
+            activeStrikes.length <= this.env.MODERATION.STRIKE_MUTE_DURATIONS.size
+                ? this.env.MODERATION.STRIKE_MUTE_DURATIONS.get(activeStrikes.length)
                 : null;
-        const reason = args.slice(1).join(' ');
 
-        const strikeId = await this.usersRepository.addStrikeToUser(
-            member.user,
-            message.author,
-            reason,
-            this.env.MODERATION.STRIKE_EXPIRATION_IN_MONTHS
-        );
-
-        let actionTaken = 'unknown';
-        let reply: string;
-        let wasInformed: boolean;
-        if (!muteDuration) {
+        if (!muteDurations) {
             this.logger.info(
-                `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} strikes, which is more than the maximum allowed (${this.env.MODERATION.STRIKE_MUTE_DURATIONS_IN_HOURS.length}). Banning...`
+                `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} strikes, which is more than the maximum allowed (${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size}). Showing ban dialogue...`
             );
-            try {
-                wasInformed = await this.moderationService.banGuildMember(
-                    member,
-                    message.author,
-                    true,
-                    {
-                        content: `🔨 You've exceeded the maximum allowed number of strikes (${this.env.MODERATION.STRIKE_MUTE_DURATIONS_IN_HOURS.length}) in the Last.fm Discord and have been banned.\n**Reason:** ${reason}\n`,
-                    },
-                    reason,
-                    false
-                );
-            } catch (e) {
-                await this.usersRepository.removeStrikeFromUser(member.user.id, strikeId);
-                return {
-                    isSuccessful: false,
-                    replyToUser: `I was unable to ban ${member} because they have more privileges than I do or because something broke!`,
-                };
-            }
-
-            reply =
-                `I've successfully banned ${inlineCode(member.user.tag)} for accumulating too many strikes.\n` +
-                `-# ${TextHelper.strikeCounter(activeStrikes.length + 1, allStrikes.length + 1)}`;
-            actionTaken = 'Ban';
-        } else {
-            this.logger.info(
-                `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} strikes, handing out a mute...`
-            );
-
-            const endDate = moment().add(muteDuration, 'hours').toDate();
-            let strikeMessage: string =
-                `🗯️ **You've received a strike in the Last.fm Discord** and are muted until <t:${moment(endDate).unix()}:F>. ` +
-                `You now have ${activeStrikes.length + 1} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS_IN_HOURS.length} strikes.`;
-            if (activeStrikes.length + 1 === this.env.MODERATION.STRIKE_MUTE_DURATIONS_IN_HOURS.length)
-                strikeMessage += ` Another strike will lead to a ban.`;
-            strikeMessage += `\n**Reason:** ${reason}`;
-            strikeMessage +=
-                `\n-# This strike will expire automatically <t:${moment().add(this.env.MODERATION.STRIKE_EXPIRATION_IN_MONTHS, 'months').unix()}:R>. ` +
-                `Contact staff if you believe this strike was unjustified or would otherwise like to discuss it.`;
-            wasInformed = await this.moderationService.muteGuildMember(
-                member,
-                message.author,
-                endDate,
-                {
-                    content: strikeMessage,
-                },
-                undefined,
-                false
-            );
-            actionTaken = `Mute (${muteDuration}h)`;
-            reply =
-                `🗯️ I've successfully issued a strike to ${member} with a mute (${muteDuration}h).\n` +
-                `-# ${TextHelper.strikeCounter(activeStrikes.length + 1, allStrikes.length + 1)}`;
+            await message.reply({
+                content:
+                    `User ${member} has ${activeStrikes.length} strikes, which is more than the maximum allowed (${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size}). Proceed with ban?\n` +
+                    `-# ${TextHelper.strikeCounter(activeStrikes.length + 1, allStrikes.length + 1)}`,
+                components: [
+                    new ActionRowBuilder<ButtonBuilder>().addComponents([
+                        ComponentHelper.strikeBanButton(message.id, true),
+                        ComponentHelper.strikeBanButton(message.id, false),
+                        ComponentHelper.cancelButton('defer-cancel', ButtonStyle.Secondary),
+                    ]),
+                ],
+            });
+            return {};
         }
-
-        await this.loggingService.logStrike(
-            member.user,
-            message.author,
-            reason,
-            activeStrikes.length + 1,
-            allStrikes.length + 1,
-            actionTaken
+        this.logger.info(
+            `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} strikes, handing out a mute...`
         );
 
-        return {
-            isSuccessful: true,
-            replyToUser: wasInformed ? reply : (reply += ` I was unable to inform the user of the strike.`),
-        };
+        await message.reply({
+            content:
+                `User ${member} has ${activeStrikes.length} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size} strikes. Proceed with mute?\n` +
+                `-# ${TextHelper.strikeCounter(activeStrikes.length + 1, allStrikes.length + 1)}`,
+            components: [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                    muteDurations!
+                        .map((muteDuration) => ComponentHelper.strikeMuteButton(message.id, muteDuration))
+                        .concat([ComponentHelper.cancelButton('defer-cancel', ButtonStyle.Secondary)])
+                ),
+            ],
+        });
+
+        return {};
     }
 
     validateArgs(args: string[]): Promise<void> {

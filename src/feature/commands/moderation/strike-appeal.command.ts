@@ -37,13 +37,6 @@ export class StrikeAppealCommand implements ICommand {
         this.env = env;
         this.memberService = memberService;
         this.usersRepository = usersRepository;
-
-        this.description += `Strike Configuration:\n`;
-        this.env.MODERATION.STRIKE_MUTE_DURATIONS_IN_HOURS.forEach((muteDuration, index) => {
-            this.description += ` - ${index + 1} strike: Mute (${muteDuration}h)\n`;
-        });
-        this.description += ` - ${this.env.MODERATION.STRIKE_MUTE_DURATIONS_IN_HOURS.length + 1} strike: Ban\n`;
-        this.description += `\nStrikes expire after ${env.MODERATION.STRIKE_EXPIRATION_IN_MONTHS} months.`;
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
