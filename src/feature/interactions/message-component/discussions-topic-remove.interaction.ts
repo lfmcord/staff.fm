@@ -47,12 +47,21 @@ export class DiscussionsTopicRemoveInteraction implements IMessageComponentInter
 
         const user = await this.memberService.fetchUser(discussionToDelete.addedById);
 
-        await this.loggingService.logDiscussionTopic(interaction.user, discussionToDelete.topic, true);
+        const openTopics = await this.discussionsRepository.getAllUnusedDiscussions();
+
+        await this.loggingService.logDiscussionTopic(
+            interaction.user,
+            discussionToDelete.topic,
+            openTopics.length,
+            true
+        );
 
         await interaction.update({
             embeds: [],
             components: [],
-            content: `I've removed the following topic:\n- \`${discussionToDelete.topic}\` (added by ${user?.username ?? 'unknown'} at <t:${moment(discussionToDelete.addedAt).unix()}:f>)`,
+            content:
+                `I've removed the topic "${discussionToDelete.topic}" (added by ${user?.username ?? 'unknown'} at <t:${moment(discussionToDelete.addedAt).unix()}:f>)\n` +
+                `-# There are now ${openTopics.length} open topics.`,
             attachments: [],
         });
     }

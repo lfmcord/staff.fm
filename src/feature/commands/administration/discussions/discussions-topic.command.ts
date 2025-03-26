@@ -56,6 +56,10 @@ export class DiscussionsTopicCommand implements ICommand {
             );
         }
 
+        if (args[0] == this.operations[0] && args.slice(1).join(' ').length > 256) {
+            throw new ValidationError(`Topic too long.`, `A topic can't be longer than 256 characters.`);
+        }
+
         if (args[0] == this.operations[1] && args.length > 1) {
             try {
                 if (Number.parseInt(args[1]) < 1)
@@ -98,11 +102,13 @@ export class DiscussionsTopicCommand implements ICommand {
 
         await this.discussionsRepository.addDiscussionTopic(topic, message.author);
 
-        await this.loggingService.logDiscussionTopic(message.author, topic);
+        const openTopics = await this.discussionsRepository.getAllUnusedDiscussions();
+
+        await this.loggingService.logDiscussionTopic(message.author, topic, openTopics.length);
 
         return {
             isSuccessful: true,
-            replyToUser: `I've added the following topic:\n- \`${topic}\``,
+            replyToUser: `I've added the following topic: "${topic}"\n-# There are now ${openTopics.length} open topics.`,
         };
     }
 
@@ -120,7 +126,12 @@ export class DiscussionsTopicCommand implements ICommand {
             await this.discussionsRepository.removeDiscussionById(discussionToRemove._id);
             const user = await this.memberService.fetchUser(discussionToRemove.addedById);
 
-            await this.loggingService.logDiscussionTopic(message.author, discussionToRemove.topic, true);
+            await this.loggingService.logDiscussionTopic(
+                message.author,
+                discussionToRemove.topic,
+                topics.length - 1,
+                true
+            );
 
             return {
                 isSuccessful: true,

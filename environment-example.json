@@ -73,7 +73,9 @@
   "DISCUSSIONS": {
     "CHANNEL_ID": "CHANNEL_ID",
     "AUTO_INTERVAL_IN_HOURS": 2,
-    "PING_ROLE_ID": "PING_ROLE_ID"
+    "PING_ROLE_IDS": [
+      "PING_ROLE_IDS"
+    ]
   },
   "STAFFMAIL": {
     "CATEGORY_ID": "CATEGORY_ID",
