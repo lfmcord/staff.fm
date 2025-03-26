@@ -5,7 +5,9 @@ import { CountryCodeHelper } from '@src/helpers/country-code.helper';
 import { LogLevel } from '@src/helpers/models/LogLevel';
 import { StrikeHelper } from '@src/helpers/strike.helper';
 import { TextHelper } from '@src/helpers/text.helper';
+import { IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
 import { IStrikesModel, IUserModel, IVerificationModel } from '@src/infrastructure/repositories/users.repository';
+
 import {
     ActionRowBuilder,
     Attachment,
@@ -678,6 +680,49 @@ export class EmbedHelper {
                 `This user is not yet indexed (hasn't been manually imported or verified yet), so I don't have any more info to show you. 
                 If you know their last.fm username, please verify them manually with \`>>verify ${userId ?? '[user ID]'} [last.fm username]\``
             );
+    }
+
+    static getDiscussionsManagementEmbed(
+        discussions: IDiscussionsModel[],
+        interval: number,
+        pingRoleIds: string[]
+    ): EmbedBuilder {
+        const scheduledDiscussions = discussions.filter((d) => d.scheduledFor);
+        const usedDiscussions = discussions.filter((d) => d.threadId);
+        const unusedDiscussions = discussions.filter((d) => !d.threadId && !d.scheduledFor);
+
+        const autoDiscussionEnabled = scheduledDiscussions.length > 0;
+        const fields = [
+            {
+                name: 'Settings',
+                value:
+                    `- Automatic schedule: ${autoDiscussionEnabled ? '♾️ enabled' : '⏹️ disabled'}\n` +
+                    `${autoDiscussionEnabled ? `- Next Discussion: scheduled for <t:${moment(scheduledDiscussions[0].scheduledFor).unix()}:f> (Topic: "${scheduledDiscussions[0].topic}").\n` : ''}` +
+                    `- Automatic interval: ${interval}h\n` +
+                    `- Ping Role IDs: ${pingRoleIds.map((id) => '<@&' + id + '>').join(', ')}`,
+            },
+            {
+                name: 'Discussion Stats',
+                value: `- Total Topic Count: ${discussions.length}\n- ${usedDiscussions.length} topics used.\n- ${unusedDiscussions.length} topics open.`,
+            },
+        ];
+        return new EmbedBuilder().setTitle(`Discussions Management`).setColor(EmbedHelper.blue).addFields(fields);
+    }
+
+    static getDiscussionEtiquetteEmbed(): EmbedBuilder {
+        return new EmbedBuilder()
+            .setTitle('📜 Discussion Etiquette')
+            .setColor(EmbedHelper.blue)
+            .setDescription(
+                `Please remember our Discussions Etiquette:\n` +
+                    `1. **Be Respectful** – Disagreements should be about ideas, not individuals.\n` +
+                    `2. **Use Constructive Criticism** – If critiquing, offer insights, not just complaints.\n` +
+                    `3. **Don't Gatekeep** – Welcome all levels of knowledge and musical tastes.\n` +
+                    `4. **Be Open-Minded** – Embrace different genres, styles, and interpretations.\n` +
+                    `5. **Stay on Topic** – Keep discussions focused on music and related subjects.`
+            )
+            .setFooter({ text: `Enjoy!` })
+            .setTimestamp();
     }
 
     static getStrikesEmbed(strikes: IStrikesModel[], subject?: User): EmbedBuilder {

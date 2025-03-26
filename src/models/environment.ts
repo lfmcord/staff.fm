@@ -42,11 +42,12 @@ export interface Environment {
         CROWNS_LOG_CHANNEL_ID: string;
         DELETED_MESSAGE_LOG_CHANNEL_ID: string;
         DELETED_MESSAGE_LOG_EXCLUDED_CHANNEL_IDS: string[];
+        DISCUSSIONS_LOG_CHANNEL_ID: string;
     };
     DISCUSSIONS: {
         CHANNEL_ID: string;
-        AUTO_INTERVAL_IN_DAYS: number;
-        PING_ROLE_ID: string;
+        AUTO_INTERVAL_IN_HOURS: number;
+        PING_ROLE_IDS: string[];
     };
     STAFFMAIL: {
         CATEGORY_ID: string;

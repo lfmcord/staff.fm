@@ -1,11 +1,19 @@
 import { Environment } from '@models/environment';
+import { EmbedHelper } from '@src/helpers/embed.helper';
 import { DiscussionsRepository, IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { TYPES } from '@src/types';
-import { BaseGuildTextChannel, TextBasedChannel, ThreadAutoArchiveDuration } from 'discord.js';
+import {
+    BaseGuildTextChannel,
+    Client,
+    TextBasedChannel,
+    ThreadAutoArchiveDuration,
+    ThreadChannel,
+    User,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
 import { Logger } from 'tslog';
@@ -19,6 +27,7 @@ export class DiscussionsTrigger {
     environment: Environment;
     loggingService: LoggingService;
     scheduleService: ScheduleService;
+    private client: Client;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<DiscussionsTrigger>,
@@ -27,8 +36,10 @@ export class DiscussionsTrigger {
         @inject(TYPES.DiscussionsRepository) discussionsRepository: DiscussionsRepository,
         @inject(TYPES.ChannelService) channelService: ChannelService,
         @inject(TYPES.MemberService) memberService: MemberService,
-        @inject(TYPES.ScheduleService) scheduleService: ScheduleService
+        @inject(TYPES.ScheduleService) scheduleService: ScheduleService,
+        @inject(TYPES.Client) client: Client
     ) {
+        this.client = client;
         this.memberService = memberService;
         this.channelService = channelService;
         this.discussionsRepository = discussionsRepository;
@@ -38,102 +49,63 @@ export class DiscussionsTrigger {
         this.scheduleService = scheduleService;
     }
 
-    public async scheduleDiscussion(previousDiscussion?: IDiscussionsModel) {
+    public async scheduleDiscussion(
+        discussion: IDiscussionsModel,
+        actor: User,
+        shouldLog = true
+    ): Promise<ThreadChannel | null> {
         this.logger.info(`Trying to schedule a new discussion.`);
+        const thread = await this.createDiscussionThread(discussion, actor);
 
-        if (this.scheduleService.jobExists(`DISCUSSIONS_AUTO}`)) {
-            this.logger.info(`Discussion is already scheduled. I am not starting a new discussion.`);
-            return null;
-        }
-
-        if (previousDiscussion) {
-            await this.closeDiscussion(previousDiscussion, true, true);
-        }
-
-        let newDiscussion = await this.discussionsRepository.getRandomDiscussionTopic();
-
-        if (!newDiscussion) {
-            this.logger.info(`No discussion topics found. I am not starting a new discussion.`);
-            if (previousDiscussion) await this.loggingService.logNoDiscussionTopicsAlert();
+        if (!thread) {
+            this.logger.error(`Couldn't open discussion thread. Ask Haiyn why.`);
             return null;
         }
 
         const nextTopicPostDate = moment()
-            .set({ hour: 14, minute: 0, second: 0, millisecond: 0 })
-            .add(this.environment.DISCUSSIONS.AUTO_INTERVAL_IN_DAYS, 'days')
+            .set({ minute: 0, second: 0, millisecond: 0 })
+            .add(this.environment.DISCUSSIONS.AUTO_INTERVAL_IN_HOURS, 'hours')
             .toDate();
-
-        newDiscussion.scheduledToCloseAt = nextTopicPostDate;
-
-        const thread = await this.openDiscussion(newDiscussion!);
-
-        if (!thread) {
-            this.logger.error(`Couldn't open discussion thread. I am not starting a new discussion.`);
-            return null;
-        }
 
         this.logger.debug(`Scheduling next discussion for ${nextTopicPostDate}.`);
-        newDiscussion = await this.discussionsRepository.openDiscussionById(
-            newDiscussion._id,
-            nextTopicPostDate,
-            thread?.id
-        );
+        let newDiscussion = await this.discussionsRepository.getRandomDiscussionTopic();
+        if (!newDiscussion) {
+            this.logger.info(`No discussion topics found. I am not scheduling a new discussion.`);
+            await this.loggingService.logNoDiscussionTopicsAlert(0);
+            return thread;
+        } else {
+            const remainingDiscussions = await this.discussionsRepository.getAllUnusedDiscussions();
+            if (remainingDiscussions.length == 1) {
+                this.logger.info(`Only one discussion topic left.`);
+                await this.loggingService.logNoDiscussionTopicsAlert(1);
+                return thread;
+            }
+        }
 
         this.scheduleService.scheduleJob(`DISCUSSIONS_AUTO`, nextTopicPostDate, async () => {
-            await this.scheduleDiscussion(newDiscussion!);
+            await this.scheduleDiscussion(newDiscussion!, this.client.user!);
         });
+
+        newDiscussion = await this.discussionsRepository.scheduleDiscussionTopic(newDiscussion!._id, nextTopicPostDate);
+        if (shouldLog) await this.loggingService.logDiscussionScheduled(newDiscussion!);
 
         this.logger.info(`Scheduled discussion with topic '${newDiscussion!.topic}' for ${nextTopicPostDate}.`);
-        return newDiscussion;
-    }
-
-    public async scheduleDiscussionOnce(discussion: IDiscussionsModel) {
-        this.logger.info(`Trying to schedule a new discussion one-time.`);
-
-        if (this.scheduleService.jobExists(`DISCUSSIONS_AUTO}`)) {
-            this.logger.info(`Discussion is already scheduled. I am not starting a new discussion.`);
-            return null;
-        }
-
-        const closeDate = moment()
-            .set({ hour: 14, minute: 0, second: 0, millisecond: 0 })
-            .add(this.environment.DISCUSSIONS.AUTO_INTERVAL_IN_DAYS, 'days')
-            .toDate();
-
-        discussion.scheduledToCloseAt = closeDate;
-
-        const thread = await this.openDiscussion(discussion);
-
-        if (!thread) {
-            this.logger.error(`Couldn't open discussion thread. I am not starting a new discussion.`);
-            return null;
-        }
-
-        this.logger.debug(`Scheduling one-time discussion to close at ${closeDate}.`);
-        await this.discussionsRepository.openDiscussionById(discussion._id, closeDate, thread.id);
-
-        this.scheduleService.scheduleJob(`DISCUSSIONS_AUTO`, closeDate, async () => {
-            await this.closeDiscussion(discussion);
-        });
-
-        this.logger.info(`Scheduled discussion with topic '${discussion.topic}' for ${closeDate}.`);
         return thread;
     }
 
     public async cancelDiscussionSchedule() {
+        const activeDiscussions = await this.discussionsRepository.getAllScheduledDiscussions();
+        for (const discussion of activeDiscussions) {
+            await this.discussionsRepository.unscheduleDiscussionTopic(discussion._id);
+        }
         if (this.scheduleService.jobExists(`DISCUSSIONS_AUTO}`)) {
             this.logger.info(`Cancelling scheduled discussion.`);
-            const activeDiscussions = await this.discussionsRepository.getAllScheduledDiscussions();
-            for (const discussion of activeDiscussions) {
-                await this.discussionsRepository.removeClosingScheduleForDiscussionById(discussion._id);
-            }
             this.scheduleService.cancelJob(`DISCUSSIONS_AUTO}`);
-            return activeDiscussions;
         }
-        return [];
+        return activeDiscussions;
     }
 
-    public async openDiscussion(discussion: IDiscussionsModel) {
+    public async createDiscussionThread(discussion: IDiscussionsModel, actor: User) {
         this.logger.info(`Opening discussion with topic '${discussion.topic}'.`);
 
         const channel = (await this.channelService.getGuildTextChannelById(
@@ -145,109 +117,53 @@ export class DiscussionsTrigger {
             return;
         }
 
+        const usedDiscussions = await this.discussionsRepository.getAllUsedDiscussions();
+
         const startMessage = await channel.send(
-            `# ${moment().format('YYYY-MM-DD')}: ${discussion.topic}\n<@&${this.environment.DISCUSSIONS.PING_ROLE_ID}>`
+            `# ${usedDiscussions.length + 1}. ${discussion.topic}\n${this.environment.DISCUSSIONS.PING_ROLE_IDS.map((id) => `<@&${id}>`).join(' ')}`
         );
 
         const createdThread = await (channel as BaseGuildTextChannel).threads.create({
-            name: `${moment().format('YYYY-MM-DD')}: ${discussion.topic}`.slice(0, 99),
+            name: `${usedDiscussions.length + 1}. ${discussion.topic}`.slice(0, 99),
             autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
             startMessage: startMessage,
         });
 
-        createdThread.send(
-            `## Welcome to the discussion! Please remember our Discussions Etiquette:\n` +
-                `1. **Be Respectful** – Disagreements should be about ideas, not individuals.\n` +
-                `2. **Use Constructive Criticism** – If critiquing, offer insights, not just complaints.\n` +
-                `3. **Don't Gatekeep** – Welcome all levels of knowledge and musical tastes.\n` +
-                `4. **Be Open-Minded** – Embrace different genres, styles, and interpretations.\n` +
-                `5. **Stay on Topic** – Keep discussions focused on music and related subjects.\n\n` +
-                `Closes at: <t:${moment(discussion.scheduledToCloseAt).unix()}:f>\n\n` +
-                `Enjoy! :tada:`
-        );
+        createdThread.send({ embeds: [EmbedHelper.getDiscussionEtiquetteEmbed()] });
 
         this.logger.info(`Opened discussion thread has thread ID ${createdThread.id} and name ${createdThread.name}.`);
+        discussion = (await this.discussionsRepository.setDiscussionToOpened(discussion._id, createdThread.id))!;
+        await this.loggingService.logDiscussionOpened(discussion, actor);
 
         return createdThread;
-    }
-
-    public async closeDiscussion(discussion: IDiscussionsModel, isAutomatic = true, makeActivityCheck = false) {
-        this.logger.info(`Closing discussion with topic '${discussion.topic}'.`);
-        discussion = (await this.discussionsRepository.getDiscussionById(discussion._id))!;
-
-        if (discussion.closedAt) {
-            this.logger.info(`Discussion is already closed. I am not closing it.`);
-            return false;
-        }
-        const thread = await this.channelService.getGuildThreadById(
-            this.environment.DISCUSSIONS.CHANNEL_ID,
-            discussion.threadId
-        );
-
-        if (!thread) {
-            this.logger.error(`Couldn't find thread with ID ${discussion.threadId}. I didn't close it.`);
-            return false;
-        }
-
-        if (makeActivityCheck) {
-            const messages = await thread.messages.fetch({ limit: 1 });
-            const latestMessage = messages.first();
-
-            if (moment().diff(latestMessage?.createdAt, 'hours') < 1) {
-                this.logger.info(`Last message was less than 1 hour ago. I am not closing the discussion.`);
-                await this.discussionsRepository.removeClosingScheduleForDiscussionById(discussion._id);
-                await this.loggingService.logDiscussionStillActiveAlert(discussion);
-                return false;
-            }
-            this.logger.debug(`Last message was more than 1 hour ago. Closing the discussion.`);
-        }
-
-        await thread.send(
-            `## This discussion has been closed.\nStay up-to-date with the latest discussions in <#${this.environment.DISCUSSIONS.CHANNEL_ID}> and by grabbing the Discussions ping role!`
-        );
-        await thread.setLocked(true, isAutomatic ? 'Automatic' : 'Manually closed by moderator.');
-
-        await this.discussionsRepository.closeDiscussionById(discussion._id);
-
-        this.logger.info(`Closed discussion thread with ID ${discussion.threadId}.`);
-
-        return true;
     }
 
     public async restoreScheduledDiscussion() {
         const discussions: IDiscussionsModel[] = await this.discussionsRepository.getAllScheduledDiscussions();
 
-        switch (discussions.length) {
-            case 0:
-                this.logger.debug(`No scheduled discussion to restore.`);
-                return 0;
-            case 1:
-                this.logger.debug(
-                    `Discussion with topic '${discussions[0].topic}' should be closed at ${discussions[0].scheduledToCloseAt}.`
-                );
-                break;
-            default:
-                this.logger.warn(`More than 1 scheduled discussion found.`);
-                break;
+        if (discussions.length == 0) {
+            this.logger.debug(`No scheduled discussion to restore.`);
+            return 0;
         }
 
-        let count = 0;
-        for (const discussion of discussions) {
-            if (moment().isAfter(discussion.scheduledToCloseAt)) {
-                this.logger.debug(`Scheduled discussion expired, trying to close.`);
-                if (!this.scheduleService.jobExists(`DISCUSSIONS_AUTO}`)) {
-                    await this.scheduleDiscussion(discussion);
-                }
-            } else {
-                if (!this.scheduleService.jobExists(`DISCUSSIONS_AUTO}`)) {
-                    this.scheduleService.scheduleJob(`DISCUSSIONS_AUTO`, discussion.scheduledToCloseAt, async () => {
-                        await this.scheduleDiscussion(discussion);
-                    });
-                }
-            }
-            count++;
+        if (discussions.length > 1) {
+            this.logger.warn(`More than 1 scheduled discussion found. Only one will be restored.`);
         }
 
-        return count;
+        for (const discussion of discussions.slice(1)) {
+            this.logger.debug(`Unscheduling discussion with topic '${discussion.topic}'.`);
+            await this.discussionsRepository.unscheduleDiscussionTopic(discussion._id);
+        }
+
+        this.logger.debug(
+            `Discussion with topic '${discussions[0].topic}' should be opened at ${discussions[0].scheduledFor}.`
+        );
+        if (moment().isAfter(discussions[0].scheduledFor)) {
+            await this.scheduleDiscussion(discussions[0], this.client.user!, false);
+        } else {
+            this.scheduleService.scheduleJob(`DISCUSSIONS_AUTO`, discussions[0].scheduledFor, async () => {
+                await this.scheduleDiscussion(discussions[0], this.client.user!);
+            });
+        }
     }
 }
