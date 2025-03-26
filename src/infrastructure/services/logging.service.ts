@@ -12,16 +12,16 @@ import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { TYPES } from '@src/types';
 import {
     AttachmentBuilder,
+    bold,
     Client,
+    codeBlock,
     EmbedBuilder,
     GuildMember,
     GuildTextBasedChannel,
-    Message,
-    User,
-    bold,
-    codeBlock,
     inlineCode,
     italic,
+    Message,
+    User,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
@@ -422,28 +422,18 @@ export class LoggingService {
         await logChannel.send({ embeds: [embed] });
     }
 
-    async logNoDiscussionTopicsAlert() {
-        const logChannel = await this.getLogChannel(this.env.CHANNELS.HELPERS_CHANNEL_ID);
+    async logNoDiscussionTopicsAlert(topicsLeftCount: number) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.DISCUSSIONS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
-        const description = `Discussions are scheduled but there are no more topics available. Please add more topics using \`${this.env.CORE.PREFIX}dtopic add\`. Automatic posting of discussions is disabled, enable it again with \`${this.env.CORE.PREFIX}dtopic auto\` once there are topics available.`;
+        const description =
+            topicsLeftCount === 1
+                ? `There is only 1 discussion topic left. Please add more topics using \`${this.env.CORE.PREFIX}dtopic add\`.`
+                : `The next discussion topic is set to be posted but there are no more topics available. Please add more topics using \`${this.env.CORE.PREFIX}dtopic add\`.\n\n` +
+                  `Automatic posting of discussions is **disabled**. enable it again with \`${this.env.CORE.PREFIX}dmanage start\` once there are topics available.`;
         const embed = new EmbedBuilder()
             .setColor(EmbedHelper.orange)
             .setTitle(`⚠️ No Discussion Topics Available`)
-            .setDescription(description)
-            .setTimestamp();
-
-        await logChannel.send({ embeds: [embed] });
-    }
-
-    async logDiscussionStillActiveAlert(discussion: IDiscussionsModel) {
-        const logChannel = await this.getLogChannel(this.env.CHANNELS.HELPERS_CHANNEL_ID);
-        if (!logChannel) return;
-
-        const description = `The previous discussion in <#${discussion.threadId}> still active and has not been closed. Please close it manually once it's not active anymore.`;
-        const embed = new EmbedBuilder()
-            .setColor(EmbedHelper.blue)
-            .setTitle(`ℹ️ Previous Discussion Still Active`)
             .setDescription(description)
             .setTimestamp();
 
@@ -461,6 +451,66 @@ export class LoggingService {
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
         embed.setTitle(capRoleId ? '🚫 Scrobble Cap Set' : '☑️ Scrobble Cap Removed');
         embed.setURL(TextHelper.getDiscordMessageLink(message));
+
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logDiscussionTopic(actor: User, topic: string, openTopicsCount: number, isRemoval: boolean = false) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.DISCUSSIONS_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const embed = EmbedHelper.getLogEmbed(actor, null, isRemoval ? LogLevel.Failure : LogLevel.Success)
+            .setDescription(topic)
+            .setTitle(isRemoval ? `📤 Topic removed` : `📥 Topic added`)
+            .setFooter({ text: `Topics left: ${openTopicsCount}` });
+
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logDiscussionOpened(discussion: IDiscussionsModel, actor: User) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.DISCUSSIONS_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        let description = `🧵 ${bold('Thread:')} <#${discussion.threadId}>`;
+        description += `\n📄 ${bold('Topic:')} \`${discussion.topic}\``;
+
+        const embed = EmbedHelper.getLogEmbed(actor, null, LogLevel.Success)
+            .setDescription(description)
+            .setTitle(`💬 Discussion opened`);
+
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logDiscussionScheduled(discussion: IDiscussionsModel) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.DISCUSSIONS_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        let description = `📄 ${bold('Topic:')} \`${discussion.topic}\``;
+        description += `\n🕒 ${bold('Scheduled for:')} <t:${moment(discussion.scheduledFor).unix()}:f> (<t:${moment(discussion.scheduledFor).unix()}:R>)`;
+
+        const embed = EmbedHelper.getLogEmbed(null, null, LogLevel.Info)
+            .setDescription(description)
+            .setTitle(`⌛ Discussion scheduled`);
+
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logDiscussionScheduleChanged(actor: User, isStart: boolean = false) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.DISCUSSIONS_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description = isStart
+            ? `Automatic discussions have been scheduled (Interval: ${this.env.DISCUSSIONS.AUTO_INTERVAL_IN_HOURS} hours).`
+            : `Automatic discussions have been stopped.`;
+
+        const embed = EmbedHelper.getLogEmbed(actor, null, LogLevel.Info)
+            .setDescription(description)
+            .setTitle(isStart ? `♾️ Automatic Discussions scheduled` : `⏹️ Automatic Discussions stopped`)
+            .setFooter({
+                text: isStart
+                    ? `Use ${this.env.CORE.PREFIX}dmanage stop to stop automatic discussions.`
+                    : `Use ${this.env.CORE.PREFIX}dmanage start to start automatic discussions.`,
+            });
 
         await logChannel.send({ embeds: [embed] });
     }

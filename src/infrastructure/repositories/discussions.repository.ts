@@ -1,14 +1,15 @@
-import { model, Schema } from 'mongoose';
-import { inject, injectable } from 'inversify';
-import { TYPES } from '@src/types';
 import { MemberService } from '@src/infrastructure/services/member.service';
-import { User } from 'discord.js';
-import * as moment from 'moment';
+import { TYPES } from '@src/types';
 import * as Buffer from 'buffer';
+import { User } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import * as moment from 'moment';
+import { Schema, model } from 'mongoose';
 
 @injectable()
 export class DiscussionsRepository {
     private memberService: MemberService;
+
     constructor(@inject(TYPES.MemberService) memberService: MemberService) {
         this.memberService = memberService;
     }
@@ -19,21 +20,17 @@ export class DiscussionsRepository {
 
     public async getAllUnusedDiscussions() {
         return await DiscussionsModelInstance.find({
-            closedAt: { $exists: false },
-            scheduledToCloseAt: { $exists: false },
+            scheduledFor: { $exists: false },
             threadId: { $exists: false },
         }).exec();
     }
 
-    public async getAllActiveDiscussions() {
-        return await DiscussionsModelInstance.find({
-            threadId: { $exists: true },
-            closedAt: { $exists: false },
-        }).exec();
+    public async getAllScheduledDiscussions() {
+        return await DiscussionsModelInstance.find({ scheduledFor: { $exists: true } }).exec();
     }
 
-    public async getAllScheduledDiscussions() {
-        return await DiscussionsModelInstance.find({ scheduledToCloseAt: { $exists: true } }).exec();
+    public async getAllUsedDiscussions() {
+        return await DiscussionsModelInstance.find({ threadId: { $exists: true } }).exec();
     }
 
     public async getAllDiscussionTopicsAsFile(topics?: IDiscussionsModel[]) {
@@ -41,12 +38,16 @@ export class DiscussionsRepository {
 
         if (topics.length == 0) return null;
 
+        topics = topics.sort(
+            (a, b) => (a.openedAt ? a.openedAt.getTime() : 0) - (b.openedAt ? b.openedAt.getTime() : 0)
+        );
+
         let content = '';
         let i = 1;
         const users: { [key: string]: User | null } = {};
         for (const topic of topics) {
             if (!users[topic.addedById]) users[topic.addedById] = await this.memberService.fetchUser(topic.addedById);
-            const newLine = `${i}. ${topic.closedAt ? `[used on ${moment(topic.closedAt).format('YYYY-MM-DD')}] ` : ''}${!topic.closedAt && topic.threadId ? `[active] ` : ''}${topic.topic} (by ${users[topic.addedById]?.username ?? 'unknown'} on ${moment(topic.addedAt).format('YYYY-MM-DD')})\n`;
+            const newLine = `${i}. ${topic.openedAt ? `[used on ${moment(topic.openedAt).format('YYYY-MM-DD')}] ` : ''}${topic.scheduledFor ? `[scheduled] ` : ''}${topic.topic} (by ${users[topic.addedById]?.username ?? 'unknown'} on ${moment(topic.addedAt).format('YYYY-MM-DD')})\n`;
             content += newLine;
             i++;
         }
@@ -56,10 +57,6 @@ export class DiscussionsRepository {
 
     public async getDiscussionById(_id: string) {
         return await DiscussionsModelInstance.findOne({ _id: _id }).exec();
-    }
-
-    public async getDiscussionByThreadId(threadId: string) {
-        return await DiscussionsModelInstance.findOne({ threadId: threadId }).exec();
     }
 
     public async getRandomDiscussionTopic() {
@@ -95,21 +92,26 @@ export class DiscussionsRepository {
         await DiscussionsModelInstance.deleteOne({ _id: _id }).exec();
     }
 
-    public async closeDiscussionById(_id: string) {
-        await DiscussionsModelInstance.updateOne(
+    public async setDiscussionToOpened(_id: string, threadId: string) {
+        return await DiscussionsModelInstance.findOneAndUpdate(
             { _id: _id },
-            { $set: { closedAt: moment().toDate() }, $unset: { scheduledToCloseAt: '' } }
+            { $set: { threadId: threadId, openedAt: moment().toDate() }, $unset: { scheduledFor: '' } },
+            { returnDocument: 'after' }
         ).exec();
     }
 
-    public async removeClosingScheduleForDiscussionById(_id: string) {
-        await DiscussionsModelInstance.updateOne({ _id: _id }, { $unset: { scheduledToCloseAt: '' } }).exec();
-    }
-
-    public async openDiscussionById(_id: string, date: Date, threadId: string) {
+    public async scheduleDiscussionTopic(_id: string, scheduledFor: Date) {
         return await DiscussionsModelInstance.findOneAndUpdate(
             { _id: _id },
-            { $set: { scheduledToCloseAt: date, threadId: threadId } },
+            { $set: { scheduledFor: scheduledFor } },
+            { returnDocument: 'after' }
+        ).exec();
+    }
+
+    public async unscheduleDiscussionTopic(_id: string) {
+        return await DiscussionsModelInstance.findOneAndUpdate(
+            { _id: _id },
+            { $unset: { scheduledFor: '' } },
             { returnDocument: 'after' }
         ).exec();
     }
@@ -121,10 +123,8 @@ export interface IDiscussionsModel {
     addedAt: Date;
     addedById: string;
     openedAt: Date;
-    closedAt: Date;
-    scheduledToCloseAt: Date;
+    scheduledFor: Date;
     threadId: string;
-    isActive: boolean;
 }
 
 const discussionsSchema = new Schema<IDiscussionsModel>(
@@ -133,10 +133,8 @@ const discussionsSchema = new Schema<IDiscussionsModel>(
         addedAt: { type: Date, required: true },
         addedById: { type: String, required: true },
         openedAt: { type: Date, required: false },
-        closedAt: { type: Date, required: false },
-        scheduledToCloseAt: { type: Date, required: false },
+        scheduledFor: { type: Date, required: false },
         threadId: { type: String, required: false },
-        isActive: { type: Boolean, required: true, default: false },
     },
     { collection: 'Discussions' }
 );

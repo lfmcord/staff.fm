@@ -1,11 +1,12 @@
-import { inject, injectable } from 'inversify';
 import { IMessageComponentInteraction } from '@src/feature/interactions/abstractions/message-component-interaction.interface';
-import { StringSelectMenuInteraction } from 'discord.js';
-import { TYPES } from '@src/types';
-import { Logger } from 'tslog';
 import { DiscussionsRepository } from '@src/infrastructure/repositories/discussions.repository';
-import * as moment from 'moment/moment';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
+import { TYPES } from '@src/types';
+import { StringSelectMenuInteraction } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import * as moment from 'moment/moment';
+import { Logger } from 'tslog';
 
 @injectable()
 export class DiscussionsTopicRemoveInteraction implements IMessageComponentInteraction {
@@ -13,15 +14,18 @@ export class DiscussionsTopicRemoveInteraction implements IMessageComponentInter
     logger: Logger<DiscussionsTopicRemoveInteraction>;
     memberService: MemberService;
     discussionsRepository: DiscussionsRepository;
+    loggingService: LoggingService;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<DiscussionsTopicRemoveInteraction>,
         @inject(TYPES.DiscussionsRepository) discussionsRepository: DiscussionsRepository,
-        @inject(TYPES.MemberService) memberService: MemberService
+        @inject(TYPES.MemberService) memberService: MemberService,
+        @inject(TYPES.LoggingService) loggingService: LoggingService
     ) {
         this.memberService = memberService;
         this.discussionsRepository = discussionsRepository;
         this.logger = logger;
+        this.loggingService = loggingService;
     }
 
     async manage(interaction: StringSelectMenuInteraction) {
@@ -43,10 +47,21 @@ export class DiscussionsTopicRemoveInteraction implements IMessageComponentInter
 
         const user = await this.memberService.fetchUser(discussionToDelete.addedById);
 
+        const openTopics = await this.discussionsRepository.getAllUnusedDiscussions();
+
+        await this.loggingService.logDiscussionTopic(
+            interaction.user,
+            discussionToDelete.topic,
+            openTopics.length,
+            true
+        );
+
         await interaction.update({
             embeds: [],
             components: [],
-            content: `I've removed the following topic:\n- \`${discussionToDelete.topic}\` (added by ${user?.username ?? 'unknown'} at <t:${moment(discussionToDelete.addedAt).unix()}:f>)`,
+            content:
+                `I've removed the topic "${discussionToDelete.topic}" (added by ${user?.username ?? 'unknown'} at <t:${moment(discussionToDelete.addedAt).unix()}:f>)\n` +
+                `-# There are now ${openTopics.length} open topics.`,
             attachments: [],
         });
     }

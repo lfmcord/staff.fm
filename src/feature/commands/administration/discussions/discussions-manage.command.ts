@@ -4,11 +4,12 @@ import { CommandResult } from '@src/feature/commands/models/command-result.model
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { DiscussionsTrigger } from '@src/feature/triggers/discussions.trigger';
-import { TextHelper } from '@src/helpers/text.helper';
+import { EmbedHelper } from '@src/helpers/embed.helper';
 import { DiscussionsRepository, IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { TYPES } from '@src/types';
-import { Message } from 'discord.js';
+import { AttachmentBuilder, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
 import { Logger } from 'tslog';
@@ -18,15 +19,15 @@ export class DiscussionsManageCommand implements ICommand {
     name: string = 'dmanage';
     description: string =
         'Manage discussions. Topics are chosen at random with preference for older topics.\n' +
-        '-`open` opens a new discussion.\n' +
-        '-`close`: closes an open discussions thread\n' +
-        '-`auto`: schedules automatic discussion topic posting every 48 hours as long as there are topics.\n' +
+        'Operations:\n' +
+        '-`open`: opens a new discussion without scheduling anything.\n' +
+        '-`start`: opens a new discussion and sets up automatic posting of discussions.\n' +
         '-`stop`: stops automatic discussion topic posting\n' +
-        '-`active`: shows all discussions that are currently active (scheduled or not).';
-    usageHint: string = 'open  | close [thread or thread ID] | auto | stop | active';
-    examples: string[] = ['open', 'close 1115081240165486632', 'auto', 'stop', 'active'];
+        'Using no operation gives you information about the current discussion schedule.';
+    usageHint: string = 'open  | start | stop';
+    examples: string[] = ['', 'open', 'start', 'stop'];
     permissionLevel = CommandPermissionLevel.Moderator;
-    operations = ['open', 'close', 'auto', 'stop', 'active'];
+    operations = ['open', 'start', 'stop'];
     aliases = ['discussionmanage', 'discussionsmanage'];
     isUsableInDms = false;
     isUsableInServer = true;
@@ -36,19 +37,22 @@ export class DiscussionsManageCommand implements ICommand {
     private channelService: ChannelService;
     discussionsRepository: DiscussionsRepository;
     environment: Environment;
+    loggingService: LoggingService;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<DiscussionsManageCommand>,
         @inject(TYPES.DiscussionsTrigger) discussionsTrigger: DiscussionsTrigger,
         @inject(TYPES.ChannelService) channelService: ChannelService,
         @inject(TYPES.ENVIRONMENT) environment: Environment,
-        @inject(TYPES.DiscussionsRepository) discussionsRepository: DiscussionsRepository
+        @inject(TYPES.DiscussionsRepository) discussionsRepository: DiscussionsRepository,
+        @inject(TYPES.LoggingService) loggingService: LoggingService
     ) {
         this.discussionsRepository = discussionsRepository;
         this.discussionsTrigger = discussionsTrigger;
         this.logger = logger;
         this.channelService = channelService;
         this.environment = environment;
+        this.loggingService = loggingService;
     }
 
     validateArgs(args: string[]): Promise<void> {
@@ -60,34 +64,29 @@ export class DiscussionsManageCommand implements ICommand {
             );
         }
 
-        // Check if the 'close' operation is provided without a thread ID
-        if (args[0] == this.operations[1] && args.length <= 1) {
-            throw new ValidationError(
-                `Operation close with no further args for discussions.`,
-                `You must provide a discussions thread or thread ID!`
-            );
-        }
-
         return Promise.resolve();
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
+        if (args.length == 0) return await this.showDiscussionManagement(message);
+
+        if (args[0] == 'stop') return await this.stopAutomaticDiscussions(message);
+
+        const discussion = await this.discussionsRepository.getRandomDiscussionTopic();
+        if (!discussion) {
+            return {
+                isSuccessful: false,
+                replyToUser: `There are no discussion topics to open a thread for. Add more with \`${this.environment.CORE.PREFIX}dtopic add [topic]\``,
+            };
+        }
+
         let result: CommandResult;
         switch (args[0]) {
             case this.operations[0]:
-                result = await this.openDiscussionThread();
+                result = await this.openDiscussion(message, discussion);
                 break;
             case this.operations[1]:
-                result = await this.closeDiscussionThread(args[1]);
-                break;
-            case this.operations[2]:
-                result = await this.startAutomaticDiscussions();
-                break;
-            case this.operations[3]:
-                result = await this.stopAutomaticDiscussions();
-                break;
-            case this.operations[4]:
-                result = await this.showActiveDiscussions();
+                result = await this.startAutomaticDiscussions(message, discussion);
                 break;
             default:
                 throw new ValidationError(
@@ -99,29 +98,16 @@ export class DiscussionsManageCommand implements ICommand {
         return result;
     }
 
-    private async openDiscussionThread() {
-        const discussions: IDiscussionsModel[] = await this.discussionsRepository.getAllScheduledDiscussions();
-        if (discussions.length > 0) {
-            return {
-                isSuccessful: false,
-                replyToUser:
-                    `There is an automatic discussion schedule running:\n` +
-                    `- "${discussions[0].topic}" (closes <t:${moment(discussions[0].scheduledToCloseAt).unix()}:f>)\n` +
-                    `-# Stop it with \`${this.environment.CORE.PREFIX}stop\` if you want to manually start a new discussion!`,
-            };
-        }
-
+    private async openDiscussion(message: Message, discussion?: IDiscussionsModel | null) {
         let thread;
         try {
-            const discussion = await this.discussionsRepository.getRandomDiscussionTopic();
-
             if (!discussion) {
                 return {
                     isSuccessful: false,
                     replyToUser: `There are no discussion topics to open a thread for. Add more with \`${this.environment.CORE.PREFIX}dtopic add [topic]\``,
                 };
             }
-            thread = await this.discussionsTrigger.scheduleDiscussionOnce(discussion);
+            thread = await this.discussionsTrigger.createDiscussionThread(discussion, message.author!);
         } catch (e) {
             this.logger.error(`Failed while trying to open a new discussion thread.`, e);
             return {
@@ -136,125 +122,105 @@ export class DiscussionsManageCommand implements ICommand {
         };
     }
 
-    private async closeDiscussionThread(unsanitizedThreadId: string) {
-        const threadId = TextHelper.getDiscordThreadId(unsanitizedThreadId);
-        this.logger.debug(`Thread ID is ${threadId}`);
-
-        if (!threadId) {
-            throw new ValidationError(
-                `Could not recognize ${unsanitizedThreadId} as a discord thread id.`,
-                `${unsanitizedThreadId} doesn't seem to be a discussions thread.`
-            );
-        }
-
-        const thread = await this.channelService.getGuildThreadById(this.environment.DISCUSSIONS.CHANNEL_ID, threadId);
-
-        if (!thread) {
-            throw new ValidationError(
-                `Could not recognize ${threadId} as a discord thread.`,
-                `<#${threadId}> doesn't seem to be a discussions thread.`
-            );
-        }
-
-        const discussion = await this.discussionsRepository.getDiscussionByThreadId(threadId);
-
-        if (!discussion) {
-            throw new ValidationError(
-                `Could not find discussion with thread ID ${threadId}.`,
-                `This thread doesn't seem to be a discussions thread.`
-            );
-        }
-
-        if (discussion.closedAt) {
-            throw new ValidationError(
-                `Discussion with thread ID ${threadId} is already closed.`,
-                `This thread is already closed.`
-            );
-        }
-
-        try {
-            await this.discussionsTrigger.closeDiscussion(discussion);
-        } catch (e) {
-            this.logger.error(`Failed while trying to close the discussion in thread ${threadId}.`, e);
-            return {
-                isSuccessful: false,
-                replyToUser: `I wasn't able to close the discussion in <#${threadId}>.`,
-            };
-        }
-
-        return {
-            isSuccessful: true,
-            replyToUser: `I've closed the discussion in <#${threadId}>!`,
-        };
-    }
-
-    private async startAutomaticDiscussions() {
+    private async startAutomaticDiscussions(message: Message, discussion: IDiscussionsModel) {
         const discussions: IDiscussionsModel[] = await this.discussionsRepository.getAllScheduledDiscussions();
         if (discussions.length > 0) {
             return {
                 isSuccessful: false,
                 replyToUser:
                     `There is already an automatic discussion schedule running:\n` +
-                    `- "${discussions[0].topic}" (closes <t:${moment(discussions[0].scheduledToCloseAt).unix()}:f>)\n` +
-                    `-# Stop it with \`${this.environment.CORE.PREFIX}stop if this is wrong.`,
+                    `- "${discussions[0].topic}" (scheduled for <t:${moment(discussions[0].scheduledFor).unix()}:f>)\n` +
+                    `-# Stop it with \`${this.environment.CORE.PREFIX}dmanage stop\` if this is wrong.`,
             };
         }
 
-        const discussion = await this.discussionsTrigger.scheduleDiscussion();
+        const remainingTopics = await this.discussionsRepository.getAllUnusedDiscussions();
+        if (remainingTopics.length == 1) {
+            return {
+                isSuccessful: true,
+                replyToUser:
+                    `There was only one discussion topic left. I've opened the discussion, but have not scheduled more. ` +
+                    `Add more topics with \`${this.environment.CORE.PREFIX}dtopic add [topic]\`.`,
+            };
+        }
+        if (remainingTopics.length == 0) {
+            return {
+                isSuccessful: false,
+                replyToUser: `There are no discussion topics left to schedule. Add more with \`${this.environment.CORE.PREFIX}dtopic add [topic]\`.`,
+            };
+        }
 
-        if (!discussion) {
+        const thread = await this.discussionsTrigger.scheduleDiscussion(discussion, message.author);
+
+        if (!thread) {
             return {
                 isSuccessful: false,
                 replyToUser: `I wasn't able to start the automatic discussion schedule. Please check if there are enough topics.`,
             };
         }
 
+        await this.loggingService.logDiscussionScheduleChanged(message.author, true);
+
         return {
             isSuccessful: true,
-            replyToUser: `I've started the automatic discussion schedule and opened a new discussion in <#${discussion!.threadId}>. The next topic will be posted at <t:${moment(discussion.scheduledToCloseAt).unix()}:f>.`,
+            replyToUser:
+                `I've started the automatic discussion schedule and opened a new discussion in <#${thread.id}>. ` +
+                `The next topic will be posted at <t:${moment(discussion.scheduledFor).unix()}:f>.`,
         };
     }
 
-    private async stopAutomaticDiscussions() {
+    private async stopAutomaticDiscussions(message: Message) {
         const cancelledDiscussions = await this.discussionsTrigger.cancelDiscussionSchedule();
-        const wasCancelled = cancelledDiscussions.length > 0;
-        let reply;
-        if (wasCancelled) {
-            reply = `I've stopped the automatic discussion schedule and disabled automating closing for ${cancelledDiscussions.length} discussions:\n`;
-            for (const discussion of cancelledDiscussions) {
-                reply += `- <#${discussion.threadId}> (scheduled to close at <t:${moment(discussion.scheduledToCloseAt).unix()}:f>)\n`;
-            }
-        } else {
-            reply = `There is no automatic discussion schedule running.`;
-        }
-        return {
-            isSuccessful: wasCancelled,
-            replyToUser: reply,
-        };
-    }
 
-    private async showActiveDiscussions() {
-        const activeDiscussions = await this.discussionsRepository.getAllActiveDiscussions();
-
-        if (activeDiscussions.length === 0) {
+        if (cancelledDiscussions.length == 0) {
             return {
-                isSuccessful: true,
-                replyToUser: `There are no active discussions.`,
+                isSuccessful: false,
+                replyToUser: `There is no automatic discussion schedule active! Start one with \`${this.environment.CORE.PREFIX}dmanage start\`.`,
             };
         }
 
-        let reply = `Here are the active discussions:\n`;
-        for (const discussion of activeDiscussions) {
-            reply += `- <#${discussion.threadId}>`;
-            if (discussion.scheduledToCloseAt) {
-                reply += ` (closes <t:${moment(discussion.scheduledToCloseAt).unix()}:f>)`;
+        await this.loggingService.logDiscussionScheduleChanged(message.author);
+
+        let reply = `I've stopped the automatic discussion schedule.`;
+        if (cancelledDiscussions.length > 1) {
+            reply = `I've stopped the automatic discussion schedule and unscheduled the following topics:\n`;
+            for (const discussion of cancelledDiscussions) {
+                reply += `- '${discussion.topic}' (scheduled to open at <t:${moment(discussion.scheduledFor).unix()}:f>)\n`;
             }
-            reply += '\n';
+        } else {
+            reply = `I've stopped the automatic discussion schedule and unscheduled the topic '${cancelledDiscussions[0].topic}' (scheduled to open at <t:${moment(cancelledDiscussions[0].scheduledFor).unix()}:f>).`;
         }
 
         return {
             isSuccessful: true,
             replyToUser: reply,
+        };
+    }
+
+    private async showDiscussionManagement(message: Message) {
+        const allDiscussions = await this.discussionsRepository.getAllDiscussions();
+
+        const embed = EmbedHelper.getDiscussionsManagementEmbed(
+            allDiscussions,
+            this.environment.DISCUSSIONS.AUTO_INTERVAL_IN_HOURS,
+            this.environment.DISCUSSIONS.PING_ROLE_IDS
+        );
+
+        const topicsFile = await this.discussionsRepository.getAllDiscussionTopicsAsFile(allDiscussions);
+
+        message.channel.send({
+            embeds: [embed],
+            files: topicsFile
+                ? [
+                      new AttachmentBuilder(topicsFile, {
+                          name: `${moment().format('YYYY_MM_DD')}_discussion_topics.txt`,
+                      }),
+                  ]
+                : [],
+        });
+
+        return {
+            isSuccessful: true,
         };
     }
 }
