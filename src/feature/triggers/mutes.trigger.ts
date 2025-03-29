@@ -68,7 +68,7 @@ export class MutesTrigger {
                     await this.moderationService.unmuteGuildMember(
                         subject,
                         roles,
-                        actor ?? undefined,
+                        actor?.user ?? undefined,
                         unmuteMessage,
                         `Mute expired while bot was offline.`
                     );
@@ -84,7 +84,7 @@ export class MutesTrigger {
                         await this.moderationService.unmuteGuildMember(
                             subject,
                             roles,
-                            actor ?? undefined,
+                            actor?.user ?? undefined,
                             unmuteMessage,
                             `Mute duration expired.`
                         )

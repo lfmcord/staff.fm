@@ -81,7 +81,7 @@ export class SelfMuteUnmuteCommand implements ICommand {
         await this.moderationService.unmuteGuildMember(
             member!,
             roles,
-            member!,
+            member!.user,
             {
                 content: `🔊 Your selfmute has ended and I've unmuted you. Welcome back!`,
             },

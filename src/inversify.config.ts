@@ -93,6 +93,13 @@ import { MutesRepository } from '@src/infrastructure/repositories/mutes.reposito
 import { MutesTrigger } from '@src/feature/triggers/mutes.trigger';
 import { ModerationService } from '@src/infrastructure/services/moderation.service';
 import { EndSelfmuteButtonInteraction } from '@src/feature/interactions/message-component/end-selfmute-button.interaction';
+import { LastfmCommand } from '@src/feature/commands/administration/lastfm.command';
+import { StrikeCommand } from '@src/feature/commands/moderation/strike.command';
+import { StrikesCommand } from '@src/feature/commands/moderation/strikes.command';
+import { CancelButtonInteraction } from '@src/feature/interactions/message-component/cancel-button.interaction';
+import { StrikeAppealInteraction } from '@src/feature/interactions/message-component/strike-appeal.interaction';
+import { StrikeAppealCommand } from '@src/feature/commands/moderation/strike-appeal.command';
+import { StrikeButtonInteraction } from '@src/feature/interactions/message-component/strike-button.interaction';
 
 const container = new Container();
 
@@ -105,6 +112,12 @@ for (const [k, v] of Object.entries(environmentData.ROLES.SCROBBLE_MILESTONES)) 
     scrobbleMilestones.set(parseInt(k), v);
 }
 environmentData.ROLES.SCROBBLE_MILESTONES = scrobbleMilestones;
+const strikeMuteDurations = new Map<number, number[]>();
+for (const [k, v] of Object.entries(environmentData.MODERATION.STRIKE_MUTE_DURATIONS)) {
+    const durations = v as number[];
+    strikeMuteDurations.set(parseInt(k), durations);
+}
+environmentData.MODERATION.STRIKE_MUTE_DURATIONS = strikeMuteDurations;
 container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue(environmentData);
 
 // CORE
@@ -212,6 +225,10 @@ container.bind<ICommand>('Command').to(DiscussionsManageCommand);
 container.bind<ICommand>('Command').to(IndexCommand);
 container.bind<ICommand>('Command').to(UpdateCommand);
 container.bind<ICommand>('Command').to(ScrobbleCapCommand);
+container.bind<ICommand>('Command').to(LastfmCommand);
+container.bind<ICommand>('Command').to(StrikeCommand);
+container.bind<ICommand>('Command').to(StrikesCommand);
+container.bind<ICommand>('Command').to(StrikeAppealCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
@@ -221,20 +238,25 @@ container.bind<DiscussionsTrigger>(TYPES.DiscussionsTrigger).to(DiscussionsTrigg
 container.bind<MutesTrigger>(TYPES.MutesTrigger).to(MutesTrigger);
 
 // INTERACTIONS
+container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(VerifyContextMenuInteraction);
+container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(StaffMailReportInteraction);
+
 container.bind<IModalSubmitInteraction>('ModalSubmitInteraction').to(StaffMailCreateModalSubmitInteraction);
+
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateButtonInteraction);
 container
     .bind<IMessageComponentInteraction>('MessageComponentInteraction')
     .to(StaffMailCreateUrgentReportButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateModalShowInteraction);
-container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(VerifyContextMenuInteraction);
-container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(StaffMailReportInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(VerifyRemoveInteraction);
 container
     .bind<IMessageComponentInteraction>('MessageComponentInteraction')
     .to(VerifyDismissPlaycountWarningInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(DiscussionsTopicRemoveInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(EndSelfmuteButtonInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(CancelButtonInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeAppealInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeButtonInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);

@@ -1,14 +1,15 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { Client, EmbedBuilder, Message, MessageCreateOptions } from 'discord.js';
-import { inject, injectable } from 'inversify';
+import { Environment } from '@models/environment';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
-import { TYPES } from '@src/types';
-import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
-import { TextHelper } from '@src/helpers/text.helper';
-import { MemberService } from '@src/infrastructure/services/member.service';
 import { EmbedHelper } from '@src/helpers/embed.helper';
+import { TextHelper } from '@src/helpers/text.helper';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { TYPES } from '@src/types';
+import { EmbedBuilder, Message, MessageCreateOptions, User } from 'discord.js';
+import { inject, injectable } from 'inversify';
 import LastFM from 'lastfm-typed';
 import { Logger } from 'tslog';
 
@@ -22,31 +23,31 @@ export class WhoisCommand implements ICommand {
     aliases = [];
     isUsableInDms = false;
     isUsableInServer = true;
-    logger: Logger<WhoisCommand>;
 
     private lastFmClient: LastFM;
     private memberService: MemberService;
     private usersRepository: UsersRepository;
-    private client: Client;
+    private logger: Logger<WhoisCommand>;
+    private env: Environment;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<WhoisCommand>,
         @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.LastFmClient) lastFmClient: LastFM,
-        @inject(TYPES.Client) client: Client
+        @inject(TYPES.ENVIRONMENT) env: Environment
     ) {
+        this.env = env;
         this.logger = logger;
         this.lastFmClient = lastFmClient;
         this.memberService = memberService;
         this.usersRepository = usersRepository;
-        this.client = client;
     }
 
     async run(message: Message, args: string[]): Promise<CommandResult> {
         const userId = TextHelper.getDiscordUserId(args[0]);
         if (userId) {
-            message.channel.send(await this.getMessageForDiscordUser(userId));
+            message.channel.send(await this.getMessageForDiscordUser(userId, message.author!));
         } else {
             const messagesToSend = await this.getMessagesForLastFmUsername(args[0]);
             for (const messageToSend of messagesToSend) {
@@ -99,7 +100,7 @@ export class WhoisCommand implements ICommand {
         return messages;
     }
 
-    async getMessageForDiscordUser(userId: string): Promise<MessageCreateOptions> {
+    async getMessageForDiscordUser(userId: string, executingUser: User): Promise<MessageCreateOptions> {
         const embeds: EmbedBuilder[] = [];
         // Discord user
         const guildMember = await this.memberService.getGuildMemberFromUserId(userId);
@@ -134,6 +135,14 @@ export class WhoisCommand implements ICommand {
 
         // Past verifications
         embeds.push(EmbedHelper.getVerificationHistoryEmbed(verifications));
+
+        // Strikes
+        const executingMember = await this.memberService.getGuildMemberFromUserId(executingUser.id);
+        const executingMemberPermissionLevel = await this.memberService.getMemberPermissionLevel(executingMember!);
+        if (executingMemberPermissionLevel >= CommandPermissionLevel.Moderator) {
+            const strikes = await this.usersRepository.getAllStrikesOfUser(userId);
+            embeds.push(EmbedHelper.getStrikesEmbed(strikes));
+        }
 
         // Crowns
         embeds.push(EmbedHelper.getCrownsEmbed(indexedUser));

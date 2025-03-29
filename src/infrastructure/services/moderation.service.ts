@@ -5,7 +5,7 @@ import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { TYPES } from '@src/types';
-import { Client, GuildMember, MessageCreateOptions, Role } from 'discord.js';
+import { Client, GuildMember, MessageCreateOptions, Role, User } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 
@@ -39,14 +39,14 @@ export class ModerationService {
 
     async muteGuildMember(
         subject: GuildMember,
-        actor: GuildMember,
+        actor: User,
         endDate: Date,
         muteMessage?: MessageCreateOptions,
         unmuteMessage?: MessageCreateOptions,
         shouldLog = true
-    ): Promise<void> {
+    ): Promise<boolean> {
         this.logger.info(
-            `Trying to mute user ${TextHelper.userLog(subject.user)} (by ${TextHelper.userLog(actor.user)}) until ${endDate.toISOString()}...`
+            `Trying to mute user ${TextHelper.userLog(subject.user)} (by ${TextHelper.userLog(actor)}) until ${endDate.toISOString()}...`
         );
         const isSelfmute = actor.id === subject.id;
         const highestUserRole = await this.memberService.getHighestRoleFromGuildMember(subject);
@@ -66,8 +66,8 @@ export class ModerationService {
 
         const roles = await this.memberService.getRolesFromGuildMember(subject);
         roles.forEach((r) => r.comparePositionTo(botMember!.roles.highest));
-        await subject.roles.add(mutedRole);
         await subject.roles.remove(roles);
+        await subject.roles.add(mutedRole);
 
         this.logger.debug(`Removed ${roles.length} roles from user ${TextHelper.userLog(subject.user)}.`);
 
@@ -75,31 +75,36 @@ export class ModerationService {
             await this.unmuteGuildMember(subject, roles, actor, unmuteMessage, `Mute duration expired.`);
         });
 
-        await this.mutesRepository.createMute(subject.user, actor.user, endDate, roles);
+        await this.mutesRepository.deleteMuteByUserId(subject.user.id);
+        await this.mutesRepository.createMute(subject.user, actor, endDate, roles);
         this.logger.info(`Muted user ${TextHelper.userLog(subject.user)} until ${endDate.toISOString()}.`);
 
-        if (shouldLog) await this.loggingService.logMute(actor.user, subject.user, endDate, muteMessage?.content);
+        if (shouldLog) await this.loggingService.logMute(actor, subject.user, endDate, muteMessage?.content);
 
         if (muteMessage) {
             try {
                 this.logger.debug(`Sending mute message to user ${TextHelper.userLog(subject.user)}.`);
                 await subject.send(muteMessage);
+                this.logger.info(`Sent mute message to user ${TextHelper.userLog(subject.user)}.`);
+                return true;
             } catch (e) {
                 this.logger.warn(`Could not send mute message to user.`, e);
+                return false;
             }
         }
+        return false;
     }
 
     async unmuteGuildMember(
         subject: GuildMember,
         rolesToRestore: Role[],
-        actor?: GuildMember,
+        actor?: User,
         unmuteMessage?: MessageCreateOptions,
         reason?: string,
         shouldLog = true
     ) {
         this.logger.info(
-            `Unmuting user ${TextHelper.userLog(subject.user)} (by ${actor ? TextHelper.userLog(actor.user) : 'unknown'})...`
+            `Unmuting user ${TextHelper.userLog(subject.user)} (by ${actor ? TextHelper.userLog(actor) : 'unknown'})...`
         );
         const isSelfmute = actor?.id === subject.id;
         const mutedRole = isSelfmute ? this.env.ROLES.SELFMUTED_ROLE_ID : this.env.ROLES.MUTED_ROLE_ID;
@@ -113,18 +118,52 @@ export class ModerationService {
 
         await this.mutesRepository.deleteMuteByUserId(subject.user.id);
         this.logger.info(
-            `Unmuted user ${TextHelper.userLog(subject.user)} (by ${actor ? TextHelper.userLog(actor.user) : 'unknown'}).`
+            `Unmuted user ${TextHelper.userLog(subject.user)} (by ${actor ? TextHelper.userLog(actor) : 'unknown'}).`
         );
 
-        if (shouldLog) await this.loggingService.logUnmute(subject.user, actor?.user, reason);
+        if (shouldLog) await this.loggingService.logUnmute(subject.user, actor, reason);
 
         if (unmuteMessage) {
             try {
                 this.logger.debug(`Sending unmute message to user ${TextHelper.userLog(subject.user)}.`);
                 await subject.send(unmuteMessage);
+                this.logger.info(`Sent unmute message to user ${TextHelper.userLog(subject.user)}.`);
             } catch (e) {
                 this.logger.warn(`Could not send unmute message to user.`, e);
             }
         }
+    }
+
+    async banGuildMember(
+        subject: GuildMember,
+        actor: User,
+        isAppealable: boolean,
+        banMessage?: MessageCreateOptions,
+        reason?: string,
+        shouldLog = true
+    ): Promise<boolean> {
+        let wasInformed = false;
+        if (banMessage) {
+            if (isAppealable)
+                banMessage.content += `\n-# Unless stated otherwise in the reason above, you are able to appeal your ban by joining the ban appeal server at <https://discord.gg/2WwNFyhq5n>`;
+            try {
+                await subject.send(banMessage);
+            } catch (e) {
+                this.logger.warn(`Could not send ban message to user ${TextHelper.userLog(subject.user)}.`, e);
+            }
+            this.logger.info(`Sent ban message to user ${TextHelper.userLog(subject.user)}.`);
+            wasInformed = true;
+        }
+
+        try {
+            await subject.ban({ reason: reason ?? 'No reason provided.' });
+        } catch (e) {
+            this.logger.warn(`Could not ban user ${TextHelper.userLog(subject.user)}.`, e);
+            throw Error(`Could not ban user.`);
+        }
+
+        if (shouldLog) await this.loggingService.logBan(actor, subject.user, reason);
+
+        return wasInformed;
     }
 }

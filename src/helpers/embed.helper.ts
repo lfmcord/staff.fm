@@ -3,9 +3,11 @@ import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type'
 import { ComponentHelper } from '@src/helpers/component.helper';
 import { CountryCodeHelper } from '@src/helpers/country-code.helper';
 import { LogLevel } from '@src/helpers/models/LogLevel';
+import { StrikeHelper } from '@src/helpers/strike.helper';
 import { TextHelper } from '@src/helpers/text.helper';
 import { IDiscussionsModel } from '@src/infrastructure/repositories/discussions.repository';
-import { IUserModel, IVerificationModel } from '@src/infrastructure/repositories/users.repository';
+import { IStrikesModel, IUserModel, IVerificationModel } from '@src/infrastructure/repositories/users.repository';
+
 import {
     ActionRowBuilder,
     Attachment,
@@ -721,6 +723,50 @@ export class EmbedHelper {
             )
             .setFooter({ text: `Enjoy!` })
             .setTimestamp();
+    }
+
+    static getStrikesEmbed(strikes: IStrikesModel[], subject?: User): EmbedBuilder {
+        const activeStrikes = StrikeHelper.getActiveStrikes(strikes);
+        const expiredStrikes = StrikeHelper.getExpiredStrikes(strikes);
+        const appealedStrikes = StrikeHelper.getAppealedStrikes(strikes);
+
+        let description = '';
+        if (subject) description += `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}\n`;
+
+        description +=
+            TextHelper.strikeCounterVerbose(activeStrikes.length, expiredStrikes.length, appealedStrikes.length) +
+            '\n\n';
+
+        if (activeStrikes.length > 0) {
+            description += '**Active Strikes:**\n';
+            activeStrikes.forEach((activeStrike, idx) => {
+                description += `${idx + 1}. <t:${moment(activeStrike.createdAt).unix()}:d> by <@!${activeStrike.createdById}>${activeStrike.strikeLogLink ? ' [show log](' + activeStrike.strikeLogLink + ')' : ''}\n`;
+            });
+        }
+        if (expiredStrikes.length > 0) {
+            description += '\n**Expired Strikes:**\n';
+            expiredStrikes.forEach((expiredStrike, idx) => {
+                description += `${idx + 1}. <t:${moment(expiredStrike.createdAt).unix()}:d> by <@!${expiredStrike.createdById}>${expiredStrike.strikeLogLink ? ' [show log](' + expiredStrike.strikeLogLink + ')' : ''}\n`;
+            });
+        }
+        if (appealedStrikes.length > 0) {
+            description += '\n**Appealed Strikes:**\n';
+            appealedStrikes.forEach((appealedStrike, idx) => {
+                description += `${idx + 1}. <t:${moment(appealedStrike.createdAt).unix()}:d> by <@!${appealedStrike.createdById}>${appealedStrike.strikeLogLink ? ' [show log](' + appealedStrike.strikeLogLink + ')' : ''}\n`;
+            });
+        }
+
+        const embed = new EmbedBuilder();
+        embed.setColor(EmbedHelper.red);
+        embed.setDescription(description);
+        embed.setTitle(`🗯️ Strikes`);
+        if (subject) {
+            embed
+                .setThumbnail(subject?.avatarURL() ?? null)
+                .setTimestamp()
+                .setFooter({ text: `${subject.username} | ${subject.id}` });
+        }
+        return embed;
     }
 
     static getLogLevelColor(level: LogLevel): number {

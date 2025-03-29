@@ -58,4 +58,12 @@ export class TextHelper {
     static numberWithCommas(x: number | string): string {
         return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
+
+    static strikeCounter(activeCount: number, allCount: number) {
+        return `Strike Count: ${activeCount} active / ${allCount} total`;
+    }
+
+    static strikeCounterVerbose(activeCount: number, expiredCount: number, appealedCount: number) {
+        return `**\\# of Strikes:** ${activeCount + expiredCount + appealedCount} total (${activeCount} active / ${expiredCount} expired / ${appealedCount} appealed)`;
+    }
 }
