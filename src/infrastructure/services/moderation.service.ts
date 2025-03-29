@@ -85,6 +85,7 @@ export class ModerationService {
             try {
                 this.logger.debug(`Sending mute message to user ${TextHelper.userLog(subject.user)}.`);
                 await subject.send(muteMessage);
+                this.logger.info(`Sent mute message to user ${TextHelper.userLog(subject.user)}.`);
                 return true;
             } catch (e) {
                 this.logger.warn(`Could not send mute message to user.`, e);
@@ -126,6 +127,7 @@ export class ModerationService {
             try {
                 this.logger.debug(`Sending unmute message to user ${TextHelper.userLog(subject.user)}.`);
                 await subject.send(unmuteMessage);
+                this.logger.info(`Sent unmute message to user ${TextHelper.userLog(subject.user)}.`);
             } catch (e) {
                 this.logger.warn(`Could not send unmute message to user.`, e);
             }
@@ -140,6 +142,7 @@ export class ModerationService {
         reason?: string,
         shouldLog = true
     ): Promise<boolean> {
+        let wasInformed = false;
         if (banMessage) {
             if (isAppealable)
                 banMessage.content += `\n-# Unless stated otherwise in the reason above, you are able to appeal your ban by joining the ban appeal server at <https://discord.gg/2WwNFyhq5n>`;
@@ -147,8 +150,9 @@ export class ModerationService {
                 await subject.send(banMessage);
             } catch (e) {
                 this.logger.warn(`Could not send ban message to user ${TextHelper.userLog(subject.user)}.`, e);
-                return false;
             }
+            this.logger.info(`Sent ban message to user ${TextHelper.userLog(subject.user)}.`);
+            wasInformed = true;
         }
 
         try {
@@ -159,6 +163,7 @@ export class ModerationService {
         }
 
         if (shouldLog) await this.loggingService.logBan(actor, subject.user, reason);
-        return true;
+
+        return wasInformed;
     }
 }
