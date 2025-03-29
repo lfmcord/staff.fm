@@ -1,6 +1,7 @@
+import { IMessageComponentInteraction } from '@src/feature/interactions/abstractions/message-component-interaction.interface';
+import { IMessageContextMenuInteraction } from '@src/feature/interactions/abstractions/message-context-menu-interaction.interface';
+import { IModalSubmitInteraction } from '@src/feature/interactions/abstractions/modal-submit-interaction.interface';
 import { IHandler } from '@src/handlers/models/handler.interface';
-import { Logger } from 'tslog';
-import { inject, injectable } from 'inversify';
 import { TYPES } from '@src/types';
 import {
     Interaction,
@@ -8,18 +9,19 @@ import {
     MessageContextMenuCommandInteraction,
     ModalSubmitInteraction,
 } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import { Logger } from 'tslog';
 import container from '../inversify.config';
-import { IMessageComponentInteraction } from '@src/feature/interactions/abstractions/message-component-interaction.interface';
-import { IModalSubmitInteraction } from '@src/feature/interactions/abstractions/modal-submit-interaction.interface';
-import { IMessageContextMenuInteraction } from '@src/feature/interactions/abstractions/message-context-menu-interaction.interface';
 
 @injectable()
 export class InteractionCreateHandler implements IHandler {
     eventType = 'interactionCreate';
     private logger: Logger<InteractionCreateHandler>;
+
     constructor(@inject(TYPES.BotLogger) logger: Logger<InteractionCreateHandler>) {
         this.logger = logger;
     }
+
     async handle(interaction: Interaction) {
         if (interaction.isMessageContextMenuCommand()) {
             await this.handleMessageContextMenuCommandInteraction(interaction as MessageContextMenuCommandInteraction);
@@ -66,8 +68,10 @@ export class InteractionCreateHandler implements IHandler {
             return;
         }
         const interactions = container.getAll<IMessageComponentInteraction>('MessageComponentInteraction');
-        const foundInteraction = interactions.find((i: IMessageComponentInteraction) =>
-            i.customIds.includes(interaction.customId)
+        const foundInteraction = interactions.find(
+            (i: IMessageComponentInteraction) =>
+                i.customIds.includes(interaction.customId) ||
+                i.customIds.some((id) => interaction.customId.startsWith(id))
         );
         if (!foundInteraction) {
             this.logger.error(

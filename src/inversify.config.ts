@@ -99,8 +99,7 @@ import { StrikesCommand } from '@src/feature/commands/moderation/strikes.command
 import { CancelButtonInteraction } from '@src/feature/interactions/message-component/cancel-button.interaction';
 import { StrikeAppealInteraction } from '@src/feature/interactions/message-component/strike-appeal.interaction';
 import { StrikeAppealCommand } from '@src/feature/commands/moderation/strike-appeal.command';
-import { StrikeMuteButtonInteraction } from '@src/feature/interactions/message-component/strike-mute-button.interaction';
-import { StrikeBanButtonInteraction } from '@src/feature/interactions/message-component/strike-ban-button.interaction';
+import { StrikeButtonInteraction } from '@src/feature/interactions/message-component/strike-button.interaction';
 
 const container = new Container();
 
@@ -257,8 +256,7 @@ container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(D
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(EndSelfmuteButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(CancelButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeAppealInteraction);
-container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeMuteButtonInteraction);
-container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeBanButtonInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeButtonInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);

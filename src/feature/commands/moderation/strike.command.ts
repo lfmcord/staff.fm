@@ -84,12 +84,12 @@ export class StrikeCommand implements ICommand {
 
         if (!muteDurations) {
             this.logger.info(
-                `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} strikes, which is more than the maximum allowed (${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size}). Showing ban dialogue...`
+                `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} strikes, which is the maximum (${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size}). Showing ban dialogue...`
             );
-            await message.reply({
+            await message.channel.send({
                 content:
-                    `User ${member} has ${activeStrikes.length} strikes, which is more than the maximum allowed (${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size}). Proceed with ban?\n` +
-                    `-# ${TextHelper.strikeCounter(activeStrikes.length + 1, allStrikes.length + 1)}`,
+                    `User ${member} has ${activeStrikes.length} strikes, another strike would be more than the maximum allowed (${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size}). Proceed with ban?\n` +
+                    `-# ${TextHelper.strikeCounter(activeStrikes.length, allStrikes.length)}`,
                 components: [
                     new ActionRowBuilder<ButtonBuilder>().addComponents([
                         ComponentHelper.strikeBanButton(message.id, true),
@@ -97,6 +97,7 @@ export class StrikeCommand implements ICommand {
                         ComponentHelper.cancelButton('defer-cancel', ButtonStyle.Secondary),
                     ]),
                 ],
+                allowedMentions: { users: [] },
             });
             return {};
         }
@@ -104,10 +105,10 @@ export class StrikeCommand implements ICommand {
             `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} strikes, handing out a mute...`
         );
 
-        await message.reply({
+        await message.channel.send({
             content:
                 `User ${member} has ${activeStrikes.length} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size} strikes. Proceed with mute?\n` +
-                `-# ${TextHelper.strikeCounter(activeStrikes.length + 1, allStrikes.length + 1)}`,
+                `-# ${TextHelper.strikeCounter(activeStrikes.length, allStrikes.length)}`,
             components: [
                 new ActionRowBuilder<ButtonBuilder>().addComponents(
                     muteDurations!
@@ -115,6 +116,7 @@ export class StrikeCommand implements ICommand {
                         .concat([ComponentHelper.cancelButton('defer-cancel', ButtonStyle.Secondary)])
                 ),
             ],
+            allowedMentions: { users: [] },
         });
 
         return {};

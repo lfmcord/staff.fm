@@ -740,19 +740,19 @@ export class EmbedHelper {
         if (activeStrikes.length > 0) {
             description += '**Active Strikes:**\n';
             activeStrikes.forEach((activeStrike, idx) => {
-                description += `${idx + 1}. ${activeStrike.reason.substring(0, 256)} (<t:${moment(activeStrike.createdAt).unix()}:d> by <@!${activeStrike.createdById}>)\n`;
+                description += `${idx + 1}. <t:${moment(activeStrike.createdAt).unix()}:d> by <@!${activeStrike.createdById}>${activeStrike.strikeLogLink ? ' [show log](' + activeStrike.strikeLogLink + ')' : ''}\n`;
             });
         }
         if (expiredStrikes.length > 0) {
             description += '\n**Expired Strikes:**\n';
             expiredStrikes.forEach((expiredStrike, idx) => {
-                description += `${idx + 1}. ${expiredStrike.reason.substring(0, 256)} (<t:${moment(expiredStrike.createdAt).unix()}:d> by <@!${expiredStrike.createdById}>)\n`;
+                description += `${idx + 1}. <t:${moment(expiredStrike.createdAt).unix()}:d> by <@!${expiredStrike.createdById}>${expiredStrike.strikeLogLink ? ' [show log](' + expiredStrike.strikeLogLink + ')' : ''}\n`;
             });
         }
         if (appealedStrikes.length > 0) {
             description += '\n**Appealed Strikes:**\n';
             appealedStrikes.forEach((appealedStrike, idx) => {
-                description += `${idx + 1}. ${appealedStrike.reason.substring(0, 256)} (<t:${moment(appealedStrike.createdAt).unix()}:d> by <@!${appealedStrike.createdById}>)\n`;
+                description += `${idx + 1}. <t:${moment(appealedStrike.createdAt).unix()}:d> by <@!${appealedStrike.createdById}>${appealedStrike.strikeLogLink ? ' [show log](' + appealedStrike.strikeLogLink + ')' : ''}\n`;
             });
         }
 

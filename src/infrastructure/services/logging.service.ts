@@ -533,7 +533,7 @@ export class LoggingService {
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Failure).setDescription(description);
         embed.setFooter({ text: TextHelper.strikeCounter(activeStrikeCount, allStrikesCount) });
         embed.setTitle(`🗯️ Strike Issued`);
-        await logChannel.send({ embeds: [embed] });
+        return await logChannel.send({ embeds: [embed] });
     }
 
     async logStrikeAppeal(

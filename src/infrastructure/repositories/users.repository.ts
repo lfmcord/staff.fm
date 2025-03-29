@@ -107,7 +107,13 @@ export class UsersRepository {
         );
     }
 
-    async addStrikeToUser(subject: User, actor: User, reason: string, expiryInMonths: number): Promise<string> {
+    async addStrikeToUser(
+        subject: User,
+        actor: User,
+        reason: string,
+        expiryInMonths: number,
+        logMesssageLink?: string
+    ): Promise<string> {
         const now = moment();
         const result = await UsersModelInstance.updateOne(
             { userId: subject.id },
@@ -120,6 +126,7 @@ export class UsersRepository {
                         expiresOn: now.add(expiryInMonths, 'months').toDate(),
                         createdById: actor.id,
                         wasAppealed: false,
+                        strikeLogLink: logMesssageLink,
                     },
                 },
             }
@@ -207,6 +214,7 @@ export interface IStrikesModel {
     expiresOn: Date;
     createdById: string;
     wasAppealed?: boolean;
+    strikeLogLink?: string;
 }
 
 export interface IUserModel {
@@ -243,6 +251,7 @@ const strikesSchema = new Schema<IStrikesModel>({
     expiresOn: { type: Date, required: true },
     createdById: { type: String, required: true },
     wasAppealed: { type: Boolean, required: true },
+    strikeLogLink: { type: String, required: false },
 });
 
 const usersSchema = new Schema<IUserModel>(
