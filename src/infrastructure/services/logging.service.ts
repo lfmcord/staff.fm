@@ -383,7 +383,7 @@ export class LoggingService {
         });
     }
 
-    async logFlag(flag: Flag, isUnflag: boolean = false) {
+    async logFlag(actor: User, flag: Flag, isUnflag: boolean = false) {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
@@ -391,11 +391,9 @@ export class LoggingService {
             ? `🚩 ${bold('Removed flag')} ${inlineCode(flag.term)}\n`
             : `🚩 ${bold('Added flag')} ${inlineCode(flag.term)}\n`;
         if (!isUnflag) description += `📝 ${bold('Reason:')} ${flag.reason}`;
-        const embed = EmbedHelper.getLogEmbed(
-            flag.createdBy instanceof User ? flag.createdBy : null,
-            null,
-            isUnflag ? LogLevel.Info : LogLevel.Warning
-        ).setDescription(description);
+        const embed = EmbedHelper.getLogEmbed(actor, null, isUnflag ? LogLevel.Info : LogLevel.Warning).setDescription(
+            description
+        );
         await logChannel.send({ embeds: [embed] });
     }
 
