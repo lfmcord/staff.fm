@@ -1,13 +1,13 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { inlineCode, Message } from 'discord.js';
-import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
-import { TYPES } from '@src/types';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { TextHelper } from '@src/helpers/text.helper';
+import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { TYPES } from '@src/types';
+import { inlineCode, Message } from 'discord.js';
+import { inject, injectable } from 'inversify';
 
 @injectable()
 export class UnflagCommand implements ICommand {
@@ -44,7 +44,7 @@ export class UnflagCommand implements ICommand {
         await this.flagsRepository.deleteFlagsByTerms(args);
 
         for (const entry of entriesToDelete) {
-            await this.loggingService.logFlag(entry, true);
+            await this.loggingService.logFlag(message.author, entry, true);
         }
 
         return {

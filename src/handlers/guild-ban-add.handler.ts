@@ -1,15 +1,15 @@
-import { inject, injectable } from 'inversify';
+import { Environment } from '@models/environment';
+import { Flag } from '@src/feature/commands/moderation/models/flag.model';
 import { IHandler } from '@src/handlers/models/handler.interface';
-import { Logger } from 'tslog';
+import { TextHelper } from '@src/helpers/text.helper';
+import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { TYPES } from '@src/types';
 import { Client, Events, GuildBan } from 'discord.js';
-import { Environment } from '@models/environment';
-import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
-import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
-import { TextHelper } from '@src/helpers/text.helper';
+import { inject, injectable } from 'inversify';
+import { Logger } from 'tslog';
 import moment = require('moment');
-import { Flag } from '@src/feature/commands/moderation/models/flag.model';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
 
 @injectable()
 export class GuildBanAddHandler implements IHandler {
@@ -64,7 +64,7 @@ export class GuildBanAddHandler implements IHandler {
 
             await this.flagsRepository.addFlag(flag);
 
-            await this.loggingService.logFlag(flag);
+            await this.loggingService.logFlag(this.client.user!, flag);
         }
     }
 }

@@ -678,7 +678,7 @@ export class EmbedHelper {
             .setColor(EmbedHelper.orange)
             .setDescription(
                 `This user is not yet indexed (hasn't been manually imported or verified yet), so I don't have any more info to show you. 
-                If you know their last.fm username, please verify them manually with \`>>verify ${userId ?? '[user ID]'} [last.fm username]\``
+                If you know their last.fm username, please index them manually with \`>>index ${userId ?? '[user ID]'} [last.fm username]\``
             );
     }
 

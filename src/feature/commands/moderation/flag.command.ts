@@ -1,15 +1,15 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { inlineCode, Message } from 'discord.js';
-import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
-import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
-import { TYPES } from '@src/types';
-import * as moment from 'moment';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Flag } from '@src/feature/commands/moderation/models/flag.model';
 import { TextHelper } from '@src/helpers/text.helper';
+import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { TYPES } from '@src/types';
+import { inlineCode, Message } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import * as moment from 'moment';
 
 @injectable()
 export class FlagCommand implements ICommand {
@@ -57,7 +57,7 @@ export class FlagCommand implements ICommand {
 
         await this.flagsRepository.addFlag(flag);
 
-        await this.loggingService.logFlag(flag);
+        await this.loggingService.logFlag(message.author, flag);
 
         return {
             isSuccessful: true,
