@@ -383,7 +383,7 @@ export class LoggingService {
         });
     }
 
-    async logFlag(flag: Flag, isUnflag: boolean = false) {
+    async logFlag(actor: User, flag: Flag, isUnflag: boolean = false) {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
@@ -391,11 +391,9 @@ export class LoggingService {
             ? `🚩 ${bold('Removed flag')} ${inlineCode(flag.term)}\n`
             : `🚩 ${bold('Added flag')} ${inlineCode(flag.term)}\n`;
         if (!isUnflag) description += `📝 ${bold('Reason:')} ${flag.reason}`;
-        const embed = EmbedHelper.getLogEmbed(
-            flag.createdBy instanceof User ? flag.createdBy : null,
-            null,
-            isUnflag ? LogLevel.Info : LogLevel.Warning
-        ).setDescription(description);
+        const embed = EmbedHelper.getLogEmbed(actor, null, isUnflag ? LogLevel.Info : LogLevel.Warning).setDescription(
+            description
+        );
         await logChannel.send({ embeds: [embed] });
     }
 
@@ -512,6 +510,58 @@ export class LoggingService {
                     : `Use ${this.env.CORE.PREFIX}dmanage start to start automatic discussions.`,
             });
 
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logStrike(
+        subject: User,
+        actor: User,
+        reason: string,
+        activeStrikeCount: number,
+        allStrikesCount: number,
+        action: string
+    ) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description =
+            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}` +
+            `\n\n${action.match(/Ban/) ? '🔨' : '🔇'} User received a **${action}** for this strike.`;
+        const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Failure).setDescription(description);
+        embed.setFooter({ text: TextHelper.strikeCounter(activeStrikeCount, allStrikesCount) });
+        embed.setTitle(`🗯️ Strike Issued`);
+        return await logChannel.send({ embeds: [embed] });
+    }
+
+    async logStrikeAppeal(
+        subject: User,
+        actor: User,
+        reason: string,
+        activeStrikeCount: number,
+        allStrikesCount: number
+    ) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description =
+            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
+        const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Success).setDescription(description);
+        embed.setFooter({ text: TextHelper.strikeCounter(activeStrikeCount, allStrikesCount) });
+        embed.setTitle(`🗯️ Strike Appealed`);
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logBan(subject: User, actor: User, reason?: string) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description =
+            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n📝 ${bold('Reason:')} ${!reason || reason == '' ? 'No reason provided.' : reason}`;
+        const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Failure).setDescription(description);
+        embed.setTitle(`🔨 Ban Issued`);
         await logChannel.send({ embeds: [embed] });
     }
 

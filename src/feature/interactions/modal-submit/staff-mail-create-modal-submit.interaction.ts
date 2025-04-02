@@ -109,7 +109,7 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
             embeds.push(EmbedHelper.getVerificationHistoryEmbed(indexedUser?.verifications ?? []));
             embeds.push(EmbedHelper.getCrownsEmbed(indexedUser ?? undefined));
         }
-        embeds.push(new EmbedBuilder().setTitle(summary).setColor(EmbedHelper.blue));
+        if (summary && summary != '') embeds.push(new EmbedBuilder().setTitle(summary).setColor(EmbedHelper.blue));
 
         await staffMailChannel!.send({
             content: `${rolePings} New StaffMail: ${humanReadableCategory}`,

@@ -61,7 +61,7 @@ export class SelfMuteCommand implements ICommand {
         try {
             await this.moderationService.muteGuildMember(
                 member,
-                member,
+                member.user,
                 endDateUtc.toDate(),
                 {
                     content: `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>). You can prematurely end it by using the button below or sending me ${inlineCode(this.env.CORE.PREFIX + 'unmute')} here.`,

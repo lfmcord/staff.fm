@@ -83,6 +83,14 @@
       "PING_ROLE_IDS"
     ]
   },
+  "MODERATION": {
+    "STRIKE_MUTE_DURATIONS_IN_HOURS": [
+      4,
+      24,
+      168
+    ],
+    "STRIKE_EXPIRATION_IN_MONTHS": 6
+  },
   "LOGGING": {
     "LOG_LEVEL": 1
   },
