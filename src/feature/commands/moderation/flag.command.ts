@@ -51,7 +51,7 @@ export class FlagCommand implements ICommand {
             return {
                 isSuccessful: false,
                 reason: `Flag for term ${flag.term} already exists in database.`,
-                replyToUser: `${inlineCode(flag.term)} is already on the list of flagged terms!\nReason: '${flag.reason}' (created <t:${moment(flag.createdAt).unix()}:D> by ${TextHelper.userDisplay(flag.createdBy)})`,
+                replyToUser: `${inlineCode(flag.term)} is already on the list of flagged terms!\nReason: '${existingFlag.reason}' (created <t:${moment(existingFlag.createdAt).unix()}:D> by ${TextHelper.userDisplay(existingFlag.createdBy)})`,
             };
         }
 

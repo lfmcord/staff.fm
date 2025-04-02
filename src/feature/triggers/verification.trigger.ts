@@ -56,7 +56,7 @@ export class VerificationTrigger {
         );
         for (const flag of flags) {
             // check if last.fm username is flagged
-            if (message.content?.match(flag.term)) {
+            if (message.content?.toLowerCase().match(flag.term)) {
                 this.logger.info(`Verification message ${message.content} contains a flagged term (${flag.term})`);
                 await this.loggingService.logLastFmFlagAlert(message, flag);
                 return;
