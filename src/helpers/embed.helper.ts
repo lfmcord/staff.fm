@@ -613,6 +613,7 @@ export class EmbedHelper {
 
         return EmbedHelper.getLogEmbed(member.user, member.user, LogLevel.Info)
             .setTitle(`Discord Account`)
+            .setDescription(TextHelper.userDisplay(member.user))
             .setFields([
                 {
                     name: 'Joined',

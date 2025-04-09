@@ -299,4 +299,12 @@ export class ComponentHelper {
             .setLabel(`Ban ${!isAppealable ? '(permanent)' : ''}`)
             .setStyle(isAppealable ? ButtonStyle.Primary : ButtonStyle.Danger);
     };
+
+    static updateScrobblesButton = (userId: string) => {
+        return new ButtonBuilder()
+            .setCustomId(`defer-update-scrobbles-${userId}`)
+            .setEmoji('🔢')
+            .setLabel(`Update Scrobble Roles`)
+            .setStyle(ButtonStyle.Primary);
+    };
 }

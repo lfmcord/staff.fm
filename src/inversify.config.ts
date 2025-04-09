@@ -101,6 +101,7 @@ import { StrikeAppealInteraction } from '@src/feature/interactions/message-compo
 import { StrikeAppealCommand } from '@src/feature/commands/moderation/strike-appeal.command';
 import { StrikeButtonInteraction } from '@src/feature/interactions/message-component/strike-button.interaction';
 import { ScatterCommand } from '@src/feature/commands/administration/scatter.command';
+import { UpdateButtonInteraction } from '@src/feature/interactions/message-component/update-button.interaction';
 
 const container = new Container();
 
@@ -259,6 +260,7 @@ container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(E
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(CancelButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeAppealInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeButtonInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(UpdateButtonInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);

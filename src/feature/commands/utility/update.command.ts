@@ -9,7 +9,7 @@ import { LastFmService } from '@src/infrastructure/services/lastfm.service';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { TYPES } from '@src/types';
-import { GuildMember, Message, PartialMessage } from 'discord.js';
+import { ButtonInteraction, GuildMember, Message, PartialMessage } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 
@@ -62,6 +62,30 @@ export class UpdateCommand implements ICommand {
         await message.reactions.removeAll();
 
         return result;
+    }
+
+    async runInteraction(interaction: ButtonInteraction) {
+        await interaction.message.react(TextHelper.loading);
+        if (!interaction.deferred) await interaction.deferUpdate();
+        const actor = (await this.memberService.getGuildMemberFromUserId(interaction.user.id))!;
+        let result: CommandResult;
+        const memberIdToUpdate = TextHelper.getDiscordUserId(interaction.customId.split('-')[3]);
+        if (!memberIdToUpdate) {
+            this.logger.warn(`Interaction ID ${interaction.customId} is missing a user ID.`);
+            await interaction.message.reply('I cannot find a user ID in the custom ID.');
+            return;
+        }
+
+        if (memberIdToUpdate == actor.id) {
+            result = await this.selfUpdate(actor);
+        } else {
+            result = await this.privilegedUpdate(actor, [memberIdToUpdate]);
+        }
+        await interaction.message.reactions.removeAll();
+
+        await interaction.message.reply(
+            `${interaction.user}, ${result.replyToUser}` ?? 'I did something but I do not know what.'
+        );
     }
 
     async validateArgs(args: string[]): Promise<void> {

@@ -3,12 +3,13 @@ import { CommandPermissionLevel } from '@src/feature/commands/models/command-per
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { ComponentHelper } from '@src/helpers/component.helper';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { TextHelper } from '@src/helpers/text.helper';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { TYPES } from '@src/types';
-import { EmbedBuilder, Message, MessageCreateOptions, User } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, Message, MessageCreateOptions, User } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import LastFM from 'lastfm-typed';
 import { Logger } from 'tslog';
@@ -102,6 +103,7 @@ export class WhoisCommand implements ICommand {
 
     async getMessageForDiscordUser(userId: string, executingUser: User): Promise<MessageCreateOptions> {
         const embeds: EmbedBuilder[] = [];
+        const components: ButtonBuilder[] = [];
         // Discord user
         const guildMember = await this.memberService.getGuildMemberFromUserId(userId);
         if (!guildMember) {
@@ -132,6 +134,9 @@ export class WhoisCommand implements ICommand {
             }
         }
         embeds.push(EmbedHelper.getLastFmUserEmbed(currentLastFmUsername, lastFmUser).setTitle(`Last.fm Account`));
+        if (lastFmUser) {
+            components.push(ComponentHelper.updateScrobblesButton(userId));
+        }
 
         // Past verifications
         embeds.push(EmbedHelper.getVerificationHistoryEmbed(verifications));
@@ -147,7 +152,11 @@ export class WhoisCommand implements ICommand {
         // Crowns
         embeds.push(EmbedHelper.getCrownsEmbed(indexedUser));
 
-        return { embeds: embeds };
+        return {
+            embeds: embeds,
+            components:
+                components.length > 0 ? [new ActionRowBuilder<ButtonBuilder>().addComponents(components)] : undefined,
+        };
     }
 
     validateArgs(args: string[]): Promise<void> {
