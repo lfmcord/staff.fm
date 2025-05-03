@@ -43,12 +43,18 @@ export class SelfMuteUnmuteCommand implements ICommand {
     }
 
     public async runInteraction(interaction: ButtonInteraction) {
+        if (!interaction.deferred) await interaction.deferUpdate();
         const result = await this.tryToEndSelfmute(interaction.user, `User used end selfmute button.`);
         if (result.replyToUser) {
-            await interaction.reply(result.replyToUser);
+            await interaction.editReply(result.replyToUser);
         } else {
-            await interaction.update({});
+            await interaction.editReply({});
         }
+        if (result.isSuccessful)
+            await interaction.message.edit({
+                content: interaction.message.content,
+                components: [],
+            });
     }
 
     private async tryToEndSelfmute(user: User, reason: string): Promise<CommandResult> {

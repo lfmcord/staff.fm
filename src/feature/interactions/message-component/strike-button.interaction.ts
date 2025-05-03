@@ -45,6 +45,7 @@ export class StrikeButtonInteraction implements IMessageComponentInteraction {
             await interaction.reply({ content: 'This interaction is missing a channel.', ephemeral: true });
             return;
         }
+        if (!interaction.deferred) await interaction.deferUpdate();
         const values = interaction.customId.split('-');
         const action = values[2];
         this.logger.debug(
@@ -57,7 +58,9 @@ export class StrikeButtonInteraction implements IMessageComponentInteraction {
             reason = this.getReason(commandMessage);
             subject = await this.getSubject(commandMessage);
         } catch (e) {
-            await interaction.reply({ content: (e as Error).message + 'I did not issue a strike.', ephemeral: true });
+            await interaction.editReply({
+                content: (e as Error).message + 'I did not issue a strike.',
+            });
             return;
         }
 
@@ -107,7 +110,7 @@ export class StrikeButtonInteraction implements IMessageComponentInteraction {
             }
         } catch (e) {
             this.logger.error(`Failed to ${action} user ${TextHelper.userLog(subject.user)}.`, e);
-            await interaction.reply({ content: `Failed to ${action} user ${subject}.`, ephemeral: true });
+            await interaction.editReply({ content: `Failed to ${action} user ${subject}.` });
             return;
         }
 
@@ -128,7 +131,7 @@ export class StrikeButtonInteraction implements IMessageComponentInteraction {
             logMessage ? TextHelper.getDiscordMessageLink(logMessage) : undefined
         );
 
-        await interaction.update({
+        await interaction.editReply({
             content:
                 reply +
                 `${!wasInformed ? `:warning: *Could not send ${action} message to user. Do they have their DMs turned off?*` : ''}` +

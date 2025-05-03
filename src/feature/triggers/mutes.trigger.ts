@@ -4,7 +4,7 @@ import { MemberService } from '@src/infrastructure/services/member.service';
 import { ModerationService } from '@src/infrastructure/services/moderation.service';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { TYPES } from '@src/types';
-import { Role } from 'discord.js';
+import { Client, Role } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
 import { Logger } from 'tslog';
@@ -15,6 +15,7 @@ export class MutesTrigger {
     private memberService: MemberService;
     private mutesRepository: MutesRepository;
     private scheduleService: ScheduleService;
+    private client: Client;
     private moderationService: ModerationService;
 
     constructor(
@@ -22,8 +23,10 @@ export class MutesTrigger {
         @inject(TYPES.MutesRepository) mutesRepository: MutesRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.ScheduleService) scheduleService: ScheduleService,
-        @inject(TYPES.ModerationService) moderationService: ModerationService
+        @inject(TYPES.ModerationService) moderationService: ModerationService,
+        @inject(TYPES.Client) client: Client
     ) {
+        this.client = client;
         this.moderationService = moderationService;
         this.memberService = memberService;
         this.mutesRepository = mutesRepository;
@@ -36,7 +39,7 @@ export class MutesTrigger {
         let restored = 0;
         for (const mute of savedMutes) {
             const subject = await this.memberService.getGuildMemberFromUserId(mute.subjectId);
-            const actor = await this.memberService.getGuildMemberFromUserId(mute.subjectId);
+            const actor = await this.memberService.getGuildMemberFromUserId(mute.actorId);
             if (!subject) {
                 this.logger.warn(
                     `Unable to restore mute for user ${mute.subjectId} because user was not found. Deleting mute.`
@@ -68,7 +71,7 @@ export class MutesTrigger {
                     await this.moderationService.unmuteGuildMember(
                         subject,
                         roles,
-                        actor?.user ?? undefined,
+                        this.client.user ?? undefined,
                         unmuteMessage,
                         `Mute expired while bot was offline.`
                     );
@@ -84,7 +87,7 @@ export class MutesTrigger {
                         await this.moderationService.unmuteGuildMember(
                             subject,
                             roles,
-                            actor?.user ?? undefined,
+                            this.client.user ?? undefined,
                             unmuteMessage,
                             `Mute duration expired.`
                         )
