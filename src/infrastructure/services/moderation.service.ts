@@ -108,8 +108,18 @@ export class ModerationService {
         );
         const isSelfmute = actor?.id === subject.id;
         const mutedRole = isSelfmute ? this.env.ROLES.SELFMUTED_ROLE_ID : this.env.ROLES.MUTED_ROLE_ID;
+        this.logger.debug(`Removing muted role ${mutedRole} from user ${TextHelper.userLog(subject.user)}...`);
         await subject.roles.remove(mutedRole);
-        rolesToRestore.forEach((r) => (r.name !== '@everyone' ? subject.roles.add(r) : ''));
+        rolesToRestore = rolesToRestore.filter(
+            (r) =>
+                r.id !== this.env.ROLES.MUTED_ROLE_ID &&
+                r.id !== this.env.ROLES.SELFMUTED_ROLE_ID &&
+                r.name !== '@everyone'
+        );
+        this.logger.debug(
+            `Adding back roles for user ${TextHelper.userLog(subject.user)}: ${rolesToRestore.join(', ')}...`
+        );
+        rolesToRestore.forEach((r) => subject.roles.add(r));
 
         const jobName = `UNMUTE_${subject.id}`;
         if (this.scheduleService.jobExists(jobName)) {
