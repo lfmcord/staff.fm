@@ -565,6 +565,18 @@ export class LoggingService {
         await logChannel.send({ embeds: [embed] });
     }
 
+    async logInform(subject: User, actor: User, content: string) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description =
+            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n📝 ${bold('Content:')} ${content}`;
+        const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
+        embed.setTitle(`ℹ️ Informed User`);
+        await logChannel.send({ embeds: [embed] });
+    }
+
     private async getLogChannel(channelId: string): Promise<GuildTextBasedChannel | null> {
         const logChannel = await this.channelService.getGuildChannelById(channelId);
         if (!logChannel) {

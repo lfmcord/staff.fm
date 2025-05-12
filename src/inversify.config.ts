@@ -102,6 +102,7 @@ import { StrikeAppealCommand } from '@src/feature/commands/moderation/strike-app
 import { StrikeButtonInteraction } from '@src/feature/interactions/message-component/strike-button.interaction';
 import { ScatterCommand } from '@src/feature/commands/administration/scatter.command';
 import { UpdateButtonInteraction } from '@src/feature/interactions/message-component/update-button.interaction';
+import { InformCommand } from '@src/feature/commands/moderation/inform.command';
 
 const container = new Container();
 
@@ -232,6 +233,7 @@ container.bind<ICommand>('Command').to(StrikeCommand);
 container.bind<ICommand>('Command').to(StrikesCommand);
 container.bind<ICommand>('Command').to(StrikeAppealCommand);
 container.bind<ICommand>('Command').to(ScatterCommand);
+container.bind<ICommand>('Command').to(InformCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);

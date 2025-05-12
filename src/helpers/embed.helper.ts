@@ -770,6 +770,15 @@ export class EmbedHelper {
         return embed;
     }
 
+    static getInformEmbed(text: string): EmbedBuilder {
+        return new EmbedBuilder()
+            .setTitle('ℹ️ Information from Staff')
+            .setDescription(text)
+            .setColor(EmbedHelper.blue)
+            .setTimestamp()
+            .setFooter({ text: `This message is purely informational and not a warning.` });
+    }
+
     static getLogLevelColor(level: LogLevel): number {
         switch (level) {
             case LogLevel.Failure:
