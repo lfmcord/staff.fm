@@ -123,11 +123,13 @@ export class StrikeButtonInteraction implements IMessageComponentInteraction {
             logReason ?? 'uknown'
         );
 
+        const now = moment();
         await this.usersRepository.addStrikeToUser(
             subject!.user,
             interaction.user,
             reason,
-            this.env.MODERATION.STRIKE_EXPIRATION_IN_MONTHS,
+            now.toDate(),
+            now.add(this.env.MODERATION.STRIKE_EXPIRATION_IN_MONTHS, 'months').toDate(),
             logMessage ? TextHelper.getDiscordMessageLink(logMessage) : undefined
         );
 

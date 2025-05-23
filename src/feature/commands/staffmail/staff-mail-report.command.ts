@@ -2,6 +2,7 @@ import { Environment } from '@models/environment';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { ICommand } from '@src/feature/commands/models/command.interface';
+import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-custom-ids';
 import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
 import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
@@ -90,7 +91,13 @@ export class StaffMailReportCommand implements ICommand {
         );
     }
 
-    public validateArgs(_: string[]): Promise<void> {
+    public validateArgs(args: string[]): Promise<void> {
+        if (args.length === 0) {
+            throw new ValidationError(
+                `No args provided for report.`,
+                `Please enter your report right after the command!`
+            );
+        }
         return Promise.resolve();
     }
 
@@ -106,7 +113,7 @@ export class StaffMailReportCommand implements ICommand {
                 EmbedHelper.getStaffMailUrgentReportEmbed(
                     isInteraction,
                     Array.from(trigger.attachments.values()),
-                    trigger.content
+                    trigger.content.split(' ').slice(1).join(' ')
                 ) as MessageReplyOptions
             );
         else
@@ -215,7 +222,7 @@ export class StaffMailReportCommand implements ICommand {
         }
 
         await staffMailChannel!.send({
-            content: `${rolePings}New StaffMail: Urgent Report`,
+            content: `${rolePings} New StaffMail: Urgent Report`,
             embeds: embeds,
         });
 

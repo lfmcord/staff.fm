@@ -524,10 +524,15 @@ export class LoggingService {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
+        let actionDescription = `User received a **${action}** strike.`;
+        if (action === 'Manual') actionDescription = `-# Strike was manually added. No action has been taken.`;
+        else if (action.match('/Mute/')) actionDescription = `🔇 User received a **${action}** for this strike.`;
+        else if (action.match('/Ban/')) actionDescription = `🔨 User received a **${action}** for this strike.`;
+
         const description =
             `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
             `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}` +
-            `\n\n${action.match(/Ban/) ? '🔨' : '🔇'} User received a **${action}** for this strike.`;
+            `\n\n${actionDescription}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Failure).setDescription(description);
         embed.setFooter({ text: TextHelper.strikeCounter(activeStrikeCount, allStrikesCount) });
         embed.setTitle(`🗯️ Strike Issued`);
@@ -550,6 +555,26 @@ export class LoggingService {
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Success).setDescription(description);
         embed.setFooter({ text: TextHelper.strikeCounter(activeStrikeCount, allStrikesCount) });
         embed.setTitle(`🗯️ Strike Appealed`);
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logStrikeRemove(
+        subject: User,
+        actor: User,
+        reason: string,
+        activeStrikeCount?: number,
+        allStrikesCount?: number
+    ) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description =
+            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
+        const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Success).setDescription(description);
+        if (activeStrikeCount && allStrikesCount)
+            embed.setFooter({ text: TextHelper.strikeCounter(activeStrikeCount, allStrikesCount) });
+        embed.setTitle(`:wastebasket: Strike Removed`);
         await logChannel.send({ embeds: [embed] });
     }
 

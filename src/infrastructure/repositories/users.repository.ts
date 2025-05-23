@@ -111,10 +111,10 @@ export class UsersRepository {
         subject: User,
         actor: User,
         reason: string,
-        expiryInMonths: number,
+        createdAt: Date,
+        expiresOn: Date,
         logMesssageLink?: string
     ): Promise<string> {
-        const now = moment();
         const result = await UsersModelInstance.updateOne(
             { userId: subject.id },
             {
@@ -122,8 +122,8 @@ export class UsersRepository {
                     strikes: {
                         userId: subject.id,
                         reason: reason,
-                        createdAt: now.toDate(),
-                        expiresOn: now.add(expiryInMonths, 'months').toDate(),
+                        createdAt: createdAt,
+                        expiresOn: expiresOn,
                         createdById: actor.id,
                         wasAppealed: false,
                         strikeLogLink: logMesssageLink,
