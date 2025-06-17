@@ -49,21 +49,31 @@ export class VerificationTrigger {
         )?.displayName.toLowerCase();
         const lastFmUsername = TextHelper.getLastfmUsername(message.content)?.toLowerCase();
 
-        const flags = await this.flagsRepository.getAllFlags();
+        const flaggedTerms = await this.flagsRepository.getAllFlagTerms();
 
         this.logger.info(
             `Checking if new message or author is in flagged terms list. Last.fm username: ${lastFmUsername} Discord Username: ${discordUsername} Discord Displayname: ${discordDisplayname} Discord Server Displayname: ${discordServerDisplayname}`
         );
-        for (const flag of flags) {
+        for (const flaggedTerm of flaggedTerms) {
             // check if last.fm username is flagged
-            if (message.content?.toLowerCase().match(flag.term)) {
-                this.logger.info(`Verification message ${message.content} contains a flagged term (${flag.term})`);
+            if (message.content?.toLowerCase().match(flaggedTerm)) {
+                this.logger.info(`Verification message ${message.content} contains a flagged term (${flaggedTerm})`);
+                const flag = await this.flagsRepository.getFlagByTerm(flaggedTerm);
+                if (!flag) {
+                    this.logger.warn(`Flag for term ${flaggedTerm} not found in database.`);
+                    continue;
+                }
                 await this.loggingService.logLastFmFlagAlert(message, flag);
                 return;
             }
             // check if discord username is flagged
-            if (this.memberService.checkIfMemberIsFlagged(flag, message.author)) {
-                this.logger.info(`User ${TextHelper.userLog(message.author)} matches flagged term ${flag.term}`);
+            if (this.memberService.checkIfMemberIsFlagged(flaggedTerm, message.author)) {
+                this.logger.info(`User ${TextHelper.userLog(message.author)} matches flagged term ${flaggedTerm}`);
+                const flag = await this.flagsRepository.getFlagByTerm(flaggedTerm);
+                if (!flag) {
+                    this.logger.warn(`Flag for term ${flaggedTerm} not found in database.`);
+                    continue;
+                }
                 await this.loggingService.logDiscordFlagAlert(message, flag);
                 return;
             }

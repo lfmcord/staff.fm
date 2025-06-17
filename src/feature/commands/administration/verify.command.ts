@@ -144,13 +144,13 @@ export class VerifyCommand implements ICommand {
             CommandPermissionLevel.Moderator
         ) {
             this.logger.debug(`User is not privileged moderator, check for flagged account.`);
-            const flags = await this.flagsRepository.getAllFlags();
+            const flags = await this.flagsRepository.getAllFlagTerms();
             if (
                 flags.find(
-                    (flag) =>
-                        verificationMessage?.content?.match(flag.term) != null ||
-                        lastfmUsername?.match(flag.term) != null ||
-                        this.memberService.checkIfMemberIsFlagged(flag, memberToVerify ?? userToVerify)
+                    (flaggedTerm) =>
+                        verificationMessage?.content?.match(flaggedTerm) != null ||
+                        lastfmUsername?.match(flaggedTerm) != null ||
+                        this.memberService.checkIfMemberIsFlagged(flaggedTerm, memberToVerify ?? userToVerify)
                 )
             ) {
                 this.logger.debug(`Verifier is trying to verify a flagged account.`);

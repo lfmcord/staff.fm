@@ -1,4 +1,5 @@
 import { Environment } from '@models/environment';
+import { TextHelper } from '@src/helpers/text.helper';
 import { BlockedWordsRepository } from '@src/infrastructure/repositories/blocked-words.repository';
 import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
@@ -50,31 +51,48 @@ export class AutomodTrigger {
             this.logger.warn(`Could not fetch category for channel ID ${message.channel.id}.`);
             if (!this.env.MODERATION.AUTOMOD.ENABLED_CHANNEL_IDS.includes(message.channelId)) return;
         }
+        this.logger.info(
+            `Running automod trigger for message by ${TextHelper.userLog(message.author)} in channel ${message.channel.id}`
+        );
 
-        let textToCheck = message.content.toLowerCase();
+        if (await this.checkBlockedWords(message)) return;
+        await this.checkFlags(message);
+    }
+
+    async checkFlags(message: Message) {
+        let textToCheck = message.content;
+        if (message.embeds.length > 0) {
+            for (const embed of message.embeds) {
+                // only check the author field because the rest can contain banned friends
+                textToCheck += JSON.stringify(embed.author) ?? '';
+            }
+        }
+        textToCheck = textToCheck.toLowerCase();
+        this.logger.trace(`Checking message content for flag automod: ${textToCheck}`);
+
+        const flags = await this.flagsRepository.getAllFlagTerms();
+        this.logger.trace(`Checking message content for ${flags.length} flagged terms.`);
+        for (const flag of flags) {
+            this.logger.trace(`Checking if message contains flagged term: ${flag}`);
+            if (textToCheck.includes(flag)) {
+                this.logger.info(`Automod detected a flagged term: ${flag}`);
+                await this.loggingService.logFlaggedBotMessage(message, flag, this.client.user!);
+                return; // Stop checking further if a flag is matched
+            }
+        }
+        this.logger.debug(`Message does not contain any of the ${flags.length} flagged terms.`);
+    }
+
+    async checkBlockedWords(message: Message): Promise<boolean> {
+        let textToCheck = message.content;
         if (message.embeds.length > 0) {
             for (const embed of message.embeds) {
                 textToCheck += JSON.stringify(embed.data);
             }
         }
+        textToCheck = textToCheck.toLowerCase();
+        this.logger.trace(`Checking message content for blocked automod: ${textToCheck}`);
 
-        this.logger.trace(`Checking message content for automod: ${textToCheck}`);
-        if (await this.checkBlockedWords(message, textToCheck)) return;
-        await this.checkFlags(message, textToCheck);
-    }
-
-    async checkFlags(message: Message, textToCheck: string) {
-        const flags = await this.flagsRepository.getAllFlags();
-        for (const flag of flags) {
-            if (textToCheck.toLowerCase().includes(flag.term)) {
-                this.logger.info(`Automod detected a flagged term: ${flag.term}`);
-                await this.loggingService.logFlaggedBotMessage(message, flag.term, this.client.user!);
-                return; // Stop checking further if a flag is matched
-            }
-        }
-    }
-
-    async checkBlockedWords(message: Message, textToCheck: string): Promise<boolean> {
         const blockedWords = await this.blockedWordsRepository.getAllBlockedWords();
         for (const word of blockedWords) {
             let isBlocked = false;
@@ -84,18 +102,14 @@ export class AutomodTrigger {
                 isBlocked = pattern.test(textToCheck);
             } else {
                 // if the word does not contain any wildcards (*), isolate the words and compare
-                const words = textToCheck.toLowerCase().split(/\s+/);
-                isBlocked = words.some((w) => {
-                    const cleaned = w.replace(/[*_`|~>#\[\](){}]/g, ''); // replace any formatting in the word
-                    return cleaned === word.toLowerCase();
-                });
+                const wordRegex = new RegExp(`\\b${word.toLowerCase()}\\b`, 'i');
+                isBlocked = wordRegex.test(textToCheck);
             }
             if (isBlocked) {
                 this.logger.info(`Automod detected a blocked word: ${word}`);
-                // TODO: Comment in after testing
                 // const reply = await message.reply(
-                //     `${Constants.Blocked} This bot message contained a word we block on the server and has been removed. Please avoid running commands on content with inappropriate words such as slurs. Thank you!` +
-                //         `\n-# We block certain words to keep the server inclusive and comfortable for everyone. If you think this is a mistake, please contact the server staff.`
+                //     `${Constants.Blocked} This bot message has been removed because it contains a blocked word. Please avoid running commands on content with inappropriate words such as slurs (reclaimed or otherwise). Thank you!` +
+                //         `\n-# We block certain words to keep the server inclusive and comfortable for everyone. If you think this action was a mistake, please contact staff.`
                 // );
                 // await message.delete();
                 // await this.loggingService.logBlockedBotMessage(message, reply, word, this.client.user!);
@@ -103,6 +117,7 @@ export class AutomodTrigger {
                 return true; // Stop checking further if a blocked word is matched
             }
         }
+        this.logger.debug(`Message does not contain any of the ${blockedWords.length} blocked terms.`);
         return false;
     }
 }

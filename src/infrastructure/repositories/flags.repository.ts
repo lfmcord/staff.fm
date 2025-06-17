@@ -1,16 +1,18 @@
-import { model, Schema } from 'mongoose';
-import { inject, injectable } from 'inversify';
-import { TYPES } from '@src/types';
-import { MemberService } from '@src/infrastructure/services/member.service';
 import { Flag } from '@src/feature/commands/moderation/models/flag.model';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { TYPES } from '@src/types';
 import { User } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import { Schema, model } from 'mongoose';
 
 @injectable()
 export class FlagsRepository {
     private memberService: MemberService;
+
     constructor(@inject(TYPES.MemberService) memberService: MemberService) {
         this.memberService = memberService;
     }
+
     public async addFlag(flag: Flag) {
         const flagsInstance = new FlagsModelInstance({
             term: flag.term,
@@ -48,6 +50,11 @@ export class FlagsRepository {
                 };
             })
         );
+    }
+
+    public async getAllFlagTerms(): Promise<string[]> {
+        const flags = await FlagsModelInstance.find().exec();
+        return flags.map((flag) => flag.term);
     }
 
     public async getFlagsByTerms(terms: string[]): Promise<Flag[]> {

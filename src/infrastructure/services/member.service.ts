@@ -1,6 +1,5 @@
 import { Environment } from '@models/environment';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { Flag } from '@src/feature/commands/moderation/models/flag.model';
 import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { TYPES } from '@src/types';
 import { Client, GuildMember, Role, User } from 'discord.js';
@@ -103,7 +102,7 @@ export class MemberService {
         return permissionLevel;
     }
 
-    checkIfMemberIsFlagged(flag: Flag, user?: GuildMember | User): boolean {
+    checkIfMemberIsFlagged(flaggedTerm: string, user?: GuildMember | User): boolean {
         if (!user) return false;
 
         let discordUsername, discordUserId, discordDisplayname, discordServerDisplayname;
@@ -120,10 +119,10 @@ export class MemberService {
         }
 
         return (
-            discordUserId == flag.term ||
-            discordUsername.match(flag.term) != null ||
-            discordDisplayname.match(flag.term) != null ||
-            discordServerDisplayname?.match(flag.term) != null
+            discordUserId == flaggedTerm ||
+            discordUsername.match(flaggedTerm) != null ||
+            discordDisplayname.match(flaggedTerm) != null ||
+            discordServerDisplayname?.match(flaggedTerm) != null
         );
     }
 
