@@ -56,6 +56,9 @@ export interface Environment {
     MODERATION: {
         STRIKE_MUTE_DURATIONS: Map<number, number[]>;
         STRIKE_EXPIRATION_IN_MONTHS: number;
+        AUTOMOD: {
+            ENABLED_CHANNEL_IDS: string[];
+        };
     };
     LOGGING: {
         LOG_LEVEL: number;

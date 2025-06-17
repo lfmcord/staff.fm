@@ -2,6 +2,7 @@ import { Environment } from '@models/environment';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { AutomodTrigger } from '@src/feature/triggers/automod.trigger';
 import { StaffMailDmTrigger } from '@src/feature/triggers/staff-mail-dm.trigger';
 import { VerificationTrigger } from '@src/feature/triggers/verification.trigger';
 import { WhoknowsTrigger } from '@src/feature/triggers/whoknows.trigger';
@@ -19,14 +20,15 @@ import container from '../inversify.config';
 export class MessageCreateHandler implements IHandler {
     eventType: string = 'messageCreate';
 
-    private logger: Logger<MessageCreateHandler>;
-    commandService: CommandService;
-    verificationLastFmTrigger: VerificationTrigger;
-    whoknowsTrigger: WhoknowsTrigger;
-    env: Environment;
+    private readonly logger: Logger<MessageCreateHandler>;
+    private readonly automodTrigger: AutomodTrigger;
+    private readonly commandService: CommandService;
+    private readonly verificationLastFmTrigger: VerificationTrigger;
+    private readonly whoknowsTrigger: WhoknowsTrigger;
+    private readonly env: Environment;
     private readonly staffMailDmReply: StaffMailDmTrigger;
     private readonly cachingRepository: CachingRepository;
-    private memberService: MemberService;
+    private readonly memberService: MemberService;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<MessageCreateHandler>,
@@ -36,8 +38,10 @@ export class MessageCreateHandler implements IHandler {
         @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.VerificationLastFmTrigger) verificationLastFmTrigger: VerificationTrigger,
         @inject(TYPES.WhoknowsTrigger) whoknowsTrigger: WhoknowsTrigger,
-        @inject(TYPES.CommandService) commandService: CommandService
+        @inject(TYPES.CommandService) commandService: CommandService,
+        @inject(TYPES.AutomodTrigger) automodTrigger: AutomodTrigger
     ) {
+        this.automodTrigger = automodTrigger;
         this.commandService = commandService;
         this.verificationLastFmTrigger = verificationLastFmTrigger;
         this.env = env;
@@ -55,6 +59,7 @@ export class MessageCreateHandler implements IHandler {
         const isVerification = message.channelId === this.env.CHANNELS.VERIFICATION_CHANNEL_ID;
         const isWhoKnowsCommand = message.content.startsWith('!');
 
+        await this.automodTrigger.run(message);
         if (isWhoKnowsCommand) await this.whoknowsTrigger.run(message);
 
         if (isBot) return;

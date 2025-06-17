@@ -28,6 +28,7 @@ export const TYPES = {
     WhoknowsTrigger: Symbol('WhoknowsTrigger'),
     DiscussionsTrigger: Symbol('DiscussionsTrigger'),
     MutesTrigger: Symbol('MutesTrigger'),
+    AutomodTrigger: Symbol('AutomodTrigger'),
 
     // REPOSITORIES
     StaffMailRepository: Symbol('StaffMailRepository'),
@@ -37,6 +38,7 @@ export const TYPES = {
     UsersRepository: Symbol('UsersRepository'),
     DiscussionsRepository: Symbol('DiscussionsRepository'),
     MutesRepository: Symbol('MutesRepository'),
+    BlockedWordsRepository: Symbol('BlockedWordsRepository'),
 
     // SERVICES
     MessageService: Symbol('MessageService'),

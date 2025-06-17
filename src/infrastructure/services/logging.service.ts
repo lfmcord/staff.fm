@@ -1,3 +1,4 @@
+import { Constants } from '@models/constants';
 import { Environment } from '@models/environment';
 import { Verification } from '@src/feature/commands/administration/models/verification.model';
 import { Flag } from '@src/feature/commands/moderation/models/flag.model';
@@ -57,7 +58,7 @@ export class LoggingService {
             .setFooter({ text: `Message ID: ${deletedMessage.messageId}` })
             .setTimestamp();
 
-        let description = `🗑️ Message from ${TextHelper.userDisplay(author, false)} deleted `;
+        let description = `${Constants.Deletion} Message from ${TextHelper.userDisplay(author, false)} deleted `;
         if (actor) description += `by ${TextHelper.userDisplay(actor, false)} `;
         description += `in <#${deletedMessage.channelId}>`;
         if (deletedMessage.contents !== '') description += `:\n${codeBlock(deletedMessage.contents)}`;
@@ -97,7 +98,7 @@ export class LoggingService {
             .setFooter({ text: `Channel ID: ${channelId}` })
             .setTimestamp();
 
-        let description = `🗑️ Bulk deleted ${deletedMessageCount} messages `;
+        let description = `${Constants.Deletion} Bulk deleted ${deletedMessageCount} messages `;
         if (actor) description += `by ${TextHelper.userDisplay(actor?.user, false)} `;
         description += `in <#${channelId}>`;
 
@@ -114,19 +115,19 @@ export class LoggingService {
 
         let embed;
         if (isSelfmute) {
-            const title = `🔇 Selfmute`;
+            const title = `${Constants.Mute} Selfmute`;
             const description =
-                `👤 ${bold('User:')} ${TextHelper.userDisplay(subject)}\n` +
-                `⌛ ${bold('Expires:')} <t:${moment(endsAt).unix()}:R>`;
+                `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject)}\n` +
+                `${Constants.Hourglass} ${bold('Expires:')} <t:${moment(endsAt).unix()}:R>`;
             embed = EmbedHelper.getLogEmbed(subject, subject, LogLevel.Trace)
                 .setDescription(description)
                 .setTitle(title);
         } else {
-            const title = `🔇 Mute`;
+            const title = `${Constants.Mute} Mute`;
             const description =
-                `👤 ${bold('User:')} ${TextHelper.userDisplay(subject)}\n` +
-                `📝 ${bold('Reason:')} ${reason ?? 'No reason provided.'}\n` +
-                `⌛ ${bold('Expires:')} <t:${moment(endsAt).unix()}:R>`;
+                `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject)}\n` +
+                `${Constants.Note} ${bold('Reason:')} ${reason ?? 'No reason provided.'}\n` +
+                `${Constants.Hourglass} ${bold('Expires:')} <t:${moment(endsAt).unix()}:R>`;
             embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Warning)
                 .setDescription(description)
                 .setTitle(title);
@@ -141,10 +142,10 @@ export class LoggingService {
 
         const isSelfmute = subject.id === actor?.id;
 
-        const title = isSelfmute ? `🔊 Selfmute ended` : `🔊 Unmute`;
+        const title = isSelfmute ? `${Constants.Loud} Selfmute ended` : `${Constants.Loud} Unmute`;
         const description =
-            `👤 ${bold('User:')} ${TextHelper.userDisplay(subject)}\n` +
-            `📝 ${bold('Reason:')} ${reason ?? 'No reason provided.'}\n`;
+            `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject)}\n` +
+            `${Constants.Note} ${bold('Reason:')} ${reason ?? 'No reason provided.'}\n`;
         const embed = EmbedHelper.getLogEmbed(actor ?? null, subject, LogLevel.Info)
             .setDescription(description)
             .setTitle(title);
@@ -169,7 +170,7 @@ export class LoggingService {
                     },
                     {
                         name: `Returning?`,
-                        value: verification.isReturningUser ? `⚠️ Yes` : 'No',
+                        value: verification.isReturningUser ? `${Constants.Warning} Yes` : 'No',
                         inline: true,
                     },
                     {
@@ -295,7 +296,7 @@ export class LoggingService {
             `${bold(`Reason: `)} ${flag.reason}`;
 
         const logEmbed = EmbedHelper.getLogEmbed(this.client.user, message.author, LogLevel.Warning)
-            .setTitle(`⚠️ Last.fm Account Flagged`)
+            .setTitle(`${Constants.Warning} Last.fm Account Flagged`)
             .setDescription(description);
         logChannel.send({ embeds: [logEmbed] });
     }
@@ -311,7 +312,7 @@ export class LoggingService {
             `${bold(`Reason: `)} ${flag.reason}`;
 
         const logEmbed = EmbedHelper.getLogEmbed(this.client.user, message.author, LogLevel.Warning)
-            .setTitle(`⚠️ Discord Account Flagged`)
+            .setTitle(`${Constants.Warning} Discord Account Flagged`)
             .setDescription(description);
         logChannel.send({ embeds: [logEmbed] });
     }
@@ -328,7 +329,7 @@ export class LoggingService {
         otherMembers.forEach((memberString) => (description += `- ${memberString}\n`));
 
         const logEmbed = EmbedHelper.getLogEmbed(this.client.user, message.author, LogLevel.Warning)
-            .setTitle(`⚠️ Last.fm Account Duplicate`)
+            .setTitle(`${Constants.Warning} Last.fm Account Duplicate`)
             .setDescription(description)
             .setFooter({ text: `Please make sure they are not an alt account. When in doubt, ask staff!` });
         logChannel.send({ embeds: [logEmbed] });
@@ -348,7 +349,7 @@ export class LoggingService {
         let description =
             `${TextHelper.userDisplay(user, true)} ${isCertain ? 'most likely ' : ''}is a returning member.\n\n` +
             `${bold(`Last.fm Link:`)} https://last.fm/user/${lastFmUsername}`;
-        if (isUsingDifferentLastfm) description += ` (⚠️ verifying with different last.fm account)`;
+        if (isUsingDifferentLastfm) description += ` (${Constants.Warning} verifying with different last.fm account)`;
         if (otherDiscordUsers.length > 0) {
             description += `\n\nPrevious Discord accounts:`;
             otherDiscordUsers.forEach((user) => {
@@ -357,7 +358,7 @@ export class LoggingService {
         }
 
         const logEmbed = EmbedHelper.getLogEmbed(this.client.user, user, LogLevel.Info)
-            .setTitle(`ℹ️ Returning member${isCertain ? '?' : ''}`)
+            .setTitle(`${Constants.Information} Returning member${isCertain ? '?' : ''}`)
             .setDescription(description)
             .setFooter({ text: `Welcome back${isCertain ? '?' : '! 🎉'}` });
         logChannel.send({ embeds: [logEmbed] });
@@ -388,9 +389,9 @@ export class LoggingService {
         if (!logChannel) return;
 
         let description = isUnflag
-            ? `🚩 ${bold('Removed flag')} ${inlineCode(flag.term)}\n`
-            : `🚩 ${bold('Added flag')} ${inlineCode(flag.term)}\n`;
-        if (!isUnflag) description += `📝 ${bold('Reason:')} ${flag.reason}`;
+            ? `${Constants.Flag} ${bold('Removed flag')} ${inlineCode(flag.term)}\n`
+            : `${Constants.Flag} ${bold('Added flag')} ${inlineCode(flag.term)}\n`;
+        if (!isUnflag) description += `${Constants.Note} ${bold('Reason:')} ${flag.reason}`;
         const embed = EmbedHelper.getLogEmbed(actor, null, isUnflag ? LogLevel.Info : LogLevel.Warning).setDescription(
             description
         );
@@ -401,9 +402,13 @@ export class LoggingService {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.CROWNS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
-        const description = `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}`;
+        const description = `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject, true)}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
-        embed.setTitle(isDeletion ? `📉 Removed Imports Flag` : `📈 Added Imports Flag`);
+        embed.setTitle(
+            isDeletion
+                ? `${Constants.DownwardChart} Removed Imports Flag`
+                : `${Constants.UpwardChart} Added Imports Flag`
+        );
         await logChannel.send({ embeds: [embed] });
     }
 
@@ -412,10 +417,10 @@ export class LoggingService {
         if (!logChannel) return;
 
         const description =
-            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
-            `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
+            `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n${Constants.Note} ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
-        embed.setTitle(isUnban ? `👑 Crowns Unban` : `<:nocrown:816944519924809779> Crowns Ban`);
+        embed.setTitle(isUnban ? `${Constants.Crown} Crowns Unban` : `<:nocrown:816944519924809779> Crowns Ban`);
         embed.setURL(TextHelper.getDiscordMessageLink(message));
         await logChannel.send({ embeds: [embed] });
     }
@@ -431,7 +436,7 @@ export class LoggingService {
                   `Automatic posting of discussions is **disabled**. enable it again with \`${this.env.CORE.PREFIX}dmanage start\` once there are topics available.`;
         const embed = new EmbedBuilder()
             .setColor(EmbedHelper.orange)
-            .setTitle(`⚠️ No Discussion Topics Available`)
+            .setTitle(`${Constants.Warning} No Discussion Topics Available`)
             .setDescription(description)
             .setTimestamp();
 
@@ -442,12 +447,14 @@ export class LoggingService {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.CROWNS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
-        let description = `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}`;
-        if (capRoleId) description += `\n:1234: ${bold('Cap:')} <@&${capRoleId}>`;
-        description += `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
+        let description = `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject, true)}`;
+        if (capRoleId) description += `\n${Constants.Numbers} ${bold('Cap:')} <@&${capRoleId}>`;
+        description += `\n${Constants.Note} ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
 
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
-        embed.setTitle(capRoleId ? '🚫 Scrobble Cap Set' : '☑️ Scrobble Cap Removed');
+        embed.setTitle(
+            capRoleId ? `${Constants.Blocked} Scrobble Cap Set` : `${Constants.Accepted} Scrobble Cap Removed`
+        );
         embed.setURL(TextHelper.getDiscordMessageLink(message));
 
         await logChannel.send({ embeds: [embed] });
@@ -459,7 +466,7 @@ export class LoggingService {
 
         const embed = EmbedHelper.getLogEmbed(actor, null, isRemoval ? LogLevel.Failure : LogLevel.Success)
             .setDescription(topic)
-            .setTitle(isRemoval ? `📤 Topic removed` : `📥 Topic added`)
+            .setTitle(isRemoval ? `${Constants.Outgoing} Topic removed` : `${Constants.Incoming} Topic added`)
             .setFooter({ text: `Topics left: ${openTopicsCount}` });
 
         await logChannel.send({ embeds: [embed] });
@@ -469,12 +476,12 @@ export class LoggingService {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.DISCUSSIONS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
-        let description = `🧵 ${bold('Thread:')} <#${discussion.threadId}>`;
-        description += `\n📄 ${bold('Topic:')} \`${discussion.topic}\``;
+        let description = `${Constants.Thread} ${bold('Thread:')} <#${discussion.threadId}>`;
+        description += `\n${Constants.EmptyPage} ${bold('Topic:')} \`${discussion.topic}\``;
 
         const embed = EmbedHelper.getLogEmbed(actor, null, LogLevel.Success)
             .setDescription(description)
-            .setTitle(`💬 Discussion opened`);
+            .setTitle(`${Constants.Speech} Discussion opened`);
 
         await logChannel.send({ embeds: [embed] });
     }
@@ -483,12 +490,12 @@ export class LoggingService {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.DISCUSSIONS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
-        let description = `📄 ${bold('Topic:')} \`${discussion.topic}\``;
-        description += `\n🕒 ${bold('Scheduled for:')} <t:${moment(discussion.scheduledFor).unix()}:f> (<t:${moment(discussion.scheduledFor).unix()}:R>)`;
+        let description = `${Constants.EmptyPage} ${bold('Topic:')} \`${discussion.topic}\``;
+        description += `\n${Constants.Time} ${bold('Scheduled for:')} <t:${moment(discussion.scheduledFor).unix()}:f> (<t:${moment(discussion.scheduledFor).unix()}:R>)`;
 
         const embed = EmbedHelper.getLogEmbed(null, null, LogLevel.Info)
             .setDescription(description)
-            .setTitle(`⌛ Discussion scheduled`);
+            .setTitle(`${Constants.Hourglass} Discussion scheduled`);
 
         await logChannel.send({ embeds: [embed] });
     }
@@ -503,7 +510,11 @@ export class LoggingService {
 
         const embed = EmbedHelper.getLogEmbed(actor, null, LogLevel.Info)
             .setDescription(description)
-            .setTitle(isStart ? `♾️ Automatic Discussions scheduled` : `⏹️ Automatic Discussions stopped`)
+            .setTitle(
+                isStart
+                    ? `${Constants.Infinity} Automatic Discussions scheduled`
+                    : `${Constants.Stop} Automatic Discussions stopped`
+            )
             .setFooter({
                 text: isStart
                     ? `Use ${this.env.CORE.PREFIX}dmanage stop to stop automatic discussions.`
@@ -526,16 +537,18 @@ export class LoggingService {
 
         let actionDescription = `User received a **${action}** strike.`;
         if (action === 'Manual') actionDescription = `-# Strike was manually added. No action has been taken.`;
-        else if (action.match('/Mute/')) actionDescription = `🔇 User received a **${action}** for this strike.`;
-        else if (action.match('/Ban/')) actionDescription = `🔨 User received a **${action}** for this strike.`;
+        else if (action.match('/Mute/'))
+            actionDescription = `${Constants.Mute} User received a **${action}** for this strike.`;
+        else if (action.match('/Ban/'))
+            actionDescription = `${Constants.Hammer} User received a **${action}** for this strike.`;
 
         const description =
-            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
-            `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}` +
+            `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n${Constants.Note} ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}` +
             `\n\n${actionDescription}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Failure).setDescription(description);
         embed.setFooter({ text: TextHelper.strikeCounter(activeStrikeCount, allStrikesCount) });
-        embed.setTitle(`🗯️ Strike Issued`);
+        embed.setTitle(`${Constants.Scream} Strike Issued`);
         return await logChannel.send({ embeds: [embed] });
     }
 
@@ -550,11 +563,11 @@ export class LoggingService {
         if (!logChannel) return;
 
         const description =
-            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
-            `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
+            `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n${Constants.Note} ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Success).setDescription(description);
         embed.setFooter({ text: TextHelper.strikeCounter(activeStrikeCount, allStrikesCount) });
-        embed.setTitle(`🗯️ Strike Appealed`);
+        embed.setTitle(`${Constants.Scream} Strike Appealed`);
         await logChannel.send({ embeds: [embed] });
     }
 
@@ -569,12 +582,12 @@ export class LoggingService {
         if (!logChannel) return;
 
         const description =
-            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
-            `\n📝 ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
+            `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n${Constants.Note} ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Success).setDescription(description);
         if (activeStrikeCount && allStrikesCount)
             embed.setFooter({ text: TextHelper.strikeCounter(activeStrikeCount, allStrikesCount) });
-        embed.setTitle(`:wastebasket: Strike Removed`);
+        embed.setTitle(`${Constants.Deletion} Strike Removed`);
         await logChannel.send({ embeds: [embed] });
     }
 
@@ -583,10 +596,10 @@ export class LoggingService {
         if (!logChannel) return;
 
         const description =
-            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
-            `\n📝 ${bold('Reason:')} ${!reason || reason == '' ? 'No reason provided.' : reason}`;
+            `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n${Constants.Note} ${bold('Reason:')} ${!reason || reason == '' ? 'No reason provided.' : reason}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Failure).setDescription(description);
-        embed.setTitle(`🔨 Ban Issued`);
+        embed.setTitle(`${Constants.Hammer} Ban Issued`);
         await logChannel.send({ embeds: [embed] });
     }
 
@@ -595,11 +608,41 @@ export class LoggingService {
         if (!logChannel) return;
 
         const description =
-            `:bust_in_silhouette: ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
-            `\n📝 ${bold('Content:')} ${content}`;
+            `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
+            `\n${Constants.Note} ${bold('Content:')} ${content}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
-        embed.setTitle(`ℹ️ Informed User`);
+        embed.setTitle(`${Constants.Information} Informed User`);
         await logChannel.send({ embeds: [embed] });
+    }
+
+    async logFlaggedBotMessage(message: Message, flaggedTerm: string, actor: User) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description =
+            `${Constants.Speech} ${bold('Link to Message:')} ${TextHelper.getDiscordMessageLink(message)}` +
+            `\n${Constants.Note} ${bold('Flagged term:')} ${flaggedTerm}`;
+        const embed = EmbedHelper.getLogEmbed(actor, null, LogLevel.Warning).setDescription(description);
+        embed.setTitle(`${Constants.Flag} Bot Message Flagged`);
+        await logChannel.send({ embeds: [embed] });
+    }
+
+    async logBlockedBotMessage(originalMessage: Message, surrounding: Message, blockedWord: string, actor: User) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const description =
+            `${Constants.Speech} ${bold('Link to Surrounding:')} ${TextHelper.getDiscordMessageLink(surrounding)}` +
+            `\n${Constants.Note} ${bold('Blocked word:')} ${blockedWord}` +
+            `\n${Constants.Deletion} ${bold('Original Message:')} ${originalMessage.content}`;
+        const embed = EmbedHelper.getLogEmbed(actor, null, LogLevel.Failure).setDescription(description);
+        embed.setTitle(`${Constants.Blocked} Bot Message Blocked`);
+        const embeds = [embed];
+        for (const embed of originalMessage.embeds) {
+            const newEmbed = new EmbedBuilder(embed.data);
+            embeds.push(newEmbed);
+        }
+        await logChannel.send({ embeds: embeds });
     }
 
     private async getLogChannel(channelId: string): Promise<GuildTextBasedChannel | null> {

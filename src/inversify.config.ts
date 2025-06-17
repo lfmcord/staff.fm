@@ -105,6 +105,9 @@ import { UpdateButtonInteraction } from '@src/feature/interactions/message-compo
 import { InformCommand } from '@src/feature/commands/moderation/inform.command';
 import { StrikesManageCommand } from '@src/feature/commands/moderation/strikes-manage.command';
 import { UserlogCommand } from '@src/feature/commands/administration/userlog.command';
+import { AutomodTrigger } from '@src/feature/triggers/automod.trigger';
+import { BlockedWordsRepository } from '@src/infrastructure/repositories/blocked-words.repository';
+import { AutomodCommand } from '@src/feature/commands/moderation/automod.command';
 
 const container = new Container();
 
@@ -238,6 +241,7 @@ container.bind<ICommand>('Command').to(ScatterCommand);
 container.bind<ICommand>('Command').to(InformCommand);
 container.bind<ICommand>('Command').to(StrikesManageCommand);
 container.bind<ICommand>('Command').to(UserlogCommand);
+container.bind<ICommand>('Command').to(AutomodCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
@@ -245,6 +249,7 @@ container.bind<VerificationTrigger>(TYPES.VerificationLastFmTrigger).to(Verifica
 container.bind<WhoknowsTrigger>(TYPES.WhoknowsTrigger).to(WhoknowsTrigger);
 container.bind<DiscussionsTrigger>(TYPES.DiscussionsTrigger).to(DiscussionsTrigger);
 container.bind<MutesTrigger>(TYPES.MutesTrigger).to(MutesTrigger);
+container.bind<AutomodTrigger>(TYPES.AutomodTrigger).to(AutomodTrigger);
 
 // INTERACTIONS
 container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(VerifyContextMenuInteraction);
@@ -276,6 +281,7 @@ container.bind<FlagsRepository>(TYPES.FlagsRepository).to(FlagsRepository);
 container.bind<UsersRepository>(TYPES.UsersRepository).to(UsersRepository);
 container.bind<DiscussionsRepository>(TYPES.DiscussionsRepository).to(DiscussionsRepository);
 container.bind<MutesRepository>(TYPES.MutesRepository).to(MutesRepository);
+container.bind<BlockedWordsRepository>(TYPES.BlockedWordsRepository).to(BlockedWordsRepository);
 
 // SERVICES
 container.bind<MessageService>(TYPES.MessageService).to(MessageService);

@@ -364,9 +364,9 @@ export class EmbedHelper {
                             .setTitle('🃏 StaffMail - Other Concerns')
                             .setDescription(
                                 `The concern why you want to message staff falls under none of the other categories. We are still happy to hear you out and do what we can.\n\n` +
-                                    `⚠️ ${bold(`BEFORE YOU SUBMIT:`)} Please be aware that the Last.fm Discord is not officially affiliated with Last.fm.` +
-                                    `If you have an issue with your account or the website, we can't help you beyond pointing you in the right direction. For official Last.fm support, please visit the [Last.fm Support Forums](https://support.last.fm/).\\n` +
-                                    `Similarly, if you experience issues with the .fmbot or Gowon Discord bots, please visit their respective servers:\\n- [.fmbot support server](https://discord.gg/fmbot)\\n- [Gowon support server](https://discord.gg/9Vr7Df7TZf)\\n\\n` +
+                                    `⚠️ ${bold(`BEFORE YOU SUBMIT:`)} Please be aware that the Last.fm Discord is not officially affiliated with Last.fm. ` +
+                                    `If you have an issue with your account or the website, we can't help you beyond pointing you in the right direction. For official Last.fm support, please visit the [Last.fm Support Forums](https://support.last.fm/).\n` +
+                                    `Similarly, if you experience issues with the .fmbot or Gowon Discord bots, please visit their respective servers:\n- [.fmbot support server](https://discord.gg/fmbot)\n- [Gowon support server](https://discord.gg/9Vr7Df7TZf)\n\n` +
                                     `You might also get some help about last.fm features or scrobbling in <#579673026526969876>!\n\n` +
                                     ` Please choose below how you want to send your concern.`
                             ),
