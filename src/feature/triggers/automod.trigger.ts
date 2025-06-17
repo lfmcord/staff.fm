@@ -55,7 +55,7 @@ export class AutomodTrigger {
             `Running automod trigger for message by ${TextHelper.userLog(message.author)} in channel ${message.channel.id}`
         );
 
-        // if (await this.checkBlockedWords(message)) return;
+        if (await this.checkBlockedWords(message)) return;
         await this.checkFlags(message);
     }
 

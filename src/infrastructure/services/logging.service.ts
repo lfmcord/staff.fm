@@ -621,7 +621,7 @@ export class LoggingService {
 
         const description =
             `${Constants.Speech} ${bold('Link to Message:')} ${TextHelper.getDiscordMessageLink(message)}` +
-            `\n${Constants.Note} ${bold('Flagged term:')} ${flaggedTerm}`;
+            `\n${Constants.Note} ${bold('Flagged term:')} ${inlineCode(flaggedTerm)}`;
         const embed = EmbedHelper.getLogEmbed(actor, null, LogLevel.Warning).setDescription(description);
         embed.setTitle(`${Constants.Flag} Bot Message Flagged`);
         await logChannel.send({ embeds: [embed] });
@@ -633,7 +633,7 @@ export class LoggingService {
 
         const description =
             `${Constants.Speech} ${bold('Link to Surrounding:')} ${TextHelper.getDiscordMessageLink(surrounding)}` +
-            `\n${Constants.Note} ${bold('Blocked word:')} ${blockedWord}` +
+            `\n${Constants.Note} ${bold('Blocked word:')} ${inlineCode(blockedWord)}` +
             `\n${Constants.Deletion} ${bold('Original Message:')} ${originalMessage.content}`;
         const embed = EmbedHelper.getLogEmbed(actor, null, LogLevel.Failure).setDescription(description);
         embed.setTitle(`${Constants.Blocked} Bot Message Blocked`);

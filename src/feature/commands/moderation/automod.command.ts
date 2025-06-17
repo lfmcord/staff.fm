@@ -13,7 +13,7 @@ import { Logger } from 'tslog';
 export class AutomodCommand implements ICommand {
     name: string = 'automod';
     description: string =
-        'Gets, sets or removes automodded words. Use `*` to match any characters before or after the word.';
+        'Gets, sets or removes automodded words. Use `*` to match any characters before or after the word. Only alphanumerical and * are allowed. Formatting (e.g. italic, spoilers,...) is ignored when matching.';
     usageHint: string = 'add <words to add, separated by comma> | remove <words to remove, separated by comma>';
     examples: string[] = ['', 'add badword, worseword, *word*', 'remove badword, *word*'];
     permissionLevel = CommandPermissionLevel.Moderator;
@@ -90,11 +90,13 @@ export class AutomodCommand implements ICommand {
         const existingBlockedWords = await this.blockedWordsRepository.getAllBlockedWords();
         const existingTerms = existingBlockedWords.map((word) => word.toLowerCase());
 
-        const newWords = wordsToAdd.filter((word) => !existingTerms.includes(word.toLowerCase()));
+        const newWords = wordsToAdd.filter(
+            (word) => !existingTerms.includes(word.toLowerCase()) && /^[a-z0-9*]+$/i.test(word)
+        );
         if (newWords.length === 0) {
             return {
                 isSuccessful: false,
-                replyToUser: `None of the provided words are new!`,
+                replyToUser: `None of the provided words are new or allowed!`,
             };
         }
 
