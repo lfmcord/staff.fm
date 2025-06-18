@@ -87,7 +87,10 @@ export class AutomodTrigger {
         let textToCheck = message.content;
         if (message.embeds.length > 0) {
             for (const embed of message.embeds) {
-                textToCheck += JSON.stringify(embed.data);
+                if (embed.author) {
+                    textToCheck += embed.author.name;
+                    textToCheck += embed.author.url;
+                }
             }
         }
         textToCheck = textToCheck.toLowerCase();
