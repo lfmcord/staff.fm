@@ -45,7 +45,7 @@ export class WhoisCommand implements ICommand {
         this.usersRepository = usersRepository;
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
+    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
         const userId = TextHelper.getDiscordUserId(args[0]);
         if (userId) {
             message.channel.send(await this.getMessageForDiscordUser(userId, message.author!));

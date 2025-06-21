@@ -10,7 +10,6 @@ import { TYPES } from '@src/types';
 import {
     ActivityType,
     Client,
-    Collection,
     Events,
     GuildBan,
     GuildMember,
@@ -19,6 +18,7 @@ import {
     InteractionType,
     Message,
     PartialMessage,
+    ReadonlyCollection,
     REST,
     Routes,
 } from 'discord.js';
@@ -102,7 +102,7 @@ export class Bot {
 
         this.client.on(
             Events.MessageBulkDelete,
-            async (messages: Collection<string, Message | PartialMessage>, channel: GuildTextBasedChannel) => {
+            async (messages: ReadonlyCollection<string, Message | PartialMessage>, channel: GuildTextBasedChannel) => {
                 try {
                     // await this.handlerFactory.createHandler(Events.MessageBulkDelete).handle({ messages, channel });
                 } catch (e) {

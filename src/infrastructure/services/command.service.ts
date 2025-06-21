@@ -1,16 +1,17 @@
-import { inject, injectable } from 'inversify';
-import { GuildMember, Interaction, Message } from 'discord.js';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { TextHelper } from '@src/helpers/text.helper';
-import { Logger } from 'tslog';
-import { TYPES } from '@src/types';
 import { MemberService } from '@src/infrastructure/services/member.service';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { TYPES } from '@src/types';
+import { GuildMember, Interaction, Message } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import { Logger } from 'tslog';
 
 @injectable()
 export class CommandService {
     memberService: MemberService;
     logger: Logger<CommandService>;
+
     constructor(
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.BotLogger) logger: Logger<CommandService>
@@ -57,7 +58,7 @@ export class CommandService {
         await message.react(emoji);
 
         let reply: Message;
-        if (result.replyToUser) {
+        if (result.replyToUser && message.channel.isSendable()) {
             reply = await message.channel.send(`${result.replyToUser}`);
         }
 
@@ -76,7 +77,8 @@ export class CommandService {
         if (interaction.isRepliable())
             if (interaction.deferred) interaction.editReply({ content: messageToUser });
             else interaction.reply({ content: messageToUser, ephemeral: true });
-        else if (interaction.channel) await interaction.channel.send({ content: messageToUser });
+        else if (interaction.channel && interaction.channel.isSendable())
+            interaction.channel.send({ content: messageToUser });
     }
 
     public async handleCommandResultForInteraction(

@@ -28,6 +28,10 @@ export class StaffMailDmTrigger {
     }
 
     public async run(message: Message): Promise<void> {
+        if (!message.channel.isSendable()) {
+            this.logger.error(`Cannot send messages in channel ${message.channel.id}.`);
+            return;
+        }
         if (!message.reference) {
             await message.reply(
                 `It looks like you are trying to chat with me.\n` +

@@ -78,7 +78,7 @@ export class DiscussionsTopicCommand implements ICommand {
         return Promise.resolve();
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
+    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
         let result: CommandResult;
         switch (args[0]) {
             case this.operations[0]:
@@ -112,7 +112,7 @@ export class DiscussionsTopicCommand implements ICommand {
         };
     }
 
-    private async removeDiscussionsTopic(args: string[], message: Message): Promise<CommandResult> {
+    private async removeDiscussionsTopic(args: string[], message: Message<true>): Promise<CommandResult> {
         const topics = await this.discussionsRepository.getAllUnusedDiscussions();
         if (args[1]) {
             const numberToRemove = Number.parseInt(args[1]);
@@ -162,7 +162,7 @@ export class DiscussionsTopicCommand implements ICommand {
         return {};
     }
 
-    async showDiscussionsTopics(message: Message) {
+    async showDiscussionsTopics(message: Message<true>) {
         this.logger.info(`Showing all discussion topics...`);
         const topics = await this.discussionsRepository.getAllDiscussions();
         if (topics.length == 0) {

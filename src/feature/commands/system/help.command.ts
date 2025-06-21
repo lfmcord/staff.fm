@@ -34,7 +34,7 @@ export class HelpCommand implements ICommand {
         this.env = env;
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
+    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
         let reply;
         const member = await this.memberService.getGuildMemberFromUserId(message.author.id);
         const memberPermissionLevel = await this.memberService.getMemberPermissionLevel(member!);

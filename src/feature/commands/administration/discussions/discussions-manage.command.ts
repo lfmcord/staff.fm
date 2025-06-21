@@ -67,7 +67,7 @@ export class DiscussionsManageCommand implements ICommand {
         return Promise.resolve();
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
+    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
         if (args.length == 0) return await this.showDiscussionManagement(message);
 
         if (args[0] == 'stop') return await this.stopAutomaticDiscussions(message);
@@ -197,7 +197,7 @@ export class DiscussionsManageCommand implements ICommand {
         };
     }
 
-    private async showDiscussionManagement(message: Message) {
+    private async showDiscussionManagement(message: Message<true>) {
         const allDiscussions = await this.discussionsRepository.getAllDiscussions();
 
         const embed = EmbedHelper.getDiscussionsManagementEmbed(

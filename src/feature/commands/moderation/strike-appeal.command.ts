@@ -39,7 +39,7 @@ export class StrikeAppealCommand implements ICommand {
         this.usersRepository = usersRepository;
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
+    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
         const userId = TextHelper.getDiscordUserId(args[0])!;
         const user = await this.memberService.fetchUser(userId);
         if (!user) {

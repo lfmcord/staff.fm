@@ -9,7 +9,7 @@ import { TYPES } from '@src/types';
 import {
     BaseGuildTextChannel,
     Client,
-    TextBasedChannel,
+    GuildTextBasedChannel,
     ThreadAutoArchiveDuration,
     ThreadChannel,
     User,
@@ -110,7 +110,7 @@ export class DiscussionsTrigger {
 
         const channel = (await this.channelService.getGuildTextChannelById(
             this.environment.DISCUSSIONS.CHANNEL_ID
-        )) as TextBasedChannel;
+        )) as GuildTextBasedChannel;
 
         if (!channel) {
             this.logger.error(`Can't find discussions channel with ID ${this.environment.DISCUSSIONS.CHANNEL_ID}.`);

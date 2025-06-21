@@ -25,6 +25,9 @@ export class MessageService {
         emojiOptions: string[],
         doCleanup: boolean
     ): Promise<string | null> {
+        if (!channel.isSendable()) {
+            throw new Error(`Channel ${channel.id} is not sendable.`);
+        }
         const confirmationMessage = await channel.send(queryMessage);
 
         for (const emoji of emojiOptions) {

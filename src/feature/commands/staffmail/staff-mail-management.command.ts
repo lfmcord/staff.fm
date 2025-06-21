@@ -6,16 +6,7 @@ import { StaffMailCustomIds } from '@src/feature/interactions/models/staff-mail-
 import { ComponentHelper } from '@src/helpers/component.helper';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { TYPES } from '@src/types';
-import {
-    ActionRowBuilder,
-    bold,
-    ButtonBuilder,
-    ButtonStyle,
-    EmbedBuilder,
-    inlineCode,
-    Message,
-    PartialMessage,
-} from 'discord.js';
+import { ActionRowBuilder, bold, ButtonBuilder, ButtonStyle, EmbedBuilder, inlineCode, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 
 @injectable()
@@ -36,7 +27,7 @@ export class StaffMailManagementCommand implements ICommand {
         this.env = env;
     }
 
-    async run(message: Message | PartialMessage): Promise<CommandResult> {
+    async run(message: Message<true>): Promise<CommandResult> {
         const createButton = new ButtonBuilder()
             .setCustomId('defer-staff-mail-create-button')
             .setLabel('Contact Discord Staff')

@@ -1,12 +1,12 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { AttachmentBuilder, Message, User } from 'discord.js';
-import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
 import { TYPES } from '@src/types';
-import * as moment from 'moment';
 import * as Buffer from 'buffer';
+import { AttachmentBuilder, Message, User } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import * as moment from 'moment';
 
 @injectable()
 export class FlagsCommand implements ICommand {
@@ -25,7 +25,7 @@ export class FlagsCommand implements ICommand {
         this.flagsRepository = flagsRepository;
     }
 
-    async run(message: Message): Promise<CommandResult> {
+    async run(message: Message<true>): Promise<CommandResult> {
         const flags = await this.flagsRepository.getAllFlags();
 
         if (flags.length === 0) {

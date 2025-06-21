@@ -21,6 +21,7 @@ import {
     EmbedBuilder,
     GuildMember,
     Interaction,
+    InteractionEditReplyOptions,
     Message,
     MessageContextMenuCommandInteraction,
     MessageReplyOptions,
@@ -122,7 +123,7 @@ export class StaffMailReportCommand implements ICommand {
                     isInteraction,
                     Array.from(trigger.targetMessage.attachments.values()),
                     trigger.targetMessage.content
-                ) as MessageReplyOptions
+                ) as InteractionEditReplyOptions
             );
 
         // User needs to confirm or cancel

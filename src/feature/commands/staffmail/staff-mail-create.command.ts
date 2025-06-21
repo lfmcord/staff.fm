@@ -10,6 +10,7 @@ import {
     Client,
     inlineCode,
     Interaction,
+    InteractionEditReplyOptions,
     InteractionReplyOptions,
     Message,
     StringSelectMenuInteraction,
@@ -58,6 +59,10 @@ export class StaffMailCreateCommand implements ICommand {
     }
 
     private async createNewStaffMail(message: Message): Promise<void> {
+        if (!message.channel.isSendable()) {
+            this.logger.error(`Staff mail creation failed: Channel is not sendable.`);
+            return;
+        }
         const createMessage: Message = await message.channel.send(EmbedHelper.getStaffMailCreateEmbed());
 
         // Handling the category selection menu
@@ -138,9 +143,7 @@ export class StaffMailCreateCommand implements ICommand {
         await categorySelection.update({});
         const category: string = (categorySelection as StringSelectMenuInteraction).values[0];
         this.logger.debug(`User has selected a category (${category}). Proceeding to next menu.`);
-        const response = EmbedHelper.getStaffMailCategoryEmbed(category) as InteractionReplyOptions;
-        response.ephemeral = true;
-        response.fetchReply = true;
+        const response = EmbedHelper.getStaffMailCategoryEmbed(category) as InteractionEditReplyOptions;
         await interaction.editReply(response);
 
         // Crowns has a submenu, get the response for it.
@@ -163,9 +166,7 @@ export class StaffMailCreateCommand implements ICommand {
             this.logger.debug(`User has selected a crowns sub-category (${crownsSubcategory}). Showing send button.`);
             const response = EmbedHelper.getStaffMailCrownsSubcategoryEmbed(
                 crownsSubcategory
-            ) as InteractionReplyOptions;
-            response.ephemeral = true;
-            response.fetchReply = true;
+            ) as InteractionEditReplyOptions;
             await interaction.editReply(response);
         }
 

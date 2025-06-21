@@ -46,7 +46,7 @@ export class MuteRndCommand implements ICommand {
         this.muteRndRepository = muteRndRepository;
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
+    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
         let reply: MessageCreateOptions;
         switch (args[0]) {
             case 'optin':
@@ -99,7 +99,7 @@ export class MuteRndCommand implements ICommand {
         else return { content: `You've opted out of the mute game. You're safe... Or are you? 😈` };
     }
 
-    private async start(message: Message): Promise<MessageCreateOptions> {
+    private async start(message: Message<true>): Promise<MessageCreateOptions> {
         this.logger.debug(`Starting mute game...`);
         const players = await this.muteRndRepository.getOptedInUsers();
         if (players.length === 0)
@@ -185,7 +185,7 @@ export class MuteRndCommand implements ICommand {
     }
 
     // TODO: Fix the countdown
-    private doSetTimeout(i: number, message: Message) {
+    private doSetTimeout(i: number, message: Message<true>) {
         setTimeout(() => {
             message.channel.send(`${i}...`);
         }, 2000);

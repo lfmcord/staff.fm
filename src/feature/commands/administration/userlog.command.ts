@@ -24,7 +24,7 @@ export class UserlogCommand implements ICommand {
         this.memberService = memberService;
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
+    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
         const userId = TextHelper.getDiscordUserId(args[0]);
         if (!userId) {
             return {

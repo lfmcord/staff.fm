@@ -56,7 +56,7 @@ export class StrikeCommand implements ICommand {
         this.description += `\nStrikes expire after ${env.MODERATION.STRIKE_EXPIRATION_IN_MONTHS} months.`;
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
+    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
         const userId = TextHelper.getDiscordUserId(args[0])!;
         const member = await this.memberService.getGuildMemberFromUserId(userId);
         if (!member) {
