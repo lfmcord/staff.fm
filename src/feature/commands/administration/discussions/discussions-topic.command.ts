@@ -164,19 +164,20 @@ export class DiscussionsTopicCommand implements ICommand {
 
     async showDiscussionsTopics(message: Message) {
         this.logger.info(`Showing all discussion topics...`);
-        const topicsFile = await this.discussionsRepository.getAllDiscussionTopicsAsFile();
-
-        if (!topicsFile) {
+        const topics = await this.discussionsRepository.getAllDiscussions();
+        if (topics.length == 0) {
             return {
                 isSuccessful: true,
                 replyToUser: `No discussion topics available.`,
             };
         }
+        const topicsFile = await this.discussionsRepository.getAllDiscussionTopicsAsFile(topics);
+        const unopenedTopicsLength = topics.filter((t) => !t.openedAt).length;
 
         await message.channel.send({
-            content: `Current discussion topics (oldest to newest):`,
+            content: `There are currently ${unopenedTopicsLength} open topics (${topics.length - unopenedTopicsLength} used). Current discussion topics (oldest to newest):`,
             files: [
-                new AttachmentBuilder(topicsFile, {
+                new AttachmentBuilder(topicsFile!, {
                     name: `${moment().format('YYYY_MM_DD')}_discussion_topics.txt`,
                 }),
             ],

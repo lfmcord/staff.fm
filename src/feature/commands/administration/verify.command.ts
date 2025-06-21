@@ -228,7 +228,10 @@ export class VerifyCommand implements ICommand {
             await this.usersRepository.addVerificationToUser(verification);
         }
 
-        if (memberToVerify) await memberToVerify.roles.remove(this.env.ROLES.UNVERIFIED_ROLE_ID as RoleResolvable);
+        if (memberToVerify) {
+            await memberToVerify.roles.remove(this.env.ROLES.UNVERIFIED_ROLE_ID as RoleResolvable);
+            await memberToVerify.roles.add(this.env.ROLES.VERIFIED_ROLE_ID as RoleResolvable);
+        }
 
         try {
             await verificationMessage.reactions.removeAll();

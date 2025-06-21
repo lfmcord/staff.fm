@@ -31,6 +31,7 @@ export interface Environment {
         NO_LASTFM_ACCOUNT_ROLE_ID: string;
         UNVERIFIED_ROLE_ID: string;
         SCROBBLE_MILESTONES: Map<number, string>;
+        VERIFIED_ROLE_ID: string;
     };
     CHANNELS: {
         HELPERS_CHANNEL_ID: string;
