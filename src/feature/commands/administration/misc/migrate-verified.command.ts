@@ -76,16 +76,12 @@ export class MigrateVerifiedCommand implements ICommand {
 
         const membersToMigrate = members.filter((member) => !member.roles.cache.has(unverifiedRole.id));
 
-        const progressMessage = await message.reply(
-            `Migrating 0/${membersToMigrate.size} users from Verified to Unverified role...`
-        );
+        const progressMessage = await message.reply(`Migrating 0/${membersToMigrate.size} users to Verified role...`);
         await message.react(TextHelper.loading);
 
         let migratedCount = 0;
         const updateInterval = setInterval(async () => {
-            await progressMessage.edit(
-                `Migrating ${migratedCount}/${membersToMigrate.size} users from Verified to Unverified role...`
-            );
+            await progressMessage.edit(`Migrating ${migratedCount}/${membersToMigrate.size} users to Verified role...`);
         }, 10_000);
 
         for (const member of membersToMigrate.values()) {
