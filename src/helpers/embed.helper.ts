@@ -229,7 +229,7 @@ export class EmbedHelper {
         const embed = new EmbedBuilder()
             .setAuthor({
                 name: name,
-                iconURL: isAnonymous ? this.anonymousPictureLink : author!.avatarURL() ?? '',
+                iconURL: isAnonymous || !(author?.avatarURL()) ? this.anonymousPictureLink : author!.avatarURL()!,
             })
             .setTitle(title)
             .setColor(12059152)

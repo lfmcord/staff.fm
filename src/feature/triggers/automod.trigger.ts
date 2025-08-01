@@ -51,7 +51,7 @@ export class AutomodTrigger {
             this.logger.warn(`Could not fetch category for channel ID ${message.channel.id}.`);
             if (!this.env.MODERATION.AUTOMOD.ENABLED_CHANNEL_IDS.includes(message.channelId)) return;
         }
-        this.logger.info(
+        this.logger.trace(
             `Running automod trigger for message by ${TextHelper.userLog(message.author)} in channel ${message.channel.id}`
         );
 
@@ -80,7 +80,7 @@ export class AutomodTrigger {
                 return; // Stop checking further if a flag is matched
             }
         }
-        this.logger.debug(`Message does not contain any of the ${flags.length} flagged terms.`);
+        this.logger.trace(`Message does not contain any of the ${flags.length} flagged terms.`);
     }
 
     async checkBlockedWords(message: Message): Promise<boolean> {
@@ -120,7 +120,7 @@ export class AutomodTrigger {
                 return true; // Stop checking further if a blocked word is matched
             }
         }
-        this.logger.debug(`Message does not contain any of the ${blockedWords.length} blocked terms.`);
+        this.logger.trace(`Message does not contain any of the ${blockedWords.length} blocked terms.`);
         return false;
     }
 }
