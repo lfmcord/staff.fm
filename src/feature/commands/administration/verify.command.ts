@@ -130,6 +130,7 @@ export class VerifyCommand implements ICommand {
     ): Promise<CommandResult> {
         const memberToVerify = await this.memberService.getGuildMemberFromUserId(targetUser.id);
         const userToVerify = await this.memberService.fetchUser(targetUser.id);
+        const verifierMember = await this.memberService.getGuildMemberFromUserId(verifier.id);
         if (!lastfmUsername) lastfmUsername = TextHelper.getLastfmUsername(verificationMessage.content) ?? undefined;
 
         if (!userToVerify) {
@@ -140,7 +141,7 @@ export class VerifyCommand implements ICommand {
         }
 
         if (
-            (await this.memberService.getMemberPermissionLevel(verificationMessage.member!)) <
+            (await this.memberService.getMemberPermissionLevel(verifierMember!)) <
             CommandPermissionLevel.Moderator
         ) {
             this.logger.debug(`User is not privileged moderator, check for flagged account.`);
