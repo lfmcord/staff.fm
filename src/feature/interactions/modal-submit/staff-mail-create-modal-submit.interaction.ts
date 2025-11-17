@@ -8,7 +8,7 @@ import { UsersRepository } from '@src/infrastructure/repositories/users.reposito
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { TYPES } from '@src/types';
-import { EmbedBuilder, ModalSubmitInteraction } from 'discord.js';
+import { EmbedBuilder, GuildMember, ModalSubmitInteraction } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 
@@ -91,12 +91,15 @@ export class StaffMailCreateModalSubmitInteraction implements IModalSubmitIntera
         let rolePings = '';
         this.env.STAFFMAIL.PING_ROLE_IDS.forEach((id) => (rolePings += `<@&${id}> `));
         const embeds: EmbedBuilder[] = [];
+        const member = await this.memberService.getGuildMemberFromUserId(interaction.user.id);
+        const roles = await this.memberService.getRolesFromGuildMember(member!);
         embeds.push(
             EmbedHelper.getStaffMailStaffViewNewEmbed(
-                isAnonymous ? null : interaction.user,
+                isAnonymous ? null : member,
                 isAnonymous ? null : interaction.user,
                 category,
                 summary,
+                roles,
                 this.env.CORE.PREFIX
             )
         );

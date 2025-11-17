@@ -163,13 +163,15 @@ export class StaffMailContactCommand implements ICommand {
             newStaffMailChannel
         );
 
+        const roles = await this.memberService.getRolesFromGuildMember(member);
         await newStaffMailChannel!.send({
             embeds: [
                 EmbedHelper.getStaffMailStaffViewNewEmbed(
-                    member.user,
+                    member,
                     message.author,
                     StaffMailType.Staff,
                     'Manually contacted member',
+                    roles,
                     this.environment.CORE.PREFIX
                 ),
             ],

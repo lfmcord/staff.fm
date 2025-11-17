@@ -22,7 +22,7 @@ import {
     User,
     bold,
     codeBlock,
-    inlineCode,
+    inlineCode, Role,
 } from 'discord.js';
 import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
 import * as moment from 'moment';
@@ -151,10 +151,11 @@ export class EmbedHelper {
     }
 
     static getStaffMailStaffViewNewEmbed(
-        user: User | null,
+        member: GuildMember | null,
         createdBy: User | null,
         category: string,
         summary: string | null,
+        memberRoles: Role[],
         prefix: string = '>>'
     ): EmbedBuilder {
         const description =
@@ -164,8 +165,16 @@ export class EmbedHelper {
             `${inlineCode(prefix + 'silentclose [reason]')} to close the staff mail with an optional reason without notifying the user of the closing.`;
         const fields = [{ name: 'Category', value: EmbedHelper.getHumanReadableStaffMailType(category), inline: true }];
         if (summary) fields.push({ name: 'Summary', value: summary, inline: true });
+        let roles = "";
+        const sortedRoles = memberRoles
+            .filter(role => !role.name.includes("everyone"))
+            .sort((a, b) => b.position - a.position);
+        sortedRoles.forEach(role => {
+            roles += `<@&${role.id}> `
+        })
         fields.push(
-            { name: 'User', value: user ? TextHelper.userDisplay(user) : 'Anonymous', inline: false },
+            { name: 'User', value: member ? TextHelper.userDisplay(member.user) : 'Anonymous', inline: false },
+            { name: 'Roles', value: member ?  roles : 'Anonymous', inline: false },
             {
                 name: 'Created by',
                 value: createdBy ? TextHelper.userDisplay(createdBy) : 'Anonymous',
@@ -178,8 +187,8 @@ export class EmbedHelper {
             .setDescription(description)
             .setFields(fields)
             .setFooter({
-                text: user ? `${user.username} | ${user.id}` : 'Anonymous User',
-                iconURL: user?.avatarURL() ?? EmbedHelper.anonymousPictureLink,
+                text: member ? `${member.user.username} | ${member.id}` : 'Anonymous User',
+                iconURL: member?.avatarURL() ?? EmbedHelper.anonymousPictureLink,
             })
             .setTimestamp();
     }

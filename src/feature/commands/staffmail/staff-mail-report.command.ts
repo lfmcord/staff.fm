@@ -193,6 +193,7 @@ export class StaffMailReportCommand implements ICommand {
             `Interaction is of category ${category} and mode ${mode}. Creating StaffMail Urgent Report...`
         );
         const staffMailChannel = await this.staffMailRepository.createStaffMailChannel(reporter.user, mode);
+        const roles = await this.memberService.getRolesFromGuildMember(reporter);
 
         const text = isContextMenuReport
             ? 'Message reported via context menu.\n\n' +
@@ -205,10 +206,11 @@ export class StaffMailReportCommand implements ICommand {
         const embeds: EmbedBuilder[] = [];
         embeds.push(
             EmbedHelper.getStaffMailStaffViewNewEmbed(
-                isAnonymous ? null : reporter.user,
+                isAnonymous ? null : reporter,
                 isAnonymous ? null : reporter.user,
                 category,
                 null,
+                roles,
                 this.env.CORE.PREFIX
             )
         );
