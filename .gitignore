@@ -139,4 +139,6 @@ environment.json
 environment-prod.json
 
 development.md
-dump
+dump*/*
+
+.yarn

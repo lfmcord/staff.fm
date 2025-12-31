@@ -63,5 +63,18 @@ staff.fm is a custom moderation and server management bot for Lastcord.
    `mongodump --uri="mongodb://staff-fm-admin:dev-admin@localhost:27018/staff-fm?authSource=admin"`
 3. back up the database dump on your host machine with `scp`, e.g.
    `scp -r user@127.0.0.1:~/staff.fm/dump/staff-fm ./backup`
-4. to restore the database, use
-   `mongodump --uri="mongodb://staff-fm-admin:dev-admin@localhost:27018/staff-fm?authSource=admin" ./path/to/dump`
+
+### Database restore
+
+To restore the database, use
+   `mongorestore --uri="mongodb://staff-fm-admin:dev-admin@localhost:27018/staff-fm?authSource=admin" ./path/to/dump/staff-fm`
+
+### Database upgrade
+
+If the MongoDB image is for some reason not updating, do the following:
+
+1. Backup the database (see above)
+2. Stop and remove the MongoDB container: `docker compose rm -s staff-fm-db`
+3. Remove the MongoDB image: `docker rmi mongo`
+4. Run `sh deploy.sh` to recreate the container with the latest image
+5. Restore the database (see above)
