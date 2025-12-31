@@ -64,7 +64,7 @@ export class AutomodTrigger {
         if (message.embeds.length > 0) {
             for (const embed of message.embeds) {
                 // only check the author field because the rest can contain banned friends
-                textToCheck += JSON.stringify(embed.author) ?? '';
+                textToCheck += embed.author?.name ?? '';
             }
         }
         textToCheck = textToCheck.toLowerCase();
@@ -87,9 +87,20 @@ export class AutomodTrigger {
         let textToCheck = message.content;
         if (message.embeds.length > 0) {
             for (const embed of message.embeds) {
+                textToCheck += " " + embed.description;
                 if (embed.author) {
-                    textToCheck += embed.author.name;
-                    textToCheck += embed.author.url;
+                    textToCheck += " " + embed.author.name;
+                }
+
+                if (embed.fields) {
+                    for (const field of embed.fields) {
+                        textToCheck += " " + field.name;
+                        textToCheck += " " + field.value;
+                    }
+                }
+
+                if(embed.footer) {
+                    textToCheck += " " + embed.footer.text;
                 }
             }
         }
