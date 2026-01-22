@@ -105,16 +105,15 @@ export class StrikeCommand implements ICommand {
             `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} strikes, handing out a mute...`
         );
 
+        let components = [ComponentHelper.strikeNoneButton(message.id)];
+        components = components.concat(muteDurations!.map((muteDuration) => ComponentHelper.strikeMuteButton(message.id, muteDuration)));
+        components = components.concat(ComponentHelper.cancelButton('defer-cancel', ButtonStyle.Secondary));
         await message.channel.send({
             content:
                 `User ${member} has ${activeStrikes.length} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size} strikes. Proceed with mute?\n` +
                 `-# ${TextHelper.strikeCounter(activeStrikes.length, allStrikes.length)}`,
             components: [
-                new ActionRowBuilder<ButtonBuilder>().addComponents(
-                    muteDurations!
-                        .map((muteDuration) => ComponentHelper.strikeMuteButton(message.id, muteDuration))
-                        .concat([ComponentHelper.cancelButton('defer-cancel', ButtonStyle.Secondary)])
-                ),
+                new ActionRowBuilder<ButtonBuilder>().addComponents(components),
             ],
             allowedMentions: { users: [] },
         });

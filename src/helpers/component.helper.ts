@@ -292,6 +292,14 @@ export class ComponentHelper {
             .setStyle(ButtonStyle.Danger);
     };
 
+    static strikeNoneButton = (messageId: string) => {
+        return new ButtonBuilder()
+            .setCustomId(`defer-strike-none-${messageId}`)
+            .setEmoji('🤷')
+            .setLabel(`No action`)
+            .setStyle(ButtonStyle.Primary);
+    };
+
     static strikeBanButton = (messageId: string, isAppealable: boolean) => {
         return new ButtonBuilder()
             .setCustomId(`defer-strike-ban-${messageId}-${isAppealable}`)

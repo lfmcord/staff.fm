@@ -15,7 +15,7 @@ import { Logger } from 'tslog';
 
 @injectable()
 export class StrikeButtonInteraction implements IMessageComponentInteraction {
-    customIds = ['defer-strike-ban-', 'defer-strike-mute-'];
+    customIds = ['defer-strike-ban-', 'defer-strike-mute-', 'defer-strike-none-'];
     private logger: Logger<StrikeButtonInteraction>;
     private loggingService: LoggingService;
     private moderationService: ModerationService;
@@ -69,12 +69,30 @@ export class StrikeButtonInteraction implements IMessageComponentInteraction {
 
         let wasInformed, reply, logReason;
         try {
+            if(action === 'none') {
+                let strikeMessage: string =
+                    `🗯️ **You've received a strike in the Last.fm Discord**. ` +
+                    `You now have ${activeStrikes.length + 1} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size + 1} strikes.`;
+                if (activeStrikes.length + 1 === this.env.MODERATION.STRIKE_MUTE_DURATIONS.size)
+                    strikeMessage += ` Another strike will lead to a ban.`;
+                strikeMessage += `\n**Reason:** ${reason}`;
+                strikeMessage +=
+                    `\n-# This strike will expire automatically <t:${moment().add(this.env.MODERATION.STRIKE_EXPIRATION_IN_MONTHS, 'months').unix()}:R>. ` +
+                    `Contact staff if you believe this strike was unjustified or would otherwise like to discuss it.`;
+                try {
+                    wasInformed = await subject.send({ content: strikeMessage });
+                } catch (e) {
+                    this.logger.warn(`Failed to send strike DM to user ${TextHelper.userLog(subject.user)}.`, e);
+                }
+                reply = `🗯️ I've successfully issued a strike to ${subject} without a mute.`;
+                logReason = `no action`;
+            }
             if (action === 'mute') {
                 const muteDurationInHours = values[4];
                 const endDate = moment().add(muteDurationInHours, 'hours').toDate();
                 let strikeMessage: string =
                     `🗯️ **You've received a strike in the Last.fm Discord** and are muted until <t:${moment(endDate).unix()}:F>. ` +
-                    `You now have ${activeStrikes.length + 1} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size} strikes.`;
+                    `You now have ${activeStrikes.length + 1} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size + 1} strikes.`;
                 if (activeStrikes.length + 1 === this.env.MODERATION.STRIKE_MUTE_DURATIONS.size)
                     strikeMessage += ` Another strike will lead to a ban.`;
                 strikeMessage += `\n**Reason:** ${reason}`;
@@ -92,7 +110,7 @@ export class StrikeButtonInteraction implements IMessageComponentInteraction {
                     false
                 );
                 reply = `🗯️ I've successfully issued a strike to ${subject} with a mute (${muteDurationInHours}h).`;
-                logReason = `Mute (${muteDurationInHours}h)`;
+                logReason = `a mute (${muteDurationInHours}h)`;
             } else if (action === 'ban') {
                 const isAppealable = values[4] === 'true';
                 wasInformed = await this.moderationService.banGuildMember(
@@ -100,13 +118,13 @@ export class StrikeButtonInteraction implements IMessageComponentInteraction {
                     interaction.user,
                     isAppealable,
                     {
-                        content: `🔨 You've exceeded the maximum allowed number of strikes (${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size}) in the Last.fm Discord and have been banned.\n**Reason:** ${reason}\n`,
+                        content: `🔨 You've reached the maximum allowed number of strikes (${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size + 1}) in the Last.fm Discord and have been banned.\n**Reason:** ${reason}\n`,
                     },
                     reason,
                     false
                 );
                 reply = `I've successfully 🔨 ${bold('banned')} ${inlineCode(subject.user.username)} for accumulating too many strikes.\n`;
-                logReason = `Ban${!isAppealable ? ' (permanent)' : ''}`;
+                logReason = `a ban${!isAppealable ? ' (permanent)' : ''}`;
             }
         } catch (e) {
             this.logger.error(`Failed to ${action} user ${TextHelper.userLog(subject.user)}.`, e);
@@ -136,7 +154,7 @@ export class StrikeButtonInteraction implements IMessageComponentInteraction {
         await interaction.editReply({
             content:
                 reply +
-                `${!wasInformed ? `:warning: *Could not send ${action} message to user. Do they have their DMs turned off?*` : ''}` +
+                `${!wasInformed ? `\n:warning: *Could not send ${action} message to user. Do they have their DMs turned off?*` : ''}` +
                 `${!logMessage ? '\n:warning: *Could not log the strike. It will not be searchable in the log channel.*' : ''}` +
                 `\n-# ${TextHelper.strikeCounter(activeStrikes.length + 1, allStrikes.length + 1)}`,
             components: [],

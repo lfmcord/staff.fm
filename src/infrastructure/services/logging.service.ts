@@ -535,12 +535,12 @@ export class LoggingService {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
-        let actionDescription = `User received a **${action}** strike.`;
+        let actionDescription = `User received a strike with **${action}**.`;
         if (action === 'Manual') actionDescription = `-# Strike was manually added. No action has been taken.`;
         else if (action.match('/Mute/'))
-            actionDescription = `${Constants.Mute} User received a **${action}** for this strike.`;
+            actionDescription = `${Constants.Mute} User received a strike with **${action}**.`;
         else if (action.match('/Ban/'))
-            actionDescription = `${Constants.Hammer} User received a **${action}** for this strike.`;
+            actionDescription = `${Constants.Hammer} User received a strike with **${action}**.`;
 
         const description =
             `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject, true)}` +
@@ -628,7 +628,7 @@ export class LoggingService {
     }
 
     async logBlockedBotMessage(originalMessage: Message, surrounding: Message, blockedWord: string, actor: User) {
-        const logChannel = await this.getLogChannel(this.env.CHANNELS.SELFMUTE_LOG_CHANNEL_ID);
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.DELETED_MESSAGE_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const description =

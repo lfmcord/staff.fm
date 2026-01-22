@@ -8,10 +8,14 @@ import { TYPES } from '@src/types';
 import { Client, GuildTextBasedChannel, Message } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
+import { Constants } from '@models/constants';
+import { ScheduleService } from '@src/infrastructure/services/schedule.service';
+import * as moment from 'moment';
 
 @injectable()
 export class AutomodTrigger {
     logger: Logger<AutomodTrigger>;
+    @inject(TYPES.ScheduleService) private scheduleService: ScheduleService;
     client: Client;
     memberService: MemberService;
     blockedWordsRepository: BlockedWordsRepository;
@@ -26,8 +30,10 @@ export class AutomodTrigger {
         @inject(TYPES.FlagsRepository) flagsRepository: FlagsRepository,
         @inject(TYPES.BlockedWordsRepository) blockedWordsRepository: BlockedWordsRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
-        @inject(TYPES.Client) client: Client
+        @inject(TYPES.Client) client: Client,
+        @inject(TYPES.ScheduleService) scheduleService: ScheduleService,
     ) {
+        this.scheduleService = scheduleService;
         this.client = client;
         this.memberService = memberService;
         this.blockedWordsRepository = blockedWordsRepository;
@@ -36,6 +42,9 @@ export class AutomodTrigger {
         this.loggingService = loggingService;
         this.logger = logger;
     }
+
+    private characterThreshold: number = 300;
+    private deletionDelayInSeconds: number = 180;
 
     async run(message: Message) {
         if (!message.author.bot || message.author.id == this.client.user?.id) return; // Ignore messages from non-bots as they are handled by Discord automod
@@ -88,6 +97,9 @@ export class AutomodTrigger {
         if (message.embeds.length > 0) {
             for (const embed of message.embeds) {
                 textToCheck += " " + embed.description;
+                if (embed.title) {
+                    textToCheck += " " + embed.title;
+                }
                 if (embed.author) {
                     textToCheck += " " + embed.author.name;
                 }
@@ -107,27 +119,47 @@ export class AutomodTrigger {
         textToCheck = textToCheck.toLowerCase();
         this.logger.trace(`Checking message content for blocked automod: ${textToCheck}`);
 
+        // Extract URLs from the text
+        const urlRegex = /(https?:\/\/[^\s]+)/gi;
+        const urls = textToCheck.match(urlRegex) || [];
+
         const blockedWords = await this.blockedWordsRepository.getAllBlockedWords();
         for (const word of blockedWords) {
             let isBlocked = false;
+            let matches: RegExpMatchArray | null = null;
             if (word.includes('*')) {
                 // if the word contains any wildcards (*), transform it to valid regex and compare
                 const pattern = new RegExp(word.replace(/\*/g, '.*'), 'i');
-                isBlocked = pattern.test(textToCheck);
+                matches = textToCheck.match(pattern);
             } else {
                 // if the word does not contain any wildcards (*), isolate the words and compare
                 const wordRegex = new RegExp(`\\b${word.toLowerCase()}\\b`, 'i');
-                isBlocked = wordRegex.test(textToCheck);
+                matches = textToCheck.match(wordRegex);
             }
+
+            if (matches) {
+                // Check if any match is part of a URL
+                isBlocked = matches.some(match => {
+                    return !urls.some(url => url.includes(match));
+                });
+            }
+
             if (isBlocked) {
                 this.logger.info(`Automod detected a blocked word: ${word}`);
-                // const reply = await message.reply(
-                //     `${Constants.Blocked} This bot message has been removed because it contains a blocked word. Please avoid running commands on content with inappropriate words such as slurs (reclaimed or otherwise). Thank you!` +
-                //         `\n-# We block certain words to keep the server inclusive and comfortable for everyone. If you think this action was a mistake, please contact staff.`
-                // );
-                // await message.delete();
-                // await this.loggingService.logBlockedBotMessage(message, reply, word, this.client.user!);
-                await this.loggingService.logBlockedBotMessage(message, message, word, this.client.user!);
+                if(message.content.length > this.characterThreshold || (message.embeds[0]?.description && message.embeds[0]?.description?.length > this.characterThreshold)) {
+                    // if the message is a very long one, leave it up for the delay time, then delete it.
+                    // this.scheduleService.scheduleJob(`AUTOMOD_DELETE_${message.id}`, moment().add(this.deletionDelayInSeconds, 'seconds').toDate(), async () => {
+                    //     await message.delete();
+                    //     await this.loggingService.logBlockedBotMessage(message, message, word, this.client.user!);
+                    // })
+                } else {
+                    // const reply = await message.reply(
+                    //     `${Constants.Blocked} This bot message has been removed because it contains a blocked word. Please avoid running commands on content with inappropriate words such as slurs (reclaimed or otherwise). Thank you!` +
+                    //     `\n-# We block certain words to keep the server inclusive and comfortable for everyone. If you think this action was a mistake, please contact staff.`
+                    // );
+                    // await message.delete();
+                    await this.loggingService.logBlockedBotMessage(message, message, word, this.client.user!);
+                }
                 return true; // Stop checking further if a blocked word is matched
             }
         }

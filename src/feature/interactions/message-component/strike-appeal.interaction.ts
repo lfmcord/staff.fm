@@ -100,14 +100,20 @@ export class StrikeAppealInteraction implements IMessageComponentInteraction {
             activeStrikes.length,
             allStrikes.length
         );
+        const content = `Strike from <t:${moment(appealedStrike.createdAt).unix()}:d> for user <@${userId}> has been set to appealed and will no longer be counted towards active strikes.` +
+            `\n-# ${TextHelper.strikeCounter(activeStrikes.length, allStrikes.length)}`
 
-        await interaction.update({
-            content:
-                `Strike from <t:${moment(appealedStrike.createdAt).unix()}:d> for user <@${userId}> has been set to appealed and will no longer be counted towards active strikes.` +
-                `\n-# ${TextHelper.strikeCounter(activeStrikes.length, allStrikes.length)}`,
-            components: [],
-            embeds: [],
-        });
+        try {
+            await interaction.update({
+                content:content,
+                components: [],
+                embeds: [],
+            });
+        } catch (e) {
+            await interaction.update({});
+            if(interaction.channel?.isSendable()) await interaction.channel.send(content);
+        }
+
         this.logger.info(`Appeal for ${TextHelper.userLog(user)} has been processed.`);
     }
 }
