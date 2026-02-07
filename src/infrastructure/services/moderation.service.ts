@@ -72,7 +72,7 @@ export class ModerationService {
         this.logger.debug(`Removed ${roles.length} roles from user ${TextHelper.userLog(subject.user)}.`);
 
         this.scheduleService.scheduleJob(`UNMUTE_${subject.id}`, endDate, async () => {
-            await this.unmuteGuildMember(subject, roles, this.client.user!, unmuteMessage, `Mute duration expired.`);
+            await this.unmuteGuildMember(subject, roles, actor, unmuteMessage, `Mute duration expired.`);
         });
 
         await this.mutesRepository.deleteMuteByUserId(subject.user.id);
