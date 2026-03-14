@@ -5,7 +5,14 @@ import { FlagsRepository } from '@src/infrastructure/repositories/flags.reposito
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { TYPES } from '@src/types';
-import { Client, GuildTextBasedChannel, Message } from 'discord.js';
+import {
+    AnyComponentV2,
+    Client,
+    ContainerComponent,
+    GuildTextBasedChannel,
+    Message, SectionComponent,
+    TextDisplayComponent,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 import { Constants } from '@models/constants';
@@ -76,13 +83,18 @@ export class AutomodTrigger {
                 textToCheck += embed.author?.name ?? '';
             }
         }
+        textToCheck += this.getFmbotComponentV2Content(message);
+        if(textToCheck.includes("friends")) {
+            // contains friends so most likely a friends command which can contain banned friendsd which we ignore.
+            this.logger.debug(`Message contains the word "friends", skipping flag check to avoid false positives from banned friends in fmbot commands.`);
+            return;
+        }
         textToCheck = textToCheck.toLowerCase();
         this.logger.trace(`Checking message content for flag automod: ${textToCheck}`);
 
         const flags = await this.flagsRepository.getAllFlagTerms();
         this.logger.trace(`Checking message content for ${flags.length} flagged terms.`);
         for (const flag of flags) {
-            this.logger.trace(`Checking if message contains flagged term: ${flag}`);
             if (textToCheck.includes(flag)) {
                 this.logger.info(`Automod detected a flagged term: ${flag}`);
                 await this.loggingService.logFlaggedBotMessage(message, flag, this.client.user!);
@@ -116,6 +128,7 @@ export class AutomodTrigger {
                 }
             }
         }
+        textToCheck += this.getFmbotComponentV2Content(message);
         textToCheck = textToCheck.toLowerCase();
         this.logger.trace(`Checking message content for blocked automod: ${textToCheck}`);
 
@@ -148,16 +161,16 @@ export class AutomodTrigger {
                 this.logger.info(`Automod detected a blocked word: ${word}`);
                 if(message.content.length > this.characterThreshold || (message.embeds[0]?.description && message.embeds[0]?.description?.length > this.characterThreshold)) {
                     // if the message is a very long one, leave it up for the delay time, then delete it.
-                    // this.scheduleService.scheduleJob(`AUTOMOD_DELETE_${message.id}`, moment().add(this.deletionDelayInSeconds, 'seconds').toDate(), async () => {
-                    //     await message.delete();
-                    //     await this.loggingService.logBlockedBotMessage(message, message, word, this.client.user!);
-                    // })
+                    this.scheduleService.scheduleJob(`AUTOMOD_DELETE_${message.id}`, moment().add(this.deletionDelayInSeconds, 'seconds').toDate(), async () => {
+                        await message.delete();
+                        await this.loggingService.logBlockedBotMessage(message, message, word, this.client.user!);
+                    })
                 } else {
-                    // const reply = await message.reply(
-                    //     `${Constants.Blocked} This bot message has been removed because it contains a blocked word. Please avoid running commands on content with inappropriate words such as slurs (reclaimed or otherwise). Thank you!` +
-                    //     `\n-# We block certain words to keep the server inclusive and comfortable for everyone. If you think this action was a mistake, please contact staff.`
-                    // );
-                    // await message.delete();
+                    const reply = await message.reply(
+                        `${Constants.Blocked} This bot message has been removed because it contains a blocked word. Please avoid running commands on content with inappropriate words such as slurs (reclaimed or otherwise). Thank you!` +
+                        `\n-# We block certain words to keep the server inclusive and comfortable for everyone. If you think this action was a mistake, please contact staff.`
+                    );
+                    await message.delete();
                     await this.loggingService.logBlockedBotMessage(message, message, word, this.client.user!);
                 }
                 return true; // Stop checking further if a blocked word is matched
@@ -165,5 +178,17 @@ export class AutomodTrigger {
         }
         this.logger.trace(`Message does not contain any of the ${blockedWords.length} blocked terms.`);
         return false;
+    }
+
+    private getFmbotComponentV2Content(message: Message): string {
+        if(message.components.length > 0) {
+            try {
+                // fmbot components are always in this format, so we can directly access the text like this
+                return (((message.components[0] as ContainerComponent).components[0] as SectionComponent).components[0] as TextDisplayComponent).content ?? '';
+            } catch (e) {
+                this.logger.warn(`Failed to extract text from message components for message with ID ${message.id}.`, e);
+            }
+        }
+        return '';
     }
 }
