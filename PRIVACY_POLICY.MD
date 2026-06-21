@@ -34,7 +34,6 @@ saved to the database to facilitate replies to your message.
 We may automatically collect certain information:
 
 - Your public messages sent in the Last.fm Discord server (for logging and moderation purposes)
-- Your joins and leaves of the Last.fm Discord server (for logging and moderation purposes)
 
 ### 2.3 How We Collect Information
 
