@@ -61,14 +61,14 @@ export class HelpCommand implements ICommand {
         commands.sort((a, b) => a.name.localeCompare(b.name));
 
         commands.forEach((command) => {
-            if (memberPermissionLevel >= command.permissionLevel)
-                description += inlineCode(this.env.CORE.PREFIX + command.name) + `: ${command.description}\n`;
+            if (memberPermissionLevel >= command.permissionLevel && description.length < 3900)
+                description += inlineCode(this.env.CORE.PREFIX + command.name) + `: ${command.description}\n\n`;
         });
 
         return {
             embeds: [
                 EmbedHelper.getVerboseCommandEmbed(this.client, message)
-                    .setDescription(description)
+                    .setDescription(description += `\n\n[Privacy Policy](https://github.com/lfmcord/staff.fm/blob/main/PRIVACY_POLICY.MD)`)
                     .setTitle('Command Reference')
                     .setFooter({
                         text: `Type ${this.env.CORE.PREFIX}help [command name] to find out more about a command.`,
