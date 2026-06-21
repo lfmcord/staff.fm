@@ -100,7 +100,7 @@ We implement appropriate technical and organizational measures to protect your p
 unauthorized access, alteration, disclosure, or destruction. These measures include:
 
 - Encryption of data in transit using SSL/TLS protocols
-- Secure storage of data with access controls
+- Encryption at rest for sensitive data stored in our databases
 - Regular security assessments and updates
 - Restricted access to personal information on a need-to-know basis (only moderators and administrators have access to 
 the moderation commands, only the bot owner has access to the database)
