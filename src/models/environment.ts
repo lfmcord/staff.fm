@@ -67,5 +67,6 @@ export interface Environment {
     MISC: {
         MESSAGE_CACHING_DURATION_IN_SECONDS: number;
         LASTFM_AGE_ALERT_IN_DAYS: number;
+        CACHE_ENCRYPTION_KEY: string;
     };
 }

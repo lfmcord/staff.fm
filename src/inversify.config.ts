@@ -25,7 +25,6 @@ import { ReadyHandler } from '@src/handlers/ready.handler';
 import { OkBuddyCommand } from '@src/feature/commands/fun/ok-buddy.command';
 import { VerifyCommand } from '@src/feature/commands/administration/verify.command';
 import LastFM from 'lastfm-typed';
-import { GuildMemberAddHandler } from '@src/handlers/guild-member-add.handler';
 import { RedisConnector } from '@src/infrastructure/connectors/redis.connector';
 import { CachingRepository } from '@src/infrastructure/repositories/caching.repository';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
@@ -165,7 +164,6 @@ container.bind<Client>(TYPES.Client).toConstantValue(
             'GuildMessages',
             'GuildMessageTyping',
             'GuildMessageReactions',
-            'GuildMembers',
             'GuildBans',
             'GuildModeration',
             'Guilds',
@@ -195,7 +193,6 @@ container.bind<IApiRouter>(TYPES.ApiRouter).to(ApiRouter).inSingletonScope();
 // HANDLERS
 container.bind<IHandlerFactory>(TYPES.HandlerFactory).to(HandlerFactory);
 container.bind<IHandler>('Handler').to(MessageCreateHandler);
-container.bind<IHandler>('Handler').to(GuildMemberAddHandler);
 container.bind<IHandler>('Handler').to(ReadyHandler);
 container.bind<IHandler>('Handler').to(MessageDeleteHandler);
 container.bind<IHandler>('Handler').to(InteractionCreateHandler);

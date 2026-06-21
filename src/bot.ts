@@ -111,15 +111,6 @@ export class Bot {
             }
         );
 
-        this.client.on('guildMemberAdd', async (member: GuildMember) => {
-            this.logger.info(`Guild Member ${TextHelper.userLog(member.user)} joined.`);
-            try {
-                await this.handlerFactory.createHandler('guildMemberAdd').handle(member);
-            } catch (e) {
-                this.logger.fatal(`Unhandled exception while trying to handle Guild Member Add`, e);
-            }
-        });
-
         this.client.on(Events.InteractionCreate, async (interaction: Interaction) => {
             this.logger.debug(
                 `Message with message ID ${interaction.id} and type '${InteractionType[interaction.type]}' was created by ${TextHelper.userLog(interaction.user)}.`

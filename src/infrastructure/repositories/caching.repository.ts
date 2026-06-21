@@ -1,4 +1,5 @@
 import { Environment } from '@models/environment';
+import { EncryptionHelper } from '@src/infrastructure/encryption/encryption.helper';
 import { CachedAttachmentModel } from '@src/infrastructure/repositories/models/cached-attachment.model';
 import { CachedMessageModel } from '@src/infrastructure/repositories/models/cached-message.model';
 import { TYPES } from '@src/types';
@@ -12,6 +13,7 @@ export class CachingRepository {
     redis: Redis;
     logger: Logger<CachingRepository>;
     env: Environment;
+    encryption: EncryptionHelper;
 
     constructor(
         @inject(TYPES.Redis) redis: Redis,
@@ -21,6 +23,8 @@ export class CachingRepository {
         this.logger = logger;
         this.env = env;
         this.redis = redis;
+        // Requires MISC.CACHE_ENCRYPTION_KEY to be added to the Environment model/config.
+        this.encryption = new EncryptionHelper(this.env.MISC.CACHE_ENCRYPTION_KEY);
     }
 
     public async cacheMessage(message: Message) {
@@ -30,7 +34,7 @@ export class CachingRepository {
 
     public async getCachedLastUserMessage(userId: string): Promise<number | null> {
         const timestamp = await this.redis.get(`LASTMESSAGE_${userId}`);
-        return timestamp ? Number.parseInt(timestamp) : null;
+        return timestamp ? Number.parseInt(this.tryDecrypt(timestamp)) : null;
     }
 
     public async getCachedMessage(messageId: string): Promise<CachedMessageModel | null> {
@@ -70,16 +74,17 @@ export class CachingRepository {
             const attachmentAtIndex = await this.redis.hgetBuffer(keyV2, attachmentKey);
             const attachmentMimeTypeAtIndex = await this.redis.hget(keyV2, attachmentTypeKey);
             if (attachmentAtIndex && attachmentMimeTypeAtIndex) {
-                this.logger.trace(`Found attachment at: ${attachmentKey} with MIME type ${attachmentMimeTypeAtIndex}`);
-                attachments.push({ data: attachmentAtIndex, mimeType: attachmentMimeTypeAtIndex });
+                const mimeType = this.tryDecrypt(attachmentMimeTypeAtIndex);
+                this.logger.trace(`Found attachment at: ${attachmentKey} with MIME type ${mimeType}`);
+                attachments.push({ data: this.tryDecryptBuffer(attachmentAtIndex), mimeType: mimeType });
                 index++;
             } else break;
         } while (index);
         return {
             messageId: redisObj[0]!,
-            authorId: redisObj[1]!,
-            channelId: redisObj[2]!,
-            contents: redisObj[3]!,
+            authorId: this.tryDecrypt(redisObj[1]!),
+            channelId: this.tryDecrypt(redisObj[2]!),
+            contents: this.tryDecrypt(redisObj[3]!),
             attachments: attachments,
         };
     }
@@ -90,9 +95,9 @@ export class CachingRepository {
         const keyV2 = `MESSAGECONTENTV2_${message.id}`;
         const valueV2 = {
             messageId: message.id,
-            authorId: message.author.id,
-            channelId: message.channel.id,
-            contents: message.content,
+            authorId: this.encryption.encrypt(message.author.id),
+            channelId: this.encryption.encrypt(message.channel.id),
+            contents: this.encryption.encrypt(message.content),
         };
         const responses: Response[] = [];
         for (const attachment of message.attachments.values()) {
@@ -102,16 +107,16 @@ export class CachingRepository {
 
         await this.redis.hset(keyV2, valueV2);
         await this.redis.expire(keyV2, this.env.MISC.MESSAGE_CACHING_DURATION_IN_SECONDS);
-        this.logger.trace(`Stored ${keyV2} with value ${JSON.stringify(valueV2)} and ${responses.length} attachments.`);
+        this.logger.trace(`Stored ${keyV2} with ${responses.length} attachments (encrypted at rest).`);
         let index = 0;
         for (const response of responses) {
             const attachmentKey = 'attachment' + index;
             const attachmentTypeKey = 'attachmentType' + index;
             const buffer = Buffer.from(await response.arrayBuffer());
             const mimeType = response.headers.get('content-type');
-            await this.redis.hset(keyV2, attachmentKey, buffer);
+            await this.redis.hset(keyV2, attachmentKey, this.encryption.encryptBuffer(buffer));
             await this.redis.expire(attachmentKey, this.env.MISC.MESSAGE_CACHING_DURATION_IN_SECONDS);
-            await this.redis.hset(keyV2, attachmentTypeKey, mimeType ?? 'image/jpg');
+            await this.redis.hset(keyV2, attachmentTypeKey, this.encryption.encrypt(mimeType ?? 'image/jpg'));
             await this.redis.expire(attachmentTypeKey, this.env.MISC.MESSAGE_CACHING_DURATION_IN_SECONDS);
 
             this.logger.trace(
@@ -123,7 +128,27 @@ export class CachingRepository {
 
     private async cacheLastUserMessage(message: Message) {
         const key = `LASTMESSAGE_${message.author.id}`;
-        const value = message.createdTimestamp;
+        const value = this.encryption.encrypt(message.createdTimestamp.toString());
         await this.redis.set(key, value);
+    }
+
+    /** Decrypts a cached value, falling back to the raw value for legacy (unencrypted) entries. */
+    private tryDecrypt(value: string): string {
+        try {
+            return this.encryption.decrypt(value);
+        } catch {
+            this.logger.trace(`Cached value is not encrypted (legacy); returning as-is.`);
+            return value;
+        }
+    }
+
+    /** Decrypts a cached buffer, falling back to the raw buffer for legacy (unencrypted) entries. */
+    private tryDecryptBuffer(value: Buffer): Buffer {
+        try {
+            return this.encryption.decryptBuffer(value);
+        } catch {
+            this.logger.trace(`Cached buffer is not encrypted (legacy); returning as-is.`);
+            return value;
+        }
     }
 }

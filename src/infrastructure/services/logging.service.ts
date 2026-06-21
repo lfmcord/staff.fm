@@ -49,6 +49,12 @@ export class LoggingService {
         this.channelService = channelService;
     }
 
+    public async logBotError(message: string, error: Error) {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.DELETED_MESSAGE_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+        await logChannel.send("Bot Error: ${message}\n```" + error.stack + "```");
+    }
+
     public async logDeletedMessage(deletedMessage: CachedMessageModel, author: User | null, actor: User | null) {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.DELETED_MESSAGE_LOG_CHANNEL_ID);
         if (!logChannel) return;
