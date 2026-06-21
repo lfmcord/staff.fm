@@ -73,7 +73,7 @@ Generally, we retain:
 - Your joins and leaves of the Last.fm Discord server: For as long as your account is active or as needed to provide services 
 - Your messages and interactions with our Service: For as long as your account is active or as needed to provide 
   services (your messages to the staffmail features are retained until the staffmail thread is closed)
-- Your public messages sent in the Last.fm Discord server: 7 days 
+- Your public messages sent in the Last.fm Discord server: 2 days 
 - Logs and security data: 30 days
 
 When personal data is no longer needed, we will securely delete or anonymize it in accordance with our data retention policies.
