@@ -181,14 +181,38 @@ export class AutomodTrigger {
     }
 
     private getFmbotComponentV2Content(message: Message): string {
-        if(message.components.length > 0) {
+        let textToCheck = '';
+        if (message.components.length > 0) {
             try {
                 // fmbot components are always in this format, so we can directly access the text like this
-                return (((message.components[0] as ContainerComponent).components[0] as SectionComponent).components[0] as TextDisplayComponent).content ?? '';
+                for (const compontent of message.components) {
+                    this.logger.trace(`Component Type: ${compontent.type}`);
+                    if (compontent.type === 17) textToCheck += this.getTextFromContainer(compontent as ContainerComponent);
+                    if (compontent.type === 9) textToCheck += this.getTextFromSection(compontent as unknown as SectionComponent);
+                    if (compontent.type === 10) textToCheck += (compontent as TextDisplayComponent).content;
+                }
             } catch (e) {
                 this.logger.warn(`Failed to extract text from message components for message with ID ${message.id}.`, e);
             }
         }
+        this.logger.trace(`Checking fmbot component v2 content: ${textToCheck}`);
         return '';
+    }
+
+    private getTextFromContainer(container: ContainerComponent): string {
+        let textToCheck = '';
+        for (const innerComponent of container.components) {
+            if (innerComponent.type === 9) textToCheck += this.getTextFromSection(innerComponent as unknown as SectionComponent);
+            if (innerComponent.type === 10) textToCheck += (innerComponent as TextDisplayComponent).content;
+        }
+        return textToCheck;
+    }
+
+    private getTextFromSection(section: SectionComponent): string {
+        let textToCheck = '';
+        for (const innerComponent of section.components) {
+            textToCheck += innerComponent.content
+        }
+        return textToCheck;
     }
 }
