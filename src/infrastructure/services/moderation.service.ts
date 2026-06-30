@@ -107,7 +107,8 @@ export class ModerationService {
         this.logger.info(
             `Unmuting user ${TextHelper.userLog(subject.user)} (by ${actor ? TextHelper.userLog(actor) : 'unknown'})...`
         );
-        const isSelfmute = actor?.id === subject.id;
+        const roles = (await this.memberService.getRolesFromGuildMember(subject));
+        const isSelfmute = roles.find(r => r.id == this.env.ROLES.SELFMUTED_ROLE_ID);
         const mutedRole = isSelfmute ? this.env.ROLES.SELFMUTED_ROLE_ID : this.env.ROLES.MUTED_ROLE_ID;
         this.logger.debug(`Removing muted role ${mutedRole} from user ${TextHelper.userLog(subject.user)}...`);
         await subject.roles.remove(mutedRole);
