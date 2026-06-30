@@ -64,7 +64,8 @@ export class ModerationService {
             throw Error(`Cannot assign the muted role because it is higher than the bot role.`);
         }
 
-        const roles = await this.memberService.getRolesFromGuildMember(subject);
+        const roles = (await this.memberService.getRolesFromGuildMember(subject))
+            .filter(r => r.id !== "636189149535272980"); // Nitro booster
         roles.forEach((r) => r.comparePositionTo(botMember!.roles.highest));
         await subject.roles.remove(roles);
         await subject.roles.add(mutedRole);
@@ -114,6 +115,7 @@ export class ModerationService {
             (r) =>
                 r.id !== this.env.ROLES.MUTED_ROLE_ID &&
                 r.id !== this.env.ROLES.SELFMUTED_ROLE_ID &&
+                r.id !== "636189149535272980" && // Nitro booster
                 r.name !== '@everyone'
         );
         this.logger.debug(
