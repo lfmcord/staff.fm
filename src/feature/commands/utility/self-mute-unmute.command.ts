@@ -9,6 +9,7 @@ import { TYPES } from '@src/types';
 import { ButtonInteraction, Message, PartialMessage, Role, User } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 
 @injectable()
 export class SelfMuteUnmuteCommand implements ICommand {
@@ -25,17 +26,20 @@ export class SelfMuteUnmuteCommand implements ICommand {
     private memberService: MemberService;
     private moderationService: ModerationService;
     private mutesRepository: MutesRepository;
+    private usersRepository: UsersRepository;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<SelfMuteUnmuteCommand>,
         @inject(TYPES.ModerationService) moderationService: ModerationService,
         @inject(TYPES.MutesRepository) mutesRepository: MutesRepository,
-        @inject(TYPES.MemberService) memberService: MemberService
+        @inject(TYPES.MemberService) memberService: MemberService,
+        @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
     ) {
         this.memberService = memberService;
         this.mutesRepository = mutesRepository;
         this.moderationService = moderationService;
         this.logger = logger;
+        this.usersRepository = usersRepository;
     }
 
     async run(message: Message | PartialMessage): Promise<CommandResult> {
@@ -59,6 +63,13 @@ export class SelfMuteUnmuteCommand implements ICommand {
 
     private async tryToEndSelfmute(user: User, reason: string): Promise<CommandResult> {
         this.logger.info(`User ${TextHelper.userLog(user)} is trying to manually remove a selfmute via DMs.`);
+        const indexedUser = await this.usersRepository.getUserByUserId(user.id);
+        if(indexedUser?.strictSelfmute) {
+            return {
+                isSuccessful: false,
+                replyToUser: `You have strict selfmute enabled. You cannot unmute yourself early. Please contact staff if you want to disable this mode.`,
+            };
+        }
         const existingSelfMute = await this.mutesRepository.getMuteByUserId(user.id);
         if (!existingSelfMute || existingSelfMute.actorId !== user.id) {
             return {

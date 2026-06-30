@@ -185,6 +185,18 @@ export class UsersRepository {
         );
         return result && result.strikes ? result.strikes[0] : null;
     }
+
+    async setStrictSelfmute(userId: string): Promise<number> {
+        const result = await UsersModelInstance.findOneAndUpdate(
+            { userId: userId },
+            {
+                $set: {
+                    strictSelfmute: true,
+                },
+            }
+        );
+        return result ? 1 : 0;
+    }
 }
 
 export interface IVerificationModel {
@@ -224,6 +236,7 @@ export interface IUserModel {
     crownsBan?: ICrownsBanModel;
     scrobbleCap?: IScrobbleCapModel;
     strikes?: IStrikesModel[];
+    strictSelfmute?: boolean;
 }
 
 const verificationSchema = new Schema<IVerificationModel>({
@@ -262,6 +275,7 @@ const usersSchema = new Schema<IUserModel>(
         crownsBan: { type: crownsBanSchema, required: false },
         scrobbleCap: { type: scrobbleCapSchema, required: false },
         strikes: { type: [strikesSchema], required: false },
+        strictSelfmute: { type: Boolean, required: false },
     },
     { collection: 'Users' }
 );

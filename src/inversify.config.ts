@@ -108,6 +108,7 @@ import { AutomodTrigger } from '@src/feature/triggers/automod.trigger';
 import { BlockedWordsRepository } from '@src/infrastructure/repositories/blocked-words.repository';
 import { AutomodCommand } from '@src/feature/commands/moderation/automod.command';
 import { MigrateVerifiedCommand } from '@src/feature/commands/administration/misc/migrate-verified.command';
+import { StrictSelfMuteCommand } from '@src/feature/commands/utility/strict-self-mute.command';
 
 const container = new Container();
 
@@ -241,6 +242,7 @@ container.bind<ICommand>('Command').to(StrikesManageCommand);
 container.bind<ICommand>('Command').to(UserlogCommand);
 container.bind<ICommand>('Command').to(AutomodCommand);
 container.bind<ICommand>('Command').to(MigrateVerifiedCommand);
+container.bind<ICommand>('Command').to(StrictSelfMuteCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);

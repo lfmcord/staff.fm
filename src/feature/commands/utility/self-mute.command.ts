@@ -5,6 +5,7 @@ import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { ComponentHelper } from '@src/helpers/component.helper';
 import { TextHelper } from '@src/helpers/text.helper';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { ModerationService } from '@src/infrastructure/services/moderation.service';
 import { TYPES } from '@src/types';
@@ -29,17 +30,20 @@ export class SelfMuteCommand implements ICommand {
     private env: Environment;
     private logger: Logger<SelfMuteCommand>;
     private memberService: MemberService;
+    private usersRepository: UsersRepository;
 
     constructor(
         @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.BotLogger) logger: Logger<SelfMuteCommand>,
         @inject(TYPES.MemberService) memberService: MemberService,
-        @inject(TYPES.ModerationService) moderationService: ModerationService
+        @inject(TYPES.ModerationService) moderationService: ModerationService,
+        @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
     ) {
         this.moderationService = moderationService;
         this.env = env;
         this.logger = logger;
         this.memberService = memberService;
+        this.usersRepository = usersRepository;
     }
 
     async run(message: Message | PartialMessage, args: string[]): Promise<CommandResult> {
@@ -57,6 +61,10 @@ export class SelfMuteCommand implements ICommand {
         const endDateUtc = now.add(amount, unit as unitOfTime.DurationConstructor);
         const member = await this.memberService.getGuildMemberFromUserId(message.author!.id);
         if (!member) throw Error(`Cannot find user with user ID ${message.author!.id}. Has the user left the guild?`);
+        const user = await this.usersRepository.getUserByUserId(member.id);
+
+        let muteMessage = `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>).`;
+        if(!user?.strictSelfmute) muteMessage += `You can prematurely end it by using the button below or sending me ${inlineCode(this.env.CORE.PREFIX + 'unmute')} here.`;
 
         try {
             await this.moderationService.muteGuildMember(
@@ -64,8 +72,8 @@ export class SelfMuteCommand implements ICommand {
                 member.user,
                 endDateUtc.toDate(),
                 {
-                    content: `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>). You can prematurely end it by using the button below or sending me ${inlineCode(this.env.CORE.PREFIX + 'unmute')} here.`,
-                    components: [
+                    content: muteMessage,
+                    components: user?.strictSelfmute ? [] : [
                         new ActionRowBuilder<ButtonBuilder>().addComponents(ComponentHelper.endSelfmuteButton()),
                     ],
                 },
