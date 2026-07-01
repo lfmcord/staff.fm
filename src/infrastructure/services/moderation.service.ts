@@ -48,9 +48,7 @@ export class ModerationService {
         this.logger.info(
             `Trying to mute user ${TextHelper.userLog(subject.user)} (by ${TextHelper.userLog(actor)}) until ${endDate.toISOString()}...`
         );
-        const roles = (await this.memberService.getRolesFromGuildMember(subject))
-            .filter(r => r.id !== "636189149535272980"); // Nitro booster
-        let isSelfmute = roles.find(r => r.id == this.env.ROLES.SELFMUTED_ROLE_ID) != null;
+        const isSelfmute = actor.id === subject.id;
         const highestUserRole = await this.memberService.getHighestRoleFromGuildMember(subject);
         const botMember = await this.memberService.getGuildMemberFromUserId(this.client.user!.id);
         const highestBotRole = await this.memberService.getHighestRoleFromGuildMember(botMember!);
@@ -66,7 +64,8 @@ export class ModerationService {
             throw Error(`Cannot assign the muted role because it is higher than the bot role.`);
         }
 
-
+        const roles = (await this.memberService.getRolesFromGuildMember(subject))
+            .filter(r => r.id !== "636189149535272980"); // Nitro booster
         roles.forEach((r) => r.comparePositionTo(botMember!.roles.highest));
         await subject.roles.remove(roles);
         await subject.roles.add(mutedRole);
@@ -112,7 +111,8 @@ export class ModerationService {
         const isSelfmute = roles.find(r => r.id == this.env.ROLES.SELFMUTED_ROLE_ID);
         const mutedRole = isSelfmute ? this.env.ROLES.SELFMUTED_ROLE_ID : this.env.ROLES.MUTED_ROLE_ID;
         this.logger.debug(`Removing muted role ${mutedRole} from user ${TextHelper.userLog(subject.user)}...`);
-        await subject.roles.remove(mutedRole);
+        await subject.roles.remove(this.env.ROLES.SELFMUTED_ROLE_ID);
+        await subject.roles.remove(this.env.ROLES.MUTED_ROLE_ID);
         rolesToRestore = rolesToRestore.filter(
             (r) =>
                 r.id !== this.env.ROLES.MUTED_ROLE_ID &&
@@ -134,6 +134,8 @@ export class ModerationService {
         this.logger.info(
             `Unmuted user ${TextHelper.userLog(subject.user)} (by ${actor ? TextHelper.userLog(actor) : 'unknown'}).`
         );
+
+
 
         if (shouldLog) await this.loggingService.logUnmute(subject.user, actor, reason);
 
