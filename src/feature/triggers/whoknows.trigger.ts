@@ -68,7 +68,7 @@ export class WhoknowsTrigger {
             this.logger.info(`'${args[2]}' is not a Discord user ID`);
             await message.reply(
                 `I've not ${isBan ? 'added' : 'removed'} the crowns ban flag to the user because I couldn't recognize this user. ` +
-                    `If this is wrong, please use the \`${this.env.CORE.PREFIX}crowns ${isBan ? 'ban' : 'unban'}\` command.`
+                    `If this is wrong, please use the \`/crowns ${isBan ? 'ban' : 'unban'}\` command.`
             );
             return;
         }
@@ -105,7 +105,7 @@ export class WhoknowsTrigger {
             );
             return;
         }
-        await this.loggingService.logCrownsBan(message.author, subject, reason, message, !isBan);
+        await this.loggingService.logCrownsBan(message.author, subject, reason, !isBan);
     }
 
     private async handleLoginMessage(message: Message, userId: string, username: string) {

@@ -1,3 +1,5 @@
+import { StaffMailType } from '@src/feature/models/staff-mail-type';
+
 export class Constants {
     public static readonly Note: string = '📝';
     public static readonly User: string = '👤';
@@ -24,4 +26,20 @@ export class Constants {
     public static readonly Infinity: string = '♾️';
     public static readonly Stop: string = '⏹️';
     public static readonly Scream: string = '🗯️';
+    public static readonly Lastfm: string = '<:lastfmred:900551196023083048>';
+    public static readonly Wildcard: string = '🃏';
+
+    public static readonly StaffMailCategories: { [key: string]: string } = {
+        [StaffMailType.Crowns]: Constants.Crown + ' Crowns',
+        [StaffMailType.Report]: Constants.Warning + 'Report or Moderation concern',
+        [StaffMailType.Lastfm]: Constants.Lastfm + ' Last.fm-related',
+        [StaffMailType.Other]: Constants.Wildcard + ' Other',
+    };
+
+    public static readonly StaffMailCategoriesSimple: { [key: string]: string } = {
+        [StaffMailType.Crowns]: 'Crowns',
+        [StaffMailType.Report]: 'Report or Moderation concern',
+        [StaffMailType.Lastfm]: 'Last.fm-related',
+        [StaffMailType.Other]: 'Other',
+    };
 }

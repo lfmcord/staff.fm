@@ -7,7 +7,13 @@ import { DiscussionsRepository } from '@src/infrastructure/repositories/discussi
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { TYPES } from '@src/types';
-import { ActionRowBuilder, AttachmentBuilder, Message, StringSelectMenuBuilder } from 'discord.js';
+import {
+    ActionRowBuilder,
+    AttachmentBuilder,
+    ChatInputCommandInteraction,
+    SlashCommandBuilder,
+    StringSelectMenuBuilder,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
 import { Logger } from 'tslog';
@@ -15,7 +21,7 @@ import { Logger } from 'tslog';
 @injectable()
 export class DiscussionsTopicCommand implements ICommand {
     name: string = 'dtopic';
-    description: string = 'Adds or removes a discussion topic for automatic posting in the discussions channel.';
+    description: string = 'Adds or removes a discussion topic.';
     usageHint: string = 'add [topic] | remove [(optional) number to remove] | remove | show';
     examples: string[] = ["add Who's the best artist of all time?", 'remove', 'remove 2', 'show'];
     permissionLevel = CommandPermissionLevel.Helper;
@@ -23,6 +29,26 @@ export class DiscussionsTopicCommand implements ICommand {
     aliases = ['discussiontopic', 'discussiontopics', 'discussionstopics', 'dtopics'];
     isUsableInDms = false;
     isUsableInServer = true;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('add')
+                .setDescription('Adds a discussion topic')
+                .addStringOption((option) =>
+                    option.setName('topic').setDescription('The topic to add').setRequired(true)
+                )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('remove')
+                .setDescription('Removes a discussion topic')
+                .addIntegerOption((option) =>
+                    option.setName('topic').setDescription('The number of the topic to remove')
+                )
+        )
+        .addSubcommand((subcommand) => subcommand.setName('show').setDescription('Shows all discussion topics'));
 
     private logger: Logger<DiscussionsTopicCommand>;
     private discussionsRepository: DiscussionsRepository;
@@ -41,93 +67,68 @@ export class DiscussionsTopicCommand implements ICommand {
         this.memberService = memberService;
     }
 
-    validateArgs(args: string[]): Promise<void> {
-        if (args[0] && !this.operations.includes(args[0])) {
-            throw new ValidationError(
-                `Operation type ${args[0]} not valid for discussions.`,
-                `You must provide a one of the following operation types: ${this.operations.join(', ')}`
-            );
-        }
-
-        if (args[0] == this.operations[0] && args.length <= 1) {
-            throw new ValidationError(
-                `Operation add with no further args for discussions.`,
-                `You must provide a discussion topic to add!`
-            );
-        }
-
-        if (args[0] == this.operations[0] && args.slice(1).join(' ').length > 256) {
+    validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
+        if (interaction.options.getSubcommand() == 'add' && interaction.options.getString('topic')!.length > 256) {
             throw new ValidationError(`Topic too long.`, `A topic can't be longer than 256 characters.`);
-        }
-
-        if (args[0] == this.operations[1] && args.length > 1) {
-            try {
-                if (Number.parseInt(args[1]) < 1)
-                    throw new ValidationError(
-                        `Operation remove with second argument ${args[1]} is too small for discussions.`,
-                        `You must a valid number or pass no second argument!`
-                    );
-            } catch (e) {
-                throw new ValidationError(
-                    `Operation remove with second argument ${args[1]} is not a number for discussions.`,
-                    `You must a valid number or pass no second argument!`
-                );
-            }
         }
 
         return Promise.resolve();
     }
 
-    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
         let result: CommandResult;
-        switch (args[0]) {
+        switch (interaction.options.getSubcommand()) {
             case this.operations[0]:
-                result = await this.addDiscussionsTopic(args.slice(1).join(' '), message);
+                result = await this.addDiscussionsTopic(interaction.options.getString('topic') as string, interaction);
                 break;
             case this.operations[1]:
-                result = await this.removeDiscussionsTopic(args, message);
+                result = await this.removeDiscussionsTopic(interaction.options.getInteger('topic'), interaction);
                 break;
             case this.operations[2]:
-                result = await this.showDiscussionsTopics(message);
+                result = await this.showDiscussionsTopics(interaction);
                 break;
             default:
-                result = await this.showDiscussionsTopics(message);
+                result = await this.showDiscussionsTopics(interaction);
         }
 
         return result;
     }
 
-    private async addDiscussionsTopic(topic: string, message: Message): Promise<CommandResult> {
-        this.logger.info(`Adding new discussions topic '${topic}' by ${message.author.username}...`);
+    private async addDiscussionsTopic(topic: string, interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        this.logger.info(`Adding new discussions topic '${topic}' by ${interaction.user.username}...`);
 
-        await this.discussionsRepository.addDiscussionTopic(topic, message.author);
+        await this.discussionsRepository.addDiscussionTopic(topic, interaction.user);
 
         const openTopics = await this.discussionsRepository.getAllUnusedDiscussions();
 
-        await this.loggingService.logDiscussionTopic(message.author, topic, openTopics.length);
+        await this.loggingService.logDiscussionTopic(interaction.user, topic, openTopics.length);
 
         return {
             isSuccessful: true,
-            replyToUser: `I've added the following topic: "${topic}"\n-# There are now ${openTopics.length} open topics.`,
+            replyToUser: {
+                content: `I've added the following topic: "${topic}"\n-# There are now ${openTopics.length} open topics.`,
+            },
         };
     }
 
-    private async removeDiscussionsTopic(args: string[], message: Message<true>): Promise<CommandResult> {
+    private async removeDiscussionsTopic(
+        numberToRemove: number | null,
+        interaction: ChatInputCommandInteraction
+    ): Promise<CommandResult> {
         const topics = await this.discussionsRepository.getAllUnusedDiscussions();
-        if (args[1]) {
-            const numberToRemove = Number.parseInt(args[1]);
+        if (numberToRemove) {
             const discussionToRemove = topics[numberToRemove - 1];
             if (!discussionToRemove)
                 return {
                     isSuccessful: false,
-                    replyToUser: `This number is too high, I don't have that many topics stored!`,
+                    replyToUser: { content: `This number is too high, I don't have that many topics stored!` },
                 };
-            this.logger.info(`Removing '${discussionToRemove.topic}' by ${message.author.username}...`);
+            this.logger.info(`Removing '${discussionToRemove.topic}' by ${interaction.user.username}...`);
             await this.discussionsRepository.removeDiscussionById(discussionToRemove._id);
             const user = await this.memberService.fetchUser(discussionToRemove.addedById);
 
             await this.loggingService.logDiscussionTopic(
-                message.author,
+                interaction.user,
                 discussionToRemove.topic,
                 topics.length - 1,
                 true
@@ -135,7 +136,9 @@ export class DiscussionsTopicCommand implements ICommand {
 
             return {
                 isSuccessful: true,
-                replyToUser: `I've removed the following topic at position ${numberToRemove}:\n- \`${discussionToRemove.topic}\` (added by ${user?.username ?? 'unknown'} at <t:${moment(discussionToRemove.addedAt).unix()}:f>)`,
+                replyToUser: {
+                    content: `I've removed the following topic at position ${numberToRemove}:\n- \`${discussionToRemove.topic}\` (added by ${user?.username ?? 'unknown'} at <t:${moment(discussionToRemove.addedAt).unix()}:f>)`,
+                },
             };
         }
         this.logger.info(`No number provided, showing remove menu...`);
@@ -144,47 +147,50 @@ export class DiscussionsTopicCommand implements ICommand {
         if (!topicsFile) {
             return {
                 isSuccessful: true,
-                replyToUser: `No discussion topics to remove.`,
+                replyToUser: { content: `No discussion topics to remove.` },
             };
         }
 
-        await message.channel.send({
-            content: `Please select the topic to remove below.`,
-            files: [
-                new AttachmentBuilder(topicsFile, {
-                    name: `${moment().format('YYYY_MM_DD')}_discussion_topics.txt`,
-                }),
-            ],
-            components: [
-                new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(ComponentHelper.discussionsMenu(topics)),
-            ],
-        });
-        return {};
+        return {
+            isSuccessful: true,
+            replyToUser: {
+                content: `Please select the topic to remove below.`,
+                files: [
+                    new AttachmentBuilder(topicsFile, {
+                        name: `${moment().format('YYYY_MM_DD')}_discussion_topics.txt`,
+                    }),
+                ],
+                components: [
+                    new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+                        ComponentHelper.discussionsMenu(topics)
+                    ),
+                ],
+            },
+        };
     }
 
-    async showDiscussionsTopics(message: Message<true>) {
+    async showDiscussionsTopics(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
         this.logger.info(`Showing all discussion topics...`);
         const topics = await this.discussionsRepository.getAllDiscussions();
         if (topics.length == 0) {
             return {
                 isSuccessful: true,
-                replyToUser: `No discussion topics available.`,
+                replyToUser: { content: `No discussion topics available.` },
             };
         }
         const topicsFile = await this.discussionsRepository.getAllDiscussionTopicsAsFile(topics);
         const unopenedTopicsLength = topics.filter((t) => !t.openedAt).length;
 
-        await message.channel.send({
-            content: `There are currently ${unopenedTopicsLength} open topics (${topics.length - unopenedTopicsLength} used). Current discussion topics (oldest to newest):`,
-            files: [
-                new AttachmentBuilder(topicsFile!, {
-                    name: `${moment().format('YYYY_MM_DD')}_discussion_topics.txt`,
-                }),
-            ],
-        });
-
         return {
             isSuccessful: true,
+            replyToUser: {
+                content: `There are currently ${unopenedTopicsLength} open topics (${topics.length - unopenedTopicsLength} used). Current discussion topics (oldest to newest):`,
+                files: [
+                    new AttachmentBuilder(topicsFile!, {
+                        name: `${moment().format('YYYY_MM_DD')}_discussion_topics.txt`,
+                    }),
+                ],
+            },
         };
     }
 }

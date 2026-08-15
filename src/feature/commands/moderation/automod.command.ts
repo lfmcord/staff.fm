@@ -2,24 +2,48 @@ import { Environment } from '@models/environment';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { ICommand } from '@src/feature/commands/models/command.interface';
-import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { BlockedWordsRepository } from '@src/infrastructure/repositories/blocked-words.repository';
 import { TYPES } from '@src/types';
-import { AttachmentBuilder, Message } from 'discord.js';
+import { AttachmentBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 
 @injectable()
 export class AutomodCommand implements ICommand {
     name: string = 'automod';
-    description: string =
-        'Gets, sets or removes automodded words. Use `*` to match any characters before or after the word. Only alphanumerical and * are allowed. Formatting (e.g. italic, spoilers,...) is ignored when matching.';
-    usageHint: string = 'add <words to add, separated by comma> | remove <words to remove, separated by comma>';
-    examples: string[] = ['', 'add badword, worseword, *word*', 'remove badword, *word*'];
+    description: string = 'Checks, adds or removes automodded words.';
     permissionLevel = CommandPermissionLevel.Moderator;
-    aliases = [];
     isUsableInDms = false;
     isUsableInServer = true;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('add')
+                .setDescription('Adds one or more words to automod')
+                .addStringOption((option) =>
+                    option
+                        .setName('words')
+                        .setDescription('The words to add (separate multiple with comma, * as wildcard)')
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('remove')
+                .setDescription('Removes one or more words to automod')
+                .addStringOption((option) =>
+                    option
+                        .setName('words')
+                        .setDescription('The words to remove (separate multiple with comma)')
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand.setName('check').setDescription('Checks the existing automodded words')
+        );
 
     private env: Environment;
     private blockedWordsRepository: BlockedWordsRepository;
@@ -36,54 +60,34 @@ export class AutomodCommand implements ICommand {
         this.description += `\nAutomod enabled in following channels: ${[...this.env.MODERATION.AUTOMOD.ENABLED_CHANNEL_IDS.map((id) => `<#${id}>`)].join(' ')}.`;
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
         let result: CommandResult;
-        switch (args[0]) {
+        switch (interaction.options.getSubcommand()) {
             case 'add':
                 result = await this.addBlockedWords(
-                    args
-                        .slice(1)
-                        .join(' ')
-                        .toLowerCase()
+                    interaction.options
+                        .getString('words')!
                         .split(',')
-                        .map((word) => word.trim().replace(',', ''))
+                        .map((word) => word.toLowerCase().trim().replace(',', ''))
                 );
                 break;
             case 'remove':
                 result = await this.removeBlockedWords(
-                    args
-                        .slice(1)
-                        .join(' ')
-                        .toLowerCase()
+                    interaction.options
+                        .getString('words')!
                         .split(',')
-                        .map((word) => word.trim().replace(',', ''))
+                        .map((word) => word.toLowerCase().trim().replace(',', ''))
                 );
                 break;
             default:
-                result = await this.showBlockedWords(message);
+                result = await this.showBlockedWords(interaction);
                 break;
         }
 
         return result;
     }
 
-    async validateArgs(args: string[]): Promise<void> {
-        if (args[0] == 'add') {
-            if (args.length < 2) {
-                throw new ValidationError(
-                    `Expected >1 arguments, got ${args.length}.`,
-                    'You have to give me terms to block!'
-                );
-            }
-        } else if (args[0] == 'remove') {
-            if (args.length < 2) {
-                throw new ValidationError(
-                    `Expected >1 arguments, got ${args.length}.`,
-                    'You have to give me terms to remove!'
-                );
-            }
-        }
-    }
+    async validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {}
 
     async addBlockedWords(wordsToAdd: string[]): Promise<CommandResult> {
         this.logger.info(`Trying to add ${wordsToAdd.length} new blocked words...`);
@@ -96,7 +100,7 @@ export class AutomodCommand implements ICommand {
         if (newWords.length === 0) {
             return {
                 isSuccessful: false,
-                replyToUser: `None of the provided words are new or allowed!`,
+                replyToUser: { content: `None of the provided words are new or allowed!` },
             };
         }
 
@@ -104,7 +108,9 @@ export class AutomodCommand implements ICommand {
 
         return {
             isSuccessful: true,
-            replyToUser: `I've successfully added the following words to the blocked list: \`${newWords.join('`, `')}\`.`,
+            replyToUser: {
+                content: `I've successfully added the following words to the blocked list: \`${newWords.join('`, `')}\`.`,
+            },
         };
     }
 
@@ -116,7 +122,7 @@ export class AutomodCommand implements ICommand {
         if (removedWords.length === 0) {
             return {
                 isSuccessful: false,
-                replyToUser: `None of the provided words are currently blocked!`,
+                replyToUser: { content: `None of the provided words are currently blocked!` },
             };
         }
 
@@ -124,11 +130,13 @@ export class AutomodCommand implements ICommand {
 
         return {
             isSuccessful: true,
-            replyToUser: `I've successfully removed the following words from the blocked list: \`${removedWords.join('`, `')}\`.`,
+            replyToUser: {
+                content: `I've successfully removed the following words from the blocked list: \`${removedWords.join('`, `')}\`.`,
+            },
         };
     }
 
-    async showBlockedWords(message: Message) {
+    async showBlockedWords(interaction: ChatInputCommandInteraction) {
         const blockedWords = (await this.blockedWordsRepository.getAllBlockedWords()).sort((a, b) =>
             a.localeCompare(b)
         );
@@ -136,7 +144,7 @@ export class AutomodCommand implements ICommand {
         if (blockedWords.length === 0) {
             return {
                 isSuccessful: true,
-                replyToUser: `There are currently no blocked words.`,
+                replyToUser: { content: `There are currently no blocked words.` },
             };
         }
 
@@ -145,13 +153,12 @@ export class AutomodCommand implements ICommand {
             name: 'blocked_words.txt',
         });
 
-        await message.reply({
-            content: `Automod is enabled in following channels: ${[...this.env.MODERATION.AUTOMOD.ENABLED_CHANNEL_IDS.map((id) => `<#${id}>`)].join(' ')}.\nThere are currently ${blockedWords.length} blocked words.`,
-            files: [attachment],
-        });
-
         return {
             isSuccessful: true,
+            replyToUser: {
+                content: `Automod is enabled in following channels: ${[...this.env.MODERATION.AUTOMOD.ENABLED_CHANNEL_IDS.map((id) => `<#${id}>`)].join(' ')}.\nThere are currently ${blockedWords.length} blocked words.`,
+                files: [attachment],
+            },
         };
     }
 }

@@ -11,19 +11,34 @@ import { TextHelper } from '@src/helpers/text.helper';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { TYPES } from '@src/types';
-import { ActionRowBuilder, bold, ButtonBuilder, Message, StringSelectMenuBuilder } from 'discord.js';
+import {
+    ActionRowBuilder,
+    bold,
+    ButtonBuilder,
+    ChatInputCommandInteraction,
+    PermissionFlagsBits,
+    SlashCommandBuilder,
+    StringSelectMenuBuilder,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 
 @injectable()
 export class StrikeAppealCommand implements ICommand {
     name: string = 'strikeappeal';
     description: string = 'Sets a strike to appealed.';
-    usageHint: string = '<user id/mention> <reason>';
-    examples: string[] = ['@haiyn resolved together and learned from it :)'];
     permissionLevel = CommandPermissionLevel.Moderator;
-    aliases = ['appealstrike'];
     isUsableInDms = false;
     isUsableInServer = true;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
+        .addUserOption((option) =>
+            option.setName('user').setDescription('The discord user to appeal a strike for').setRequired(true)
+        )
+        .addStringOption((option) =>
+            option.setName('reason').setDescription('The reason for the appeal').setRequired(true)
+        );
 
     private usersRepository: UsersRepository;
     private env: Environment;
@@ -39,8 +54,8 @@ export class StrikeAppealCommand implements ICommand {
         this.usersRepository = usersRepository;
     }
 
-    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
-        const userId = TextHelper.getDiscordUserId(args[0])!;
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        const userId = interaction.options.getUser('user')!.id;
         const user = await this.memberService.fetchUser(userId);
         if (!user) {
             throw new ValidationError(`User not found.`, `I couldn't find the user you provided.`);
@@ -52,7 +67,7 @@ export class StrikeAppealCommand implements ICommand {
         if (activeStrikes.length === 0) {
             return {
                 isSuccessful: false,
-                replyToUser: `This user does not have any strikes that can be appealed.`,
+                replyToUser: { content: `This user does not have any strikes that can be appealed.` },
             };
         }
 
@@ -68,30 +83,30 @@ export class StrikeAppealCommand implements ICommand {
             })
         );
 
-        const reason = args.slice(1).join(' ');
-        message.channel.send({
-            content: `Which strike do you want to set to appealed with the reason "${reason}"? Please select below. ${bold('This action will inform the affected user!')}`,
-            embeds: [EmbedHelper.getStrikesEmbed(activeStrikes)],
-            components: [
-                new ActionRowBuilder<StringSelectMenuBuilder>().addComponents([
-                    ComponentHelper.strikeAppealMenu(appealableStrikes),
-                ]),
-                new ActionRowBuilder<ButtonBuilder>().addComponents(ComponentHelper.cancelButton('defer-cancel')),
-            ],
-        });
+        const reason = interaction.options.getString("reason")!;
 
-        return {};
+        return {
+            isSuccessful: true,
+            replyToUser: {
+                content: `Which strike do you want to set to appealed with the reason "${reason}"? Please select below. ${bold('This action will inform the affected user!')}`,
+                embeds: [EmbedHelper.getStrikesEmbed(activeStrikes)],
+                components: [
+                    new ActionRowBuilder<StringSelectMenuBuilder>().addComponents([
+                        ComponentHelper.strikeAppealMenu(appealableStrikes),
+                    ]),
+                    new ActionRowBuilder<ButtonBuilder>().addComponents(ComponentHelper.cancelButton('defer-cancel')),
+                ],
+            }
+        };
     }
 
-    validateArgs(args: string[]): Promise<void> {
-        if (args.length < 2) {
+    validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
+        const reasonLength = interaction.options.getString('reason')!.length;
+        if (reasonLength > 1500) {
             throw new ValidationError(
-                `No args provided for strike.`,
-                `You must provide a user ID or mention in addition to a reason!`
+                `Reason too long.`,
+                `The reason for the strike must be less than 2000 characters (currently: ${reasonLength}).`
             );
-        }
-        if (TextHelper.getDiscordUserId(args[0]) === null) {
-            throw new ValidationError(`Invalid user ID or mention.`, `You must provide a valid user ID or mention!`);
         }
         return Promise.resolve();
     }

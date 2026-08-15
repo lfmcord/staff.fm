@@ -15,7 +15,6 @@ export interface Environment {
         REDIS_PORT: number;
     };
     CORE: {
-        PREFIX: string;
         BOT_OWNER_ID: string;
         GUILD_ID: string;
         WHOKNOWS_USER_ID: string;
@@ -55,7 +54,7 @@ export interface Environment {
         PING_ROLE_IDS: string[];
     };
     MODERATION: {
-        STRIKE_MUTE_DURATIONS: Map<number, number[]>;
+        STRIKE_MUTE_DURATIONS: number[];
         STRIKE_EXPIRATION_IN_MONTHS: number;
         AUTOMOD: {
             ENABLED_CHANNEL_IDS: string[];

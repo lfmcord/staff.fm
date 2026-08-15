@@ -66,4 +66,10 @@ export class TextHelper {
     static strikeCounterVerbose(activeCount: number, expiredCount: number, appealedCount: number) {
         return `**\\# of Strikes:** ${activeCount + expiredCount + appealedCount} total (${activeCount} active / ${expiredCount} expired / ${appealedCount} appealed)`;
     }
+
+    static htmlEncode(text: string) {
+        return text.replace(/[\u00A0-\u9999<>\&]/g, function (i) {
+            return '&#' + i.charCodeAt(0) + ';';
+        });
+    }
 }

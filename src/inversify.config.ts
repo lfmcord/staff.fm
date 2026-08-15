@@ -22,7 +22,6 @@ import { ScheduleService } from '@src/infrastructure/services/schedule.service';
 import { SelfMuteCommand } from '@src/feature/commands/utility/self-mute.command';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { ReadyHandler } from '@src/handlers/ready.handler';
-import { OkBuddyCommand } from '@src/feature/commands/fun/ok-buddy.command';
 import { VerifyCommand } from '@src/feature/commands/administration/verify.command';
 import LastFM from 'lastfm-typed';
 import { RedisConnector } from '@src/infrastructure/connectors/redis.connector';
@@ -30,14 +29,11 @@ import { CachingRepository } from '@src/infrastructure/repositories/caching.repo
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import Redis from 'ioredis';
 import { MessageDeleteHandler } from '@src/handlers/message-delete.handler';
-import { MuteRndRepository } from '@src/infrastructure/repositories/mute-rnd.repository';
-import { MuteRndCommand } from '@src/feature/commands/fun/mute-rnd.command';
 import { IMessageComponentInteraction } from '@src/feature/interactions/abstractions/message-component-interaction.interface';
 import { InteractionCreateHandler } from '@src/handlers/interaction-create.handler';
 import { StaffMailManagementCommand } from '@src/feature/commands/staffmail/staff-mail-management.command';
 import { StaffMailContactCommand } from '@src/feature/commands/staffmail/staff-mail-contact.command';
 import { StaffMailCloseCommand } from '@src/feature/commands/staffmail/staff-mail-close.command';
-import { StaffMailCreateModalSubmitInteraction } from '@src/feature/interactions/modal-submit/staff-mail-create-modal-submit.interaction';
 import { SelfMuteUnmuteCommand } from '@src/feature/commands/utility/self-mute-unmute.command';
 import { StaffMailDmTrigger } from '@src/feature/triggers/staff-mail-dm.trigger';
 import { StaffMailReplyCommand } from '@src/feature/commands/staffmail/staff-mail-reply.command';
@@ -47,39 +43,24 @@ import * as process from 'process';
 import { VerificationTrigger } from '@src/feature/triggers/verification.trigger';
 import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
 import { FlagCommand } from '@src/feature/commands/moderation/flag.command';
-import { FlagsCommand } from '@src/feature/commands/moderation/flags.command';
-import { UnflagCommand } from '@src/feature/commands/moderation/unflag.command';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { GuildBanAddHandler } from '@src/handlers/guild-ban-add.handler';
 import { GuildBanRemoveHandler } from '@src/handlers/guild-ban-remove.handler';
 import { WhoisCommand } from '@src/feature/commands/administration/whois.command';
-import { StaffMailCreateButtonInteraction } from '@src/feature/interactions/message-component/staff-mail-create-button.interaction';
-import { StaffMailCreateUrgentReportButtonInteraction } from '@src/feature/interactions/message-component/staff-mail-create-urgentreport-button.interaction';
-import { StaffMailCreateModalShowInteraction } from '@src/feature/interactions/message-component/staff-mail-create-modal-show.interaction';
 import { IModalSubmitInteraction } from '@src/feature/interactions/abstractions/modal-submit-interaction.interface';
 import { IMessageContextMenuInteraction } from '@src/feature/interactions/abstractions/message-context-menu-interaction.interface';
-import { VerifyContextMenuInteraction } from '@src/feature/interactions/message-context-menu/verify-context-menu.interaction';
 import { CommandService } from '@src/infrastructure/services/command.service';
 import { ApiRouter } from '@src/api/api-router';
 import { UserController } from '@src/api/user.controller';
 import { IApiRouter } from '@src/api/abstraction/api-router.interface';
 import { MessageUpdateHandler } from '@src/handlers/message-update.handler';
 import { MessageBulkDeleteHandler } from '@src/handlers/message-bulk-delete.handler';
-import { StaffMailReportCommand } from '@src/feature/commands/staffmail/staff-mail-report.command';
-import { StaffMailReportInteraction } from '@src/feature/interactions/message-context-menu/staff-mail-report.interaction';
 import { CrownsCommand } from '@src/feature/commands/administration/crowns.command';
-import { CrownsBanHasCommand } from '@src/feature/commands/administration/crownsban-has.command';
 import { WhoknowsTrigger } from '@src/feature/triggers/whoknows.trigger';
 import { ImportsCommand } from '@src/feature/commands/administration/imports.command';
 import { VerifyRemoveCommand } from '@src/feature/commands/administration/verify-remove.command';
-import { VerifyRemoveInteraction } from '@src/feature/interactions/message-component/verify-remove.interaction';
-import { VerifyDismissPlaycountWarningInteraction } from '@src/feature/interactions/message-component/verify-dismiss-playcount-warning.interaction';
-import { IsInactiveCommand } from '@src/feature/commands/administration/is-inactive.command';
-import { SetInactiveCommand } from '@src/feature/commands/administration/set-inactive.command';
-import { SetActiveCommand } from '@src/feature/commands/administration/set-active.command';
 import { DiscussionsRepository } from '@src/infrastructure/repositories/discussions.repository';
 import { DiscussionsTopicCommand } from '@src/feature/commands/administration/discussions/discussions-topic.command';
-import { DiscussionsTopicRemoveInteraction } from '@src/feature/interactions/message-component/discussions-topic-remove.interaction';
 import { DiscussionsTrigger } from '@src/feature/triggers/discussions.trigger';
 import { DiscussionsManageCommand } from '@src/feature/commands/administration/discussions/discussions-manage.command';
 import { IndexCommand } from '@src/feature/commands/administration/index.command';
@@ -91,24 +72,32 @@ import * as path from 'node:path';
 import { MutesRepository } from '@src/infrastructure/repositories/mutes.repository';
 import { MutesTrigger } from '@src/feature/triggers/mutes.trigger';
 import { ModerationService } from '@src/infrastructure/services/moderation.service';
-import { EndSelfmuteButtonInteraction } from '@src/feature/interactions/message-component/end-selfmute-button.interaction';
 import { LastfmCommand } from '@src/feature/commands/administration/lastfm.command';
 import { StrikeCommand } from '@src/feature/commands/moderation/strike.command';
 import { StrikesCommand } from '@src/feature/commands/moderation/strikes.command';
-import { CancelButtonInteraction } from '@src/feature/interactions/message-component/cancel-button.interaction';
-import { StrikeAppealInteraction } from '@src/feature/interactions/message-component/strike-appeal.interaction';
 import { StrikeAppealCommand } from '@src/feature/commands/moderation/strike-appeal.command';
-import { StrikeButtonInteraction } from '@src/feature/interactions/message-component/strike-button.interaction';
 import { ScatterCommand } from '@src/feature/commands/administration/scatter.command';
-import { UpdateButtonInteraction } from '@src/feature/interactions/message-component/update-button.interaction';
 import { InformCommand } from '@src/feature/commands/moderation/inform.command';
 import { StrikesManageCommand } from '@src/feature/commands/moderation/strikes-manage.command';
-import { UserlogCommand } from '@src/feature/commands/administration/userlog.command';
 import { AutomodTrigger } from '@src/feature/triggers/automod.trigger';
 import { BlockedWordsRepository } from '@src/infrastructure/repositories/blocked-words.repository';
 import { AutomodCommand } from '@src/feature/commands/moderation/automod.command';
-import { MigrateVerifiedCommand } from '@src/feature/commands/administration/misc/migrate-verified.command';
-import { StrictSelfMuteCommand } from '@src/feature/commands/utility/strict-self-mute.command';
+import { VerifyContextMenuInteraction } from '@src/feature/interactions/administration/verify-context-menu.interaction';
+import { VerifyRemoveInteraction } from './feature/interactions/administration/verify-remove.interaction';
+import {
+    VerifyDismissPlaycountWarningInteraction
+} from '@src/feature/interactions/administration/verify-dismiss-playcount-warning.interaction';
+import { DiscussionsTopicRemoveInteraction } from '@src/feature/interactions/administration/discussions-topic-remove.interaction';
+import { EndSelfmuteButtonInteraction } from './feature/interactions/utility/end-selfmute-button.interaction';
+import { CancelButtonInteraction } from '@src/feature/interactions/shared/cancel-button.interaction';
+import { StrikeAppealInteraction } from '@src/feature/interactions/moderation/strike-appeal.interaction';
+import { UpdateButtonInteraction } from './feature/interactions/administration/update-button.interaction';
+import { StaffMailCreateInteraction } from '@src/feature/interactions/staffmail/staff-mail-create.interaction';
+import { StaffMailSubmitInteraction } from '@src/feature/interactions/staffmail/staff-mail-submit.interaction';
+import {
+    IStringSelectMenuInteraction
+} from '@src/feature/interactions/abstractions/string-select-menu-interaction.interface';
+import { StaffMailFollowUpInteraction } from '@src/feature/interactions/staffmail/staff-mail-follow-up.interaction';
 
 const container = new Container();
 
@@ -121,12 +110,6 @@ for (const [k, v] of Object.entries(environmentData.ROLES.SCROBBLE_MILESTONES)) 
     scrobbleMilestones.set(parseInt(k), v);
 }
 environmentData.ROLES.SCROBBLE_MILESTONES = scrobbleMilestones;
-const strikeMuteDurations = new Map<number, number[]>();
-for (const [k, v] of Object.entries(environmentData.MODERATION.STRIKE_MUTE_DURATIONS)) {
-    const durations = v as number[];
-    strikeMuteDurations.set(parseInt(k), durations);
-}
-environmentData.MODERATION.STRIKE_MUTE_DURATIONS = strikeMuteDurations;
 container.bind<Environment>(TYPES.ENVIRONMENT).toConstantValue(environmentData);
 
 // CORE
@@ -207,26 +190,17 @@ container.bind<ICommand>('Command').to(PingCommand);
 container.bind<ICommand>('Command').to(HelpCommand);
 container.bind<ICommand>('Command').to(SelfMuteCommand);
 container.bind<ICommand>('Command').to(SelfMuteUnmuteCommand);
-container.bind<ICommand>('Command').to(OkBuddyCommand);
 container.bind<ICommand>('Command').to(VerifyCommand);
-container.bind<ICommand>('Command').to(MuteRndCommand);
 container.bind<ICommand>('Command').to(StaffMailManagementCommand);
 container.bind<ICommand>('Command').to(StaffMailContactCommand);
 container.bind<ICommand>('Command').to(StaffMailCloseCommand);
 container.bind<ICommand>('Command').to(StaffMailCreateCommand);
 container.bind<ICommand>('Command').to(StaffMailReplyCommand);
 container.bind<ICommand>('Command').to(FlagCommand);
-container.bind<ICommand>('Command').to(FlagsCommand);
-container.bind<ICommand>('Command').to(UnflagCommand);
 container.bind<ICommand>('Command').to(WhoisCommand);
-container.bind<ICommand>('Command').to(StaffMailReportCommand);
 container.bind<ICommand>('Command').to(ImportsCommand);
 container.bind<ICommand>('Command').to(CrownsCommand);
-container.bind<ICommand>('Command').to(CrownsBanHasCommand);
 container.bind<ICommand>('Command').to(VerifyRemoveCommand);
-container.bind<ICommand>('Command').to(IsInactiveCommand);
-container.bind<ICommand>('Command').to(SetInactiveCommand);
-container.bind<ICommand>('Command').to(SetActiveCommand);
 container.bind<ICommand>('Command').to(DiscussionsTopicCommand);
 container.bind<ICommand>('Command').to(DiscussionsManageCommand);
 container.bind<ICommand>('Command').to(IndexCommand);
@@ -239,10 +213,7 @@ container.bind<ICommand>('Command').to(StrikeAppealCommand);
 container.bind<ICommand>('Command').to(ScatterCommand);
 container.bind<ICommand>('Command').to(InformCommand);
 container.bind<ICommand>('Command').to(StrikesManageCommand);
-container.bind<ICommand>('Command').to(UserlogCommand);
 container.bind<ICommand>('Command').to(AutomodCommand);
-container.bind<ICommand>('Command').to(MigrateVerifiedCommand);
-container.bind<ICommand>('Command').to(StrictSelfMuteCommand);
 
 // TRIGGERS
 container.bind<StaffMailDmTrigger>(TYPES.StaffMailDmTrigger).to(StaffMailDmTrigger);
@@ -254,30 +225,20 @@ container.bind<AutomodTrigger>(TYPES.AutomodTrigger).to(AutomodTrigger);
 
 // INTERACTIONS
 container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(VerifyContextMenuInteraction);
-container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(StaffMailReportInteraction);
-
-container.bind<IModalSubmitInteraction>('ModalSubmitInteraction').to(StaffMailCreateModalSubmitInteraction);
-
-container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateButtonInteraction);
-container
-    .bind<IMessageComponentInteraction>('MessageComponentInteraction')
-    .to(StaffMailCreateUrgentReportButtonInteraction);
-container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateModalShowInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(VerifyRemoveInteraction);
-container
-    .bind<IMessageComponentInteraction>('MessageComponentInteraction')
-    .to(VerifyDismissPlaycountWarningInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(VerifyDismissPlaycountWarningInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(DiscussionsTopicRemoveInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(EndSelfmuteButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(CancelButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeAppealInteraction);
-container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(UpdateButtonInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateInteraction);
+container.bind<IModalSubmitInteraction>('ModalSubmitInteraction').to(StaffMailSubmitInteraction);
+container.bind<IStringSelectMenuInteraction>('StringSelectMenuInteraction').to(StaffMailFollowUpInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);
 container.bind<CachingRepository>(TYPES.CachingRepository).to(CachingRepository).inSingletonScope();
-container.bind<MuteRndRepository>(TYPES.MuteRndRepository).to(MuteRndRepository);
 container.bind<FlagsRepository>(TYPES.FlagsRepository).to(FlagsRepository);
 container.bind<UsersRepository>(TYPES.UsersRepository).to(UsersRepository);
 container.bind<DiscussionsRepository>(TYPES.DiscussionsRepository).to(DiscussionsRepository);

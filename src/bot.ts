@@ -24,6 +24,7 @@ import {
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 
 @injectable()
 export class Bot {
@@ -153,11 +154,11 @@ export class Bot {
             }
         );
 
-        this.client.on('ready', async () => {
+        this.client.on('clientReady', async () => {
             try {
                 await this.handlerFactory.createHandler('ready').handle(null);
                 this.client.user?.setActivity({
-                    name: `DM ${this.env.CORE.PREFIX}staffmail or ${this.env.CORE.PREFIX}report to contact staff!`,
+                    name: `DM /staffmail or check #rules to contact staff!`,
                     type: ActivityType.Playing,
                 });
             } catch (e) {
@@ -178,6 +179,11 @@ export class Bot {
         const jsonObjects: any[] = []; // discord.js does not expose this fuckass type
         for (const messageContextMenuInteraction of messageContextMenuInteractions) {
             jsonObjects.push(messageContextMenuInteraction.data.toJSON());
+        }
+
+        const commandInteractions = container.getAll<ICommand>('Command');
+        for (const commandInteraction of commandInteractions) {
+            jsonObjects.push(commandInteraction.definition.toJSON());
         }
 
         const rest = new REST().setToken(this.env.SECRETS.TOKEN);

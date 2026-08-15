@@ -29,6 +29,7 @@ import { getInfo } from 'lastfm-typed/dist/interfaces/userInterface';
 import { extension } from 'mime-types';
 import { Logger } from 'tslog';
 import moment = require('moment');
+import { StaffMailType } from '@src/feature/models/staff-mail-type';
 
 @injectable()
 export class LoggingService {
@@ -52,7 +53,7 @@ export class LoggingService {
     public async logBotError(message: string, error: Error) {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.DELETED_MESSAGE_LOG_CHANNEL_ID);
         if (!logChannel) return;
-        await logChannel.send("Bot Error: ${message}\n```" + error.stack + "```");
+        await logChannel.send('Bot Error: ${message}\n```' + error.stack + '```');
     }
 
     public async logDeletedMessage(deletedMessage: CachedMessageModel, author: User | null, actor: User | null) {
@@ -203,7 +204,7 @@ export class LoggingService {
         await logChannel.send({ embeds: embeds });
     }
 
-    public async logIndex(verification: Verification, reason: string) {
+    public async logIndex(verification: Verification, reason: string | null) {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.USER_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
@@ -220,7 +221,7 @@ export class LoggingService {
                     },
                     {
                         name: `Reason`,
-                        value: reason == '' ? 'No reason provided.' : reason,
+                        value: reason ?? 'No reason provided.',
                         inline: false,
                     },
                 ])
@@ -238,37 +239,51 @@ export class LoggingService {
         await logChannel.send({ embeds: embeds });
     }
 
-    public async logStaffMailEvent(
-        isOpen: boolean,
-        summary: string | null,
+    public async logStaffMailOpen(category: StaffMailType, author: User | null, actor: User | null)
+    {
+        const logChannel = await this.getLogChannel(this.env.CHANNELS.STAFFMAIL_LOG_CHANNEL_ID);
+        if (!logChannel) return;
+
+        const embed = new EmbedBuilder()
+        .setColor(EmbedHelper.green)
+        .setTitle(`New StaffMail`)
+        .setFields([
+            { name: 'Category', value: EmbedHelper.getHumanReadableStaffMailType(category), inline: true },
+            { name: 'User', value: author ? TextHelper.userDisplay(author) : 'Anonymous', inline: false },
+            {
+                name: 'Created by',
+                value: actor ? TextHelper.userDisplay(actor) : 'Anonymous',
+                inline: false,
+            }
+        ])
+        .setTimestamp();
+    }
+
+    public async logStaffMailClose(
         type: string,
         author: User | null,
-        actor: User | null,
+        actor: User,
         reason: string | null,
         attachments: AttachmentBuilder[] = [],
-        logNote: string = ''
+        logNote: string = '',
     ) {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.STAFFMAIL_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         const humanReadableType = EmbedHelper.getHumanReadableStaffMailType(type);
-        const fields = [{ name: 'Category', value: humanReadableType, inline: true }];
-        if (summary) fields.push({ name: 'Summary', value: summary, inline: true });
-        fields.push(
-            { name: 'User', value: author ? TextHelper.userDisplay(author) : 'Anonymous', inline: false },
-            {
-                name: isOpen ? 'Created by' : 'Closed by',
-                value: actor ? TextHelper.userDisplay(actor) : 'Anonymous',
-                inline: false,
-            }
-        );
         const embed = new EmbedBuilder()
-            .setColor(isOpen ? EmbedHelper.green : EmbedHelper.red)
-            .setTitle(isOpen ? `New StaffMail` : `Closed StaffMail`)
-            .setFields(fields)
+            .setColor(EmbedHelper.red)
+            .setTitle(`Closed StaffMail`)
+            .setFields([{ name: 'Category', value: humanReadableType, inline: true },{ name: 'User', value: author ? TextHelper.userDisplay(author) : 'Anonymous', inline: false },
+                {
+                    name: 'Closed by',
+                    value: TextHelper.userDisplay(actor),
+                    inline: false,
+                }])
             .setTimestamp();
-        if (reason) embed.setDescription(`${bold('Reason:')} ${reason}\n\n${logNote}`);
-        else if (!isOpen) embed.setDescription(`No reason provided.\n\n${logNote}`);
+        if (reason) embed.setDescription(`${bold('Reason:')} ${reason}`);
+        else embed.setDescription(`No reason provided.`);
+        if (logNote) embed.setFooter({ text: logNote });
         await logChannel.send({
             embeds: [embed],
             files: attachments,
@@ -418,7 +433,7 @@ export class LoggingService {
         await logChannel.send({ embeds: [embed] });
     }
 
-    async logCrownsBan(actor: User, subject: User, reason: string, message: Message, isUnban: boolean = false) {
+    async logCrownsBan(actor: User, subject: User, reason: string, isUnban: boolean = false) {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.CROWNS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
@@ -427,7 +442,6 @@ export class LoggingService {
             `\n${Constants.Note} ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
         embed.setTitle(isUnban ? `${Constants.Crown} Crowns Unban` : `<:nocrown:816944519924809779> Crowns Ban`);
-        embed.setURL(TextHelper.getDiscordMessageLink(message));
         await logChannel.send({ embeds: [embed] });
     }
 
@@ -437,9 +451,9 @@ export class LoggingService {
 
         const description =
             topicsLeftCount === 1
-                ? `There is only 1 discussion topic left. Please add more topics using \`${this.env.CORE.PREFIX}dtopic add\`.`
-                : `The next discussion topic is set to be posted but there are no more topics available. Please add more topics using \`${this.env.CORE.PREFIX}dtopic add\`.\n\n` +
-                  `Automatic posting of discussions is **disabled**. enable it again with \`${this.env.CORE.PREFIX}dmanage start\` once there are topics available.`;
+                ? `There is only 1 discussion topic left. Please add more topics using \`/discussiontopic add\`.`
+                : `The next discussion topic is set to be posted but there are no more topics available. Please add more topics using \`/discussiontopic add\`.\n\n` +
+                  `Automatic posting of discussions is **disabled**. enable it again with \`/discussionsmanage start\` once there are topics available.`;
         const embed = new EmbedBuilder()
             .setColor(EmbedHelper.orange)
             .setTitle(`${Constants.Warning} No Discussion Topics Available`)
@@ -449,19 +463,18 @@ export class LoggingService {
         await logChannel.send({ embeds: [embed] });
     }
 
-    async logScrobbleCap(subject: User, actor: User, reason: string, message: Message, capRoleId?: string) {
+    async logScrobbleCap(subject: User, actor: User, reason?: string, capRoleId?: string) {
         const logChannel = await this.getLogChannel(this.env.CHANNELS.CROWNS_LOG_CHANNEL_ID);
         if (!logChannel) return;
 
         let description = `${Constants.User} ${bold('User:')} ${TextHelper.userDisplay(subject, true)}`;
         if (capRoleId) description += `\n${Constants.Numbers} ${bold('Cap:')} <@&${capRoleId}>`;
-        description += `\n${Constants.Note} ${bold('Reason:')} ${reason == '' ? 'No reason provided.' : reason}`;
+        description += `\n${Constants.Note} ${bold('Reason:')} ${reason ?? 'No reason provided.'}`;
 
         const embed = EmbedHelper.getLogEmbed(actor, subject, LogLevel.Info).setDescription(description);
         embed.setTitle(
             capRoleId ? `${Constants.Blocked} Scrobble Cap Set` : `${Constants.Accepted} Scrobble Cap Removed`
         );
-        embed.setURL(TextHelper.getDiscordMessageLink(message));
 
         await logChannel.send({ embeds: [embed] });
     }
@@ -523,8 +536,8 @@ export class LoggingService {
             )
             .setFooter({
                 text: isStart
-                    ? `Use ${this.env.CORE.PREFIX}dmanage stop to stop automatic discussions.`
-                    : `Use ${this.env.CORE.PREFIX}dmanage start to start automatic discussions.`,
+                    ? `Use ${inlineCode('/discussionsmanage stop')} to stop automatic discussions.`
+                    : `Use ${inlineCode('/discussionsmanage start')} to start automatic discussions.`,
             });
 
         await logChannel.send({ embeds: [embed] });

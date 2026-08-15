@@ -1,4 +1,5 @@
 import { Environment } from '@models/environment';
+import { ErrorMessages } from '@models/error-messages';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { ICommand } from '@src/feature/commands/models/command.interface';
@@ -9,7 +10,15 @@ import { TextHelper } from '@src/helpers/text.helper';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { TYPES } from '@src/types';
-import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, Message, MessageCreateOptions, User } from 'discord.js';
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ChatInputCommandInteraction,
+    EmbedBuilder,
+    MessageCreateOptions,
+    SlashCommandBuilder,
+    User,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 import LastFM from 'lastfm-typed';
 import { Logger } from 'tslog';
@@ -18,12 +27,16 @@ import { Logger } from 'tslog';
 export class WhoisCommand implements ICommand {
     name: string = 'whois';
     description: string = 'Shows information about a Discord or Lastfm user.';
-    usageHint: string = '<user mention/ID or last.fm username>';
-    examples: string[] = ['356178941913858049', 'haiyn'];
     permissionLevel = CommandPermissionLevel.Helper;
-    aliases = [];
     isUsableInDms = false;
     isUsableInServer = true;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .addUserOption((option) => option.setName('user').setDescription('The discord user to look up'))
+        .addStringOption((option) =>
+            option.setName('lastfm').setDescription('The last.fm username to look up')
+        );
 
     private lastFmClient: LastFM;
     private memberService: MemberService;
@@ -45,14 +58,22 @@ export class WhoisCommand implements ICommand {
         this.usersRepository = usersRepository;
     }
 
-    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
-        const userId = TextHelper.getDiscordUserId(args[0]);
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        const userId = interaction.options.getUser('user')!.id;
+        if (!interaction.channel!.isSendable()) {
+            return {
+                isSuccessful: false,
+                replyToUser: { content: ErrorMessages.ChannelNotSendable },
+            };
+        }
         if (userId) {
-            message.channel.send(await this.getMessageForDiscordUser(userId, message.author!));
+            interaction.channel.send(await this.getMessageForDiscordUser(userId, interaction.user!));
         } else {
-            const messagesToSend = await this.getMessagesForLastFmUsername(args[0]);
+            const messagesToSend = await this.getMessagesForLastFmUsername(
+                interaction.options.getString('lastfm')!
+            );
             for (const messageToSend of messagesToSend) {
-                message.channel.send(messageToSend);
+                interaction.channel.send(messageToSend);
             }
         }
 
@@ -115,7 +136,7 @@ export class WhoisCommand implements ICommand {
 
         const indexedUser = await this.usersRepository.getUserByUserId(userId);
         if (!indexedUser) {
-            embeds.push(EmbedHelper.getUserNotIndexedEmbed(userId));
+            embeds.push(EmbedHelper.getUserNotIndexedEmbed());
             return { embeds: embeds };
         }
 
@@ -159,11 +180,11 @@ export class WhoisCommand implements ICommand {
         };
     }
 
-    validateArgs(args: string[]): Promise<void> {
-        if (args.length === 0) {
+    validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
+        if (!interaction.options.getUser('user') && !interaction.options.getString('lastfm')) {
             throw new ValidationError(
                 `No args provided for whois.`,
-                `You must provide a Discord user or last.fm username!`
+                `You must provide a last.fm username or a discord user!`
             );
         }
         return Promise.resolve();

@@ -93,7 +93,7 @@ export class UsersRepository {
         );
     }
 
-    async addScrobbleCapToUser(userId: string, actorId: string, roleId: string, reason: string): Promise<void> {
+    async addScrobbleCapToUser(userId: string, actorId: string, roleId: string, reason?: string): Promise<void> {
         await UsersModelInstance.updateOne(
             { userId: userId },
             {
@@ -214,7 +214,7 @@ export interface ICrownsBanModel {
 
 export interface IScrobbleCapModel {
     roleId: string;
-    reason: string;
+    reason?: string;
     setOn: Date;
     setBy: string;
 }

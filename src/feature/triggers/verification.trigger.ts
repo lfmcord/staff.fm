@@ -40,8 +40,6 @@ export class VerificationTrigger {
     }
 
     async run(message: Message) {
-        if (message.content.startsWith(this.env.CORE.PREFIX)) return;
-
         const discordUsername = message.author.username.toLowerCase();
         const discordDisplayname = message.author.displayName.toLowerCase();
         const discordServerDisplayname = (

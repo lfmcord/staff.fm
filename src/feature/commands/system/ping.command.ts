@@ -1,36 +1,33 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { Message, PartialMessage } from 'discord.js';
-import { injectable } from 'inversify';
-import { TextHelper } from '@src/helpers/text.helper';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { TextHelper } from '@src/helpers/text.helper';
+import { ChatInputCommandInteraction, Message, PartialMessage, SlashCommandBuilder } from 'discord.js';
+import { injectable } from 'inversify';
 
 @injectable()
 export class PingCommand implements ICommand {
     name: string = 'ping';
     description: string = 'Checks if the bot is up.';
-    usageHint: string = '';
-    examples: string[] = [];
     permissionLevel = CommandPermissionLevel.User;
-    aliases = ['p'];
-    isUsableInDms = false;
-    isUsableInServer = true;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
 
-    async run(message: Message | PartialMessage): Promise<CommandResult> {
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
         const start = new Date().getTime();
-        const reply = await message.reply({
+        await interaction.reply({
             content: 'Pinging...',
         });
         const end = new Date().getTime();
-        await reply.edit(`I\'m alive! 😌 Latency is ${end - start} ms.`);
-        await message.react(TextHelper.success);
+        await interaction.editReply(`I\'m alive! 😌 Latency is ${end - start} ms.`);
 
         return {
             isSuccessful: true,
         };
     }
 
-    validateArgs(_: string[]): Promise<void> {
+    validateArgs(_: ChatInputCommandInteraction): Promise<void> {
         return Promise.resolve();
     }
 }

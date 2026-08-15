@@ -11,9 +11,17 @@ import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { ModerationService } from '@src/infrastructure/services/moderation.service';
 import { TYPES } from '@src/types';
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Message } from 'discord.js';
+import {
+    ActionRowBuilder, bold,
+    ButtonBuilder, ButtonInteraction,
+    ButtonStyle,
+    ChatInputCommandInteraction, GuildMember, inlineCode, Message, PermissionFlagsBits,
+    SlashCommandBuilder,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
+import { Error } from 'mongoose';
+import * as moment from 'moment';
 
 @injectable()
 export class StrikeCommand implements ICommand {
@@ -32,6 +40,19 @@ export class StrikeCommand implements ICommand {
     private moderationService: ModerationService;
     private env: Environment;
     private memberService: MemberService;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
+        .addUserOption((option) =>
+            option.setName('user').setDescription('The discord user to strike').setRequired(true)
+        )
+        .addStringOption((option) =>
+            option.setName('reason').setDescription('The reason for the strike').setRequired(true)
+        )
+        .addBooleanOption((option) =>
+            option.setName('nomute').setDescription('Does not hand out a mute with the strike')
+        );
 
     constructor(
         @inject(TYPES.LoggingService) loggingService: LoggingService,
@@ -49,89 +70,150 @@ export class StrikeCommand implements ICommand {
         this.logger = logger;
 
         this.description += `Strike punishments:\n`;
-        this.env.MODERATION.STRIKE_MUTE_DURATIONS.forEach((muteDurations, index) => {
-            this.description += ` - ${index + 1} strike${index + 1 > 1 ? 's' : ''}: Mute (${muteDurations.join('h, ')}h)\n`;
-        });
-        this.description += ` - ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size + 1} strike: Ban\n`;
+        for (let i = 0; i < this.env.MODERATION.STRIKE_MUTE_DURATIONS.length -1; i++) {
+            this.description += ` - ${i + 1} strike${i + 1 > 1 ? 's' : ''}: Mute (${this.env.MODERATION.STRIKE_MUTE_DURATIONS[i]}h)\n`;
+        }
+        this.description += ` - ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.length + 1} strike: Ban\n`;
         this.description += `\nStrikes expire after ${env.MODERATION.STRIKE_EXPIRATION_IN_MONTHS} months.`;
     }
 
-    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
-        const userId = TextHelper.getDiscordUserId(args[0])!;
-        const member = await this.memberService.getGuildMemberFromUserId(userId);
-        if (!member) {
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        const userId = interaction.options.getUser('user')!.id;
+        const subject = await this.memberService.getGuildMemberFromUserId(userId);
+        if (!subject) {
             return {
                 isSuccessful: false,
-                replyToUser: `I cannot strike this user because they are not in the server.`,
+                replyToUser: { content: `I cannot strike this user because they are not in the server.` },
             };
         }
 
         const indexedUser = await this.usersRepository.getUserByUserId(userId);
         if (!indexedUser) {
-            this.logger.info(`User ${TextHelper.userLog(member.user)} is not indexed. Indexing...`);
+            this.logger.info(`User ${TextHelper.userLog(subject.user)} is not indexed. Indexing...`);
             await this.usersRepository.addUserWithoutVerification(userId);
         }
+
         const allStrikes = indexedUser?.strikes ?? [];
         const activeStrikes = StrikeHelper.getActiveStrikes(allStrikes);
         this.logger.info(
-            `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} non-expired strikes. Showing information...`
+            `User ${TextHelper.userLog(subject.user)} has ${activeStrikes.length} non-expired strikes.`
         );
 
-        const muteDurations =
-            activeStrikes.length <= this.env.MODERATION.STRIKE_MUTE_DURATIONS.size
-                ? this.env.MODERATION.STRIKE_MUTE_DURATIONS.get(activeStrikes.length)
-                : null;
+        const reason = interaction.options.getString('reason')!;
 
-        if (!muteDurations) {
-            this.logger.info(
-                `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} strikes, which is the maximum (${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size}). Showing ban dialogue...`
-            );
-            await message.channel.send({
-                content:
-                    `User ${member} has ${activeStrikes.length} strikes, another strike would be more than the maximum allowed (${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size}). Proceed with ban?\n` +
-                    `-# ${TextHelper.strikeCounter(activeStrikes.length, allStrikes.length)}`,
-                components: [
-                    new ActionRowBuilder<ButtonBuilder>().addComponents([
-                        ComponentHelper.strikeBanButton(message.id, true),
-                        ComponentHelper.strikeBanButton(message.id, false),
-                        ComponentHelper.cancelButton('defer-cancel', ButtonStyle.Secondary),
-                    ]),
-                ],
-                allowedMentions: { users: [] },
-            });
-            return {};
-        }
-        this.logger.info(
-            `User ${TextHelper.userLog(member.user)} has ${activeStrikes.length} strikes, handing out a mute...`
+        let wasInformed, reply, logReason;
+        try {
+            if (interaction.options.getBoolean('nomute')) {
+                if (activeStrikes.length >= this.env.MODERATION.STRIKE_MUTE_DURATIONS.length) {
+                    return {
+                        isSuccessful: false,
+                        replyToUser: {
+                            content: `User ${subject} has ${activeStrikes.length} strikes, which is the maximum (${this.env.MODERATION.STRIKE_MUTE_DURATIONS.length}). You cannot issue a strike without a mute.`,
+                        }
+
+                    };
+                }
+
+                let strikeMessage: string =
+                    `🗯️ **You've received a strike in the Last.fm Discord**. ` +
+                    `You now have ${activeStrikes.length + 1} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.length + 1} strikes.`;
+                if (activeStrikes.length + 1 === this.env.MODERATION.STRIKE_MUTE_DURATIONS.length)
+                    strikeMessage += ` Another strike will lead to a ban.`;
+                strikeMessage += `\n**Reason:** ${reason}`;
+                strikeMessage +=
+                    `\n-# This strike will expire automatically <t:${moment().add(this.env.MODERATION.STRIKE_EXPIRATION_IN_MONTHS, 'months').unix()}:R>. ` +
+                    `Contact staff if you believe this strike was unjustified or would otherwise like to discuss it.`;
+                try {
+                    wasInformed = await subject.send({ content: strikeMessage });
+                } catch (e) {
+                    this.logger.warn(`Failed to send strike DM to user ${TextHelper.userLog(subject.user)}.`, e);
+                }
+                reply = `🗯️ I've successfully issued a strike to ${subject} without a mute.`;
+                logReason = `no action`;
+            } else if (activeStrikes.length < this.env.MODERATION.STRIKE_MUTE_DURATIONS.length) {
+                const muteDurationInHours = this.env.MODERATION.STRIKE_MUTE_DURATIONS[activeStrikes.length];
+                const endDate = moment().add(muteDurationInHours, 'hours').toDate();
+                let strikeMessage: string =
+                    `🗯️ **You've received a strike in the Last.fm Discord** and are muted until <t:${moment(endDate).unix()}:F>. ` +
+                    `You now have ${activeStrikes.length + 1} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.length + 1} strikes.`;
+                if (activeStrikes.length + 1 === this.env.MODERATION.STRIKE_MUTE_DURATIONS.length)
+                    strikeMessage += ` Another strike will lead to a ban.`;
+                strikeMessage += `\n**Reason:** ${reason}`;
+                strikeMessage +=
+                    `\n-# This strike will expire automatically <t:${moment().add(this.env.MODERATION.STRIKE_EXPIRATION_IN_MONTHS, 'months').unix()}:R>. ` +
+                    `Contact staff if you believe this strike was unjustified or would otherwise like to discuss it.`;
+                wasInformed = await this.moderationService.muteGuildMember(
+                    subject,
+                    interaction.user,
+                    endDate,
+                    {
+                        content: strikeMessage,
+                    },
+                    undefined,
+                    false
+                );
+                reply = `🗯️ I've successfully issued a strike to ${subject} with a mute (${muteDurationInHours}h).`;
+                logReason = `a mute (${muteDurationInHours}h)`;
+            } else {
+                wasInformed = await this.moderationService.banGuildMember(
+                    subject,
+                    interaction.user,
+                    {
+                        content: `🔨 You've reached the maximum allowed number of strikes (${this.env.MODERATION.STRIKE_MUTE_DURATIONS.length + 1}) in the Last.fm Discord and have been banned.\n**Reason:** ${reason}\n`,
+                    },
+                    reason,
+                    false
+                );
+                reply = `I've successfully 🔨 ${bold('banned')} ${inlineCode(subject.user.username)} for accumulating too many strikes.\n`;
+                logReason = `a ban`;
+            }
+        } catch (e) {
+                this.logger.error(`Failed to strike user ${TextHelper.userLog(subject.user)}.`, e);
+                return {
+                    isSuccessful: false,
+                    reason: `Failed to strike user: ${e}.`,
+                    replyToUser : { content: `Failed to strike user ${TextHelper.userDisplay(subject.user)}.` }
+                };
+            }
+
+        const logMessage = await this.loggingService.logStrike(
+            subject.user,
+            interaction.user,
+            reason,
+            activeStrikes.length + 1,
+            allStrikes.length + 1,
+            logReason ?? 'uknown'
         );
 
-        let components = [ComponentHelper.strikeNoneButton(message.id)];
-        components = components.concat(muteDurations!.map((muteDuration) => ComponentHelper.strikeMuteButton(message.id, muteDuration)));
-        components = components.concat(ComponentHelper.cancelButton('defer-cancel', ButtonStyle.Secondary));
-        await message.channel.send({
+        const now = moment();
+        await this.usersRepository.addStrikeToUser(
+            subject!.user,
+            interaction.user,
+            reason,
+            now.toDate(),
+            now.add(this.env.MODERATION.STRIKE_EXPIRATION_IN_MONTHS, 'months').toDate(),
+            logMessage ? TextHelper.getDiscordMessageLink(logMessage) : undefined
+        );
+
+        await interaction.editReply({
             content:
-                `User ${member} has ${activeStrikes.length} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size} strikes. Proceed with mute?\n` +
-                `-# ${TextHelper.strikeCounter(activeStrikes.length, allStrikes.length)}`,
-            components: [
-                new ActionRowBuilder<ButtonBuilder>().addComponents(components),
-            ],
-            allowedMentions: { users: [] },
+                reply +
+                `${!wasInformed ? `\n:warning: *Could not send strike message to user. Do they have their DMs turned off?*` : ''}` +
+                `${!logMessage ? '\n:warning: *Could not log the strike. It will not be searchable in the log channel.*' : ''}` +
+                `\n-# ${TextHelper.strikeCounter(activeStrikes.length + 1, allStrikes.length + 1)}`,
+            components: [],
+            embeds: [],
         });
+        this.logger.info(`${logReason} for ${TextHelper.userLog(subject.user)} has been processed.`);
 
-        return {};
+        return {
+            isSuccessful: true,
+            replyToUser: { content: `Strike for ${TextHelper.userDisplay(subject.user)} has been processed.` },
+        }
     }
 
-    validateArgs(args: string[]): Promise<void> {
-        if (args.length === 0) {
-            throw new ValidationError(
-                `No args provided for strike.`,
-                `You must provide a user to strike, together with a reason!`
-            );
-        }
-        if (args.length === 1) {
-            throw new ValidationError(`No reason provided for strike.`, `You must provide a reason for the strike!`);
-        }
-        const reasonLength = args.slice(1).join(' ').length;
+    validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
+        const reasonLength = interaction.options.getString('reason')!.length;
         if (reasonLength > 1500) {
             throw new ValidationError(
                 `Reason too long.`,

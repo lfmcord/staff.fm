@@ -22,13 +22,11 @@ export class MessageCreateHandler implements IHandler {
 
     private readonly logger: Logger<MessageCreateHandler>;
     private readonly automodTrigger: AutomodTrigger;
-    private readonly commandService: CommandService;
     private readonly verificationLastFmTrigger: VerificationTrigger;
     private readonly whoknowsTrigger: WhoknowsTrigger;
     private readonly env: Environment;
     private readonly staffMailDmReply: StaffMailDmTrigger;
     private readonly cachingRepository: CachingRepository;
-    private readonly memberService: MemberService;
 
     constructor(
         @inject(TYPES.BotLogger) logger: Logger<MessageCreateHandler>,
@@ -38,22 +36,18 @@ export class MessageCreateHandler implements IHandler {
         @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.VerificationLastFmTrigger) verificationLastFmTrigger: VerificationTrigger,
         @inject(TYPES.WhoknowsTrigger) whoknowsTrigger: WhoknowsTrigger,
-        @inject(TYPES.CommandService) commandService: CommandService,
         @inject(TYPES.AutomodTrigger) automodTrigger: AutomodTrigger
     ) {
         this.automodTrigger = automodTrigger;
-        this.commandService = commandService;
         this.verificationLastFmTrigger = verificationLastFmTrigger;
         this.env = env;
         this.staffMailDmReply = staffMailDmReply;
         this.cachingRepository = cachingRepository;
-        this.memberService = memberService;
         this.logger = logger;
         this.whoknowsTrigger = whoknowsTrigger;
     }
 
     public async handle(message: Message) {
-        const isCommand = message.content.match(`^${this.env.CORE.PREFIX}[A-z]+.*`)?.length != null;
         const isBot = message.author.bot;
         const isDms = message.channel.isDMBased();
         const isVerification = message.channelId === this.env.CHANNELS.VERIFICATION_CHANNEL_ID;
@@ -63,8 +57,7 @@ export class MessageCreateHandler implements IHandler {
         if (isWhoKnowsCommand) await this.whoknowsTrigger.run(message);
 
         if (isBot) return;
-        if (isCommand) await this.handleCommand(message);
-        if (!isCommand && isDms) {
+        if (isDms) {
             await this.staffMailDmReply.run(message);
         }
         if (isVerification) await this.verificationLastFmTrigger.run(message);
@@ -81,92 +74,5 @@ export class MessageCreateHandler implements IHandler {
         ) {
             void this.cachingRepository.cacheMessage(message);
         }
-    }
-
-    private async handleCommand(message: Message) {
-        // Resolve command
-        const command = await this.resolveCommand(message);
-        if (!command) return;
-
-        // Check if running in correct place
-        const isDms = message.channel.isDMBased();
-        if (isDms && !command.isUsableInDms) {
-            await this.commandService.handleCommandErrorForMessage(
-                message,
-                `This command is not usable in direct messages! You can only run it in the server.`
-            );
-            return;
-        } else if (!isDms && !command.isUsableInServer) {
-            await this.commandService.handleCommandErrorForMessage(
-                message,
-                `This command is not usable in the server! You can only run it by DMing me.`
-            );
-            return;
-        }
-
-        // Check permissions
-        const member = await this.memberService.getGuildMemberFromUserId(message.author.id);
-        if (!(await this.commandService.isPermittedToRun(member!, command))) {
-            await this.commandService.handleCommandErrorForMessage(
-                message,
-                `You do not have sufficient permissions to use this command.`
-            );
-            return;
-        }
-
-        // Run command
-        const args = message.content!.split(' ').splice(1);
-        const start = new Date().getTime();
-        let result: CommandResult;
-        try {
-            this.logger.info(`Validating arguments for command ${command.name}...`);
-            await command.validateArgs(args);
-            this.logger.info(`Running command ${command.name}...`);
-            this.logger.trace(args);
-            result = await command.run(message, args);
-        } catch (error) {
-            if (error instanceof ValidationError) {
-                this.logger.info(`Command validation failed: ${error.internalMessage}`);
-                await this.commandService.handleCommandErrorForMessage(
-                    message,
-                    error.messageToUser +
-                        ` For more details, use ${inlineCode(this.env.CORE.PREFIX + 'help ' + command.name.toLowerCase())}.`
-                );
-                return;
-            }
-            this.logger.error(`Failed to run command '${command?.name}'`, error);
-            await this.commandService.handleCommandErrorForMessage(message); // TODO: Log with correlation ID (bubble down from BotLogger?) and add ID here. https://tslog.js.org/#/?id=settings
-            return;
-        }
-        const end = new Date().getTime();
-
-        // Handle result
-        await this.commandService.handleCommandResultForMessage(message, result, command.name, end - start);
-    }
-
-    private async resolveCommand(message: Message): Promise<ICommand | null> {
-        const commandName = message.content
-            .slice(
-                this.env.CORE.PREFIX.length,
-                message.content.indexOf(' ') == -1 ? undefined : message.content.indexOf(' ')
-            )
-            .toLowerCase();
-        this.logger.debug(`Matching command for command name '${commandName}'...`);
-        const commands: ICommand[] = container.getAll('Command');
-        const command = commands.find(
-            (c) => c.name == commandName || c.aliases.includes(commandName)
-        ) as ICommand | null;
-
-        if (!command) {
-            this.logger.debug(`Could not find a command for name ${commandName}`);
-            await this.commandService.handleCommandErrorForMessage(
-                message,
-                `I could not find a command called '${commandName}'. ` +
-                    `Use \`${this.env.CORE.PREFIX}help\` to see a list of all commands.`
-            );
-            return null;
-        }
-
-        return command;
     }
 }

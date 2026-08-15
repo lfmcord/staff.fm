@@ -9,7 +9,7 @@ import { DiscussionsRepository, IDiscussionsModel } from '@src/infrastructure/re
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { TYPES } from '@src/types';
-import { AttachmentBuilder, Message } from 'discord.js';
+import { AttachmentBuilder, ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
 import { Logger } from 'tslog';
@@ -17,20 +17,25 @@ import { Logger } from 'tslog';
 @injectable()
 export class DiscussionsManageCommand implements ICommand {
     name: string = 'dmanage';
-    description: string =
-        'Manage discussions. Topics are chosen at random with preference for older topics.\n' +
-        'Operations:\n' +
-        '-`open`: opens a new discussion without scheduling anything.\n' +
-        '-`start`: opens a new discussion and sets up automatic posting of discussions.\n' +
-        '-`stop`: stops automatic discussion topic posting\n' +
-        'Using no operation gives you information about the current discussion schedule.';
-    usageHint: string = 'open  | start | stop';
-    examples: string[] = ['', 'open', 'start', 'stop'];
+    description: string = 'Manage discussions. Topics are chosen at random with preference for older topics.';
     permissionLevel = CommandPermissionLevel.Moderator;
-    operations = ['open', 'start', 'stop'];
-    aliases = ['discussionmanage', 'discussionsmanage'];
-    isUsableInDms = false;
-    isUsableInServer = true;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .addSubcommand((subcommand) =>
+            subcommand.setName('info').setDescription('Shows you info about the current scheduling.')
+        )
+        .addSubcommand((subcommand) =>
+            subcommand.setName('open').setDescription('Opens a new discussion without scheduling anything.')
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('start')
+                .setDescription('Opens a new discussion and sets up automatic posting of discussions.')
+        )
+        .addSubcommand((subcommand) =>
+            subcommand.setName('stop').setDescription('Stops automatic discussion topic posting.')
+        );
 
     private logger: Logger<DiscussionsManageCommand>;
     private discussionsTrigger: DiscussionsTrigger;
@@ -55,82 +60,85 @@ export class DiscussionsManageCommand implements ICommand {
         this.loggingService = loggingService;
     }
 
-    validateArgs(args: string[]): Promise<void> {
-        // Check if the first argument is a valid operation
-        if (args[0] && !this.operations.includes(args[0])) {
-            throw new ValidationError(
-                `Operation type ${args[0]} not valid for discussions.`,
-                `You must provide a one of the following operation types: ${this.operations.join(', ')}`
-            );
-        }
-
+    validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
         return Promise.resolve();
     }
 
-    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
-        if (args.length == 0) return await this.showDiscussionManagement(message);
-
-        if (args[0] == 'stop') return await this.stopAutomaticDiscussions(message);
-
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
         const discussion = await this.discussionsRepository.getRandomDiscussionTopic();
         if (!discussion) {
             return {
                 isSuccessful: false,
-                replyToUser: `There are no discussion topics to open a thread for. Add more with \`${this.environment.CORE.PREFIX}dtopic add [topic]\``,
+                replyToUser: {
+                    content: `There are no discussion topics to open a thread for. Add more with \`/dtopic add [topic]\``,
+                },
             };
         }
 
         let result: CommandResult;
-        switch (args[0]) {
-            case this.operations[0]:
-                result = await this.openDiscussion(message, discussion);
+        switch (interaction.options.getSubcommand()) {
+            case 'show':
+                result = await this.showDiscussionManagement(interaction);
                 break;
-            case this.operations[1]:
-                result = await this.startAutomaticDiscussions(message, discussion);
+            case 'open':
+                result = await this.openDiscussion(interaction, discussion);
+                break;
+            case 'start':
+                result = await this.startAutomaticDiscussions(interaction, discussion);
+                break;
+            case 'stop':
+                result = await this.stopAutomaticDiscussions(interaction);
                 break;
             default:
-                throw new ValidationError(
-                    `Operation type ${args[0]} not valid.`,
-                    `You must provide a one of the following operation types: ${this.operations.join(', ')}`
-                );
+                throw new ValidationError(`Operation type ${interaction.commandName} not valid.`);
         }
 
         return result;
     }
 
-    private async openDiscussion(message: Message, discussion?: IDiscussionsModel | null) {
+    private async openDiscussion(
+        interaction: ChatInputCommandInteraction,
+        discussion?: IDiscussionsModel | null
+    ): Promise<CommandResult> {
         let thread;
         try {
             if (!discussion) {
                 return {
                     isSuccessful: false,
-                    replyToUser: `There are no discussion topics to open a thread for. Add more with \`${this.environment.CORE.PREFIX}dtopic add [topic]\``,
+                    replyToUser: {
+                        content: `There are no discussion topics to open a thread for. Add more with \`/dtopic add [topic]\``,
+                    },
                 };
             }
-            thread = await this.discussionsTrigger.createDiscussionThread(discussion, message.author!);
+            thread = await this.discussionsTrigger.createDiscussionThread(discussion, interaction.user);
         } catch (e) {
             this.logger.error(`Failed while trying to open a new discussion thread.`, e);
             return {
                 isSuccessful: false,
-                replyToUser: `I wasn't able to start a new discussion.`,
+                replyToUser: { content: `I wasn't able to start a new discussion.` },
             };
         }
 
         return {
             isSuccessful: true,
-            replyToUser: `I've started a new discussion in <#${thread!.id}>!`,
+            replyToUser: { content: `I've started a new discussion in <#${thread!.id}>!` },
         };
     }
 
-    private async startAutomaticDiscussions(message: Message, discussion: IDiscussionsModel) {
+    private async startAutomaticDiscussions(
+        interaction: ChatInputCommandInteraction,
+        discussion: IDiscussionsModel
+    ): Promise<CommandResult> {
         const discussions: IDiscussionsModel[] = await this.discussionsRepository.getAllScheduledDiscussions();
         if (discussions.length > 0) {
             return {
                 isSuccessful: false,
-                replyToUser:
-                    `There is already an automatic discussion schedule running:\n` +
-                    `- "${discussions[0].topic}" (scheduled for <t:${moment(discussions[0].scheduledFor).unix()}:f>)\n` +
-                    `-# Stop it with \`${this.environment.CORE.PREFIX}dmanage stop\` if this is wrong.`,
+                replyToUser: {
+                    content:
+                        `There is already an automatic discussion schedule running:\n` +
+                        `- "${discussions[0].topic}" (scheduled for <t:${moment(discussions[0].scheduledFor).unix()}:f>)\n` +
+                        `-# Stop it with \`/dmanage stop\` if this is wrong.`,
+                },
             };
         }
 
@@ -138,48 +146,58 @@ export class DiscussionsManageCommand implements ICommand {
         if (remainingTopics.length == 1) {
             return {
                 isSuccessful: true,
-                replyToUser:
-                    `There was only one discussion topic left. I've opened the discussion, but have not scheduled more. ` +
-                    `Add more topics with \`${this.environment.CORE.PREFIX}dtopic add [topic]\`.`,
+                replyToUser: {
+                    content:
+                        `There was only one discussion topic left. I've opened the discussion, but have not scheduled more. ` +
+                        `Add more topics with \`/dtopic add [topic]\`.`,
+                },
             };
         }
         if (remainingTopics.length == 0) {
             return {
                 isSuccessful: false,
-                replyToUser: `There are no discussion topics left to schedule. Add more with \`${this.environment.CORE.PREFIX}dtopic add [topic]\`.`,
+                replyToUser: {
+                    content: `There are no discussion topics left to schedule. Add more with \`/dtopic add [topic]\`.`,
+                },
             };
         }
 
-        const thread = await this.discussionsTrigger.scheduleDiscussion(discussion, message.author);
+        const thread = await this.discussionsTrigger.scheduleDiscussion(discussion, interaction.user);
 
         if (!thread) {
             return {
                 isSuccessful: false,
-                replyToUser: `I wasn't able to start the automatic discussion schedule. Please check if there are enough topics.`,
+                replyToUser: {
+                    content: `I wasn't able to start the automatic discussion schedule. Please check if there are enough topics.`,
+                },
             };
         }
 
-        await this.loggingService.logDiscussionScheduleChanged(message.author, true);
+        await this.loggingService.logDiscussionScheduleChanged(interaction.user, true);
 
         return {
             isSuccessful: true,
-            replyToUser:
-                `I've started the automatic discussion schedule and opened a new discussion in <#${thread.id}>. ` +
-                `The next topic will be posted at <t:${moment(discussion.scheduledFor).unix()}:f>.`,
+            replyToUser: {
+                content:
+                    `I've started the automatic discussion schedule and opened a new discussion in <#${thread.id}>. ` +
+                    `The next topic will be posted at <t:${moment(discussion.scheduledFor).unix()}:f>.`,
+            },
         };
     }
 
-    private async stopAutomaticDiscussions(message: Message) {
+    private async stopAutomaticDiscussions(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
         const cancelledDiscussions = await this.discussionsTrigger.cancelDiscussionSchedule();
 
         if (cancelledDiscussions.length == 0) {
             return {
                 isSuccessful: false,
-                replyToUser: `There is no automatic discussion schedule active! Start one with \`${this.environment.CORE.PREFIX}dmanage start\`.`,
+                replyToUser: {
+                    content: `There is no automatic discussion schedule active! Start one with \`/dmanage start\`.`,
+                },
             };
         }
 
-        await this.loggingService.logDiscussionScheduleChanged(message.author);
+        await this.loggingService.logDiscussionScheduleChanged(interaction.user);
 
         let reply = `I've stopped the automatic discussion schedule.`;
         if (cancelledDiscussions.length > 1) {
@@ -193,11 +211,13 @@ export class DiscussionsManageCommand implements ICommand {
 
         return {
             isSuccessful: true,
-            replyToUser: reply,
+            replyToUser: {
+                content: reply,
+            },
         };
     }
 
-    private async showDiscussionManagement(message: Message<true>) {
+    private async showDiscussionManagement(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
         const allDiscussions = await this.discussionsRepository.getAllDiscussions();
 
         const embed = EmbedHelper.getDiscussionsManagementEmbed(
@@ -208,19 +228,18 @@ export class DiscussionsManageCommand implements ICommand {
 
         const topicsFile = await this.discussionsRepository.getAllDiscussionTopicsAsFile(allDiscussions);
 
-        message.channel.send({
-            embeds: [embed],
-            files: topicsFile
-                ? [
-                      new AttachmentBuilder(topicsFile, {
-                          name: `${moment().format('YYYY_MM_DD')}_discussion_topics.txt`,
-                      }),
-                  ]
-                : [],
-        });
-
         return {
             isSuccessful: true,
+            replyToUser: {
+                embeds: [embed],
+                files: topicsFile
+                    ? [
+                          new AttachmentBuilder(topicsFile, {
+                              name: `${moment().format('YYYY_MM_DD')}_discussion_topics.txt`,
+                          }),
+                      ]
+                    : [],
+            },
         };
     }
 }

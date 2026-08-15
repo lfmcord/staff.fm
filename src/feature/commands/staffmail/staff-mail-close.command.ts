@@ -1,33 +1,47 @@
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { AttachmentBuilder, GuildTextBasedChannel, Message, User } from 'discord.js';
-import { inject, injectable } from 'inversify';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { Logger } from 'tslog';
-import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
-import { TYPES } from '@src/types';
-import { TextHelper } from '@src/helpers/text.helper';
-import { EmbedHelper } from '@src/helpers/embed.helper';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
-import * as Buffer from 'buffer';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { TextHelper } from '@src/helpers/text.helper';
+import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { TYPES } from '@src/types';
+import * as Buffer from 'buffer';
+import {
+    AttachmentBuilder,
+    ChatInputCommandInteraction,
+    GuildTextBasedChannel, InteractionContextType,
+    Message, PermissionFlagsBits,
+    SlashCommandBuilder,
+    User,
+} from 'discord.js';
+import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
+import { Logger } from 'tslog';
 
 @injectable()
 export class StaffMailCloseCommand implements ICommand {
     name: string = 'close';
-    description: string =
-        'Closes a staff mail channel. Reasons are not disclosed to the user. Use `silentclose` to close it without sending a message to the user.';
-    usageHint: string = '<reason>';
-    examples: string[] = ['Closing because of inactivity.', 'Crowns unban request, granted.'];
+    description: string = 'Closes a staff mail channel. Reasons are not disclosed to the user.';
     permissionLevel = CommandPermissionLevel.Moderator;
-    aliases = ['silentclose'];
     isUsableInDms = false;
     isUsableInServer = true;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
+        .setContexts(InteractionContextType.Guild)
+        .addStringOption((option) =>
+            option.setName('reason').setDescription('The internal reason for the close')
+        )
+        .addBooleanOption((option) =>
+            option.setName('silent').setDescription('Setting to true does not inform the user of the closing')
+        );
 
     private logger: Logger<StaffMailCloseCommand>;
-    channelService: ChannelService;
+    private channelService: ChannelService;
     private loggingService: LoggingService;
     private staffmailRepository: StaffMailRepository;
 
@@ -43,18 +57,20 @@ export class StaffMailCloseCommand implements ICommand {
         this.staffmailRepository = staffMailRepository;
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
         this.logger.info(
-            `New staffmail close request by user ${TextHelper.userLog(message.author)} for channel ID ${message.channelId}.`
+            `New staffmail close request by user ${TextHelper.userLog(interaction.user)} for channel ID ${interaction.channelId}.`
         );
-        const isSilentClose = message.content.match(this.aliases[0]) != null;
-        const staffMail = await this.staffmailRepository.getStaffMailByChannelId(message.channelId);
+        const isSilentClose = interaction.options.getBoolean('silent') ?? false;
+        const staffMail = await this.staffmailRepository.getStaffMailByChannelId(interaction.channelId);
         const isAnonymous = staffMail?.mode === StaffMailModeEnum.ANONYMOUS;
         if (!staffMail) {
             return {
                 isSuccessful: false,
-                reason: `Cannot find a staff mail for channel ID ${message.channelId}`,
-                replyToUser: `You are not in a staff mail channel! Please run this command in a staff mail channel.`,
+                reason: `Cannot find a staff mail for channel ID ${interaction.channelId}`,
+                replyToUser: {
+                    content: `You are not in a staff mail channel! Please run this command in a staff mail channel.`,
+                },
             };
         }
 
@@ -63,24 +79,16 @@ export class StaffMailCloseCommand implements ICommand {
             if (staffMail.user != null) {
                 try {
                     await staffMail.user.send({
-                        embeds: [EmbedHelper.getStaffMailCloseEmbed(staffMail.summary, staffMail.type, args.join(' '))],
+                        embeds: [EmbedHelper.getStaffMailCloseEmbed(staffMail.type, interaction.options.getString('reason') ?? '')],
                     });
                 } catch (e) {
                     this.logger.warn(`Could not send closing message to user.`, e);
                     return {
                         isSuccessful: false,
-                        replyToUser: `I could not send the closing message to the user. Perhaps they have their DMs closed (or have blocked me 😭). `,
+                        replyToUser: {
+                            content: `I could not send the closing message to the user. Perhaps they have their DMs closed (or have blocked me 😭). `,
+                        },
                     };
-                }
-
-                try {
-                    const oldStaffMailEmbed = await this.channelService.getMessageFromChannelByMessageId(
-                        staffMail.mainMessageId,
-                        staffMail.user.dmChannel!
-                    );
-                    await oldStaffMailEmbed?.unpin();
-                } catch (e) {
-                    this.logger.warn(`Could not unpin old staffmail message.`, e);
                 }
             } else {
                 this.logger.info(
@@ -96,29 +104,27 @@ export class StaffMailCloseCommand implements ICommand {
         this.logger.debug(`Staffmail channel was closed.`);
 
         const protocol = await this.getChannelProtocol(
-            message.channel as GuildTextBasedChannel,
+            interaction.channel as GuildTextBasedChannel,
             isAnonymous ? null : staffMail.user
         );
 
-        await this.loggingService.logStaffMailEvent(
-            false,
-            staffMail.summary,
+        await this.loggingService.logStaffMailClose(
             staffMail.type,
             isAnonymous ? null : staffMail.user,
-            message.author,
-            args.join(' '),
+            interaction.user,
+            interaction.options.getString('reason') ?? '',
             [protocol],
-            logNote
+            logNote,
         );
 
-        await this.staffmailRepository.deleteStaffMailChannel(message.channelId);
+        await this.staffmailRepository.deleteStaffMailChannel(interaction.channelId);
 
-        await this.staffmailRepository.deleteStaffMail(message.channelId);
+        await this.staffmailRepository.deleteStaffMail(interaction.channelId);
 
         return {};
     }
 
-    validateArgs(_: string[]): Promise<void> {
+    validateArgs(_: ChatInputCommandInteraction): Promise<void> {
         return Promise.resolve();
     }
 

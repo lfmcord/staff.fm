@@ -3,13 +3,14 @@ import { CommandPermissionLevel } from '@src/feature/commands/models/command-per
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { ICommand } from '@src/feature/commands/models/command.interface';
 import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { EmbedHelper } from '@src/helpers/embed.helper';
 import { findValueInMap } from '@src/helpers/map.helper';
 import { TextHelper } from '@src/helpers/text.helper';
 import { IUserModel, UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { TYPES } from '@src/types';
-import { Message } from 'discord.js';
+import { ChatInputCommandInteraction, Role, SlashCommandBuilder } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
 import { Logger } from 'tslog';
@@ -17,14 +18,34 @@ import { Logger } from 'tslog';
 @injectable()
 export class ScrobbleCapCommand implements ICommand {
     name: string = 'scrobblecap';
-    description: string =
-        'Gets, sets or removes a maximum scrobble role cap for a user. If a user has a scrobble role cap set, they cannot update themselves higher than that cap.';
-    usageHint: string = '<user ID/mention> | set <user ID/mention> <scrobble role number> | unset <user ID/mention>';
-    examples: string[] = ['356178941913858049', 'set 356178941913858049 300000', 'set @haiyn 150000', 'unset'];
+    description: string = 'Gets, sets or removes a maximum scrobble role cap for a user.';
     permissionLevel = CommandPermissionLevel.Moderator;
-    aliases = ['cap'];
-    isUsableInDms = false;
-    isUsableInServer = true;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('set')
+                .setDescription('Sets a scrobble cap')
+                .addUserOption((option) => option.setName('user').setDescription('The user to cap').setRequired(true))
+                .addRoleOption((option) =>
+                    option.setName('role').setDescription('The role to cap the user at (inclusive)').setRequired(true)
+                )
+                .addStringOption((option) => option.setName('reason').setDescription('An optional reason'))
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('unset')
+                .setDescription('Unsets a scrobble cap')
+                .addUserOption((option) => option.setName('user').setDescription('The user to uncap').setRequired(true))
+                .addStringOption((option) => option.setName('reason').setDescription('An optional reason'))
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('check')
+                .setDescription('Checks if a user has a scrobble cap')
+                .addUserOption((option) => option.setName('user').setDescription('The user to check').setRequired(true))
+        );
 
     private env: Environment;
     private usersRepository: UsersRepository;
@@ -47,27 +68,54 @@ export class ScrobbleCapCommand implements ICommand {
         this.description += `\nAvailable scrobble caps are: ${[...this.env.ROLES.SCROBBLE_MILESTONES.keys()].join(',')}.`;
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
-        const userId =
-            args[0] != 'set' && args[0] != 'unset'
-                ? TextHelper.getDiscordUserId(args[0])
-                : TextHelper.getDiscordUserId(args[1]);
-        if (!userId) throw new ValidationError('Invalid user ID.', `I couldn't find a valid Discord user ID.`);
+    async validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
+        if (interaction.options.getSubcommand() == 'set') {
+            const roleId = interaction.options.getRole('role')!.id;
+            let isMilestone = false;
+            for (const value of this.env.ROLES.SCROBBLE_MILESTONES.values()) {
+                if (value == roleId) {
+                    isMilestone = true;
+                    break;
+                }
+            }
+            if (!isMilestone)
+                throw new ValidationError(
+                    `Role ID ${roleId} is not in scrobble milestones.`,
+                    `Please choose a scrobble milestone role.`
+                );
+        }
+
+        return;
+    }
+
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        const userId = interaction.options.getUser('user')!.id;
         const indexedUser = await this.usersRepository.getUserByUserId(userId);
         if (indexedUser == null) {
             return {
                 isSuccessful: false,
-                replyToUser: `I can't find any information on this user. Please index them with \`${this.env.CORE.PREFIX}link ${userId} [last.fm username]\`.`,
+                replyToUser: {
+                    embeds: [EmbedHelper.getUserNotIndexedEmbed()],
+                },
             };
         }
 
         let result: CommandResult;
-        switch (args[0]) {
+        switch (interaction.options.getSubcommand()) {
             case 'set':
-                result = await this.setScrobbleCap(indexedUser, message, parseInt(args[2]), args.slice(3).join(' '));
+                result = await this.setScrobbleCap(
+                    indexedUser,
+                    interaction,
+                    interaction.options.getRole('role')! as Role,
+                    interaction.options.getString('reason') ?? undefined
+                );
                 break;
             case 'unset':
-                result = await this.unsetScrobbleCap(indexedUser, message, args.slice(2).join(' '));
+                result = await this.unsetScrobbleCap(
+                    indexedUser,
+                    interaction,
+                    interaction.options.getString('reason') ?? undefined
+                );
                 break;
             default:
                 result = await this.getScrobbleCap(indexedUser);
@@ -77,53 +125,11 @@ export class ScrobbleCapCommand implements ICommand {
         return result;
     }
 
-    async validateArgs(args: string[]): Promise<void> {
-        if (args.length < 1) {
-            throw new ValidationError(
-                `Expected >1 argument, got ${args.length}.`,
-                'You must either specify a user ID, or use the set/unset subcommands.'
-            );
-        }
-
-        if (args[0] == 'set') {
-            if (args.length < 4) {
-                throw new ValidationError(
-                    `Expected >3 arguments, got ${args.length}.`,
-                    'You must specify a user ID, a scrobble number cap and a reason.'
-                );
-            }
-
-            if (!TextHelper.isDiscordUser(args[1]))
-                throw new ValidationError('Invalid user ID.', `\`${args[1]}\` is not a valid Discord user ID.`);
-
-            if (!this.env.ROLES.SCROBBLE_MILESTONES.has(parseInt(args[2])))
-                throw new ValidationError(
-                    'Invalid scrobble role number.',
-                    `\`${args[2]}\` is not a valid scrobble role number. Available scrobble caps are: ${[
-                        ...this.env.ROLES.SCROBBLE_MILESTONES.keys(),
-                    ].join(', ')}.`
-                );
-        } else if (args[0] == 'unset') {
-            if (args.length < 3) {
-                throw new ValidationError(
-                    `Expected >2 arguments, got ${args.length}.`,
-                    'You must specify a user ID and a reason for the removal of the cap.'
-                );
-            }
-
-            if (!TextHelper.isDiscordUser(args[1]))
-                throw new ValidationError('Invalid user ID.', `\`${args[1]}\` is not a valid Discord user ID.`);
-        } else {
-            if (!TextHelper.isDiscordUser(args[0]))
-                throw new ValidationError('Invalid user ID.', `\`${args[0]}\` is not a valid Discord user ID.`);
-        }
-    }
-
     async getScrobbleCap(indexedUser: IUserModel): Promise<CommandResult> {
         if (!indexedUser.scrobbleCap)
             return {
                 isSuccessful: true,
-                replyToUser: `This user has no scrobble cap set.`,
+                replyToUser: { content: `This user has no scrobble cap set.` },
             };
         const scrobbleRoleNumber = findValueInMap(
             this.env.ROLES.SCROBBLE_MILESTONES,
@@ -134,28 +140,28 @@ export class ScrobbleCapCommand implements ICommand {
         }
         return {
             isSuccessful: true,
-            replyToUser: indexedUser.scrobbleCap
-                ? `🚫 <@!${indexedUser.userId}> has a scrobble cap set at ${TextHelper.numberWithCommas(scrobbleRoleNumber)} scrobbles on <t:${moment(indexedUser.scrobbleCap.setOn).unix()}:d> by <@!${indexedUser.scrobbleCap.setBy}>: ${indexedUser.scrobbleCap.reason}.`
-                : 'This user has no scrobble cap set.',
+            replyToUser: {
+                content: indexedUser.scrobbleCap
+                    ? `🚫 <@!${indexedUser.userId}> has a scrobble cap set at ${TextHelper.numberWithCommas(scrobbleRoleNumber)} scrobbles on <t:${moment(indexedUser.scrobbleCap.setOn).unix()}:d> by <@!${indexedUser.scrobbleCap.setBy}>: ${indexedUser.scrobbleCap.reason}.`
+                    : 'This user has no scrobble cap set.',
+            },
         };
     }
 
     async setScrobbleCap(
         indexedUser: IUserModel,
-        message: Message,
-        cap: number,
-        reason: string
+        interaction: ChatInputCommandInteraction,
+        cap: Role,
+        reason?: string
     ): Promise<CommandResult> {
         if (indexedUser.scrobbleCap) {
-            const scrobbleRoleNumber = findValueInMap(
-                this.env.ROLES.SCROBBLE_MILESTONES,
-                indexedUser.scrobbleCap.roleId
-            ) as number;
             return {
                 isSuccessful: false,
-                replyToUser:
-                    `🚫 <@!${indexedUser.userId}> already has a scrobble cap set at ${TextHelper.numberWithCommas(scrobbleRoleNumber)} scrobbles on <t:${moment(indexedUser.scrobbleCap.setOn).unix()}:d> by <@!${indexedUser.scrobbleCap.setBy}>: ${indexedUser.scrobbleCap.reason}.` +
-                    `\nPlease unset it first with \`${this.env.CORE.PREFIX}scrobblecap unset ${indexedUser.userId}\`.`,
+                replyToUser: {
+                    content:
+                        `🚫 <@!${indexedUser.userId}> already has a scrobble cap set at <@&${cap.id}> on <t:${moment(indexedUser.scrobbleCap.setOn).unix()}:d> by <@!${indexedUser.scrobbleCap.setBy}>: ${indexedUser.scrobbleCap.reason}.` +
+                        `\nPlease unset it first with \`/scrobblecap unset\`.`,
+                },
             };
         }
 
@@ -163,26 +169,34 @@ export class ScrobbleCapCommand implements ICommand {
         if (!discordUser)
             return {
                 isSuccessful: false,
-                replyToUser: `Cannot find user with user ID ${indexedUser.userId}.`,
+                replyToUser: { content: `Cannot find user with user ID ${indexedUser.userId}.` },
             };
 
         this.logger.info(`Setting scrobble cap of user ${indexedUser.userId}.`);
-        const scrobbleRoleId = this.env.ROLES.SCROBBLE_MILESTONES.get(cap);
-        if (!scrobbleRoleId) throw new Error(`Scrobble role ID not found for role number ${cap}.`);
-        await this.usersRepository.addScrobbleCapToUser(indexedUser.userId, message.author.id, scrobbleRoleId, reason);
-        await this.loggingService.logScrobbleCap(discordUser, message.author, reason, message, scrobbleRoleId);
+        const roleId = cap.id;
+        await this.usersRepository.addScrobbleCapToUser(indexedUser.userId, interaction.user.id, roleId, reason);
+        await this.loggingService.logScrobbleCap(discordUser, interaction.user, reason, roleId);
 
         return {
             isSuccessful: true,
-            replyToUser: `🚫 I've set the scrobble cap of <@!${indexedUser.userId}> to ${TextHelper.numberWithCommas(cap)} scrobbles. Reason: ${reason}.`,
+            replyToUser: {
+                content:
+                    `🚫 I've set the scrobble cap of <@!${indexedUser.userId}> to <@&${cap.id}>.` + reason
+                        ? ' Reason: ' + reason
+                        : '',
+            },
         };
     }
 
-    async unsetScrobbleCap(indexedUser: IUserModel, message: Message, reason: string): Promise<CommandResult> {
+    async unsetScrobbleCap(
+        indexedUser: IUserModel,
+        interaction: ChatInputCommandInteraction,
+        reason?: string
+    ): Promise<CommandResult> {
         if (!indexedUser.scrobbleCap) {
             return {
                 isSuccessful: false,
-                replyToUser: `This user has no scrobble cap set.`,
+                replyToUser: { content: `This user has no scrobble cap set.` },
             };
         }
 
@@ -190,16 +204,21 @@ export class ScrobbleCapCommand implements ICommand {
         if (!discordUser)
             return {
                 isSuccessful: false,
-                replyToUser: `Cannot find user with user ID ${indexedUser.userId}.`,
+                replyToUser: { content: `Cannot find user with user ID ${indexedUser.userId}.` },
             };
 
         this.logger.info(`Removing scrobble cap from user ${indexedUser.userId}.`);
         await this.usersRepository.removeScrobbleCapFromUser(indexedUser.userId);
-        await this.loggingService.logScrobbleCap(discordUser, message.author, reason, message);
+        await this.loggingService.logScrobbleCap(discordUser, interaction.user, reason);
 
         return {
             isSuccessful: true,
-            replyToUser: `☑️ I've removed the scrobble cap from <@!${indexedUser.userId}>. Reason: ${reason}.`,
+            replyToUser: {
+                content:
+                    `☑️ I've removed the scrobble cap from <@!${indexedUser.userId}>.` + reason
+                        ? ' Reason: ' + reason
+                        : '',
+            },
         };
     }
 }

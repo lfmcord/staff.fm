@@ -6,7 +6,15 @@ import { MutesRepository } from '@src/infrastructure/repositories/mutes.reposito
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { ModerationService } from '@src/infrastructure/services/moderation.service';
 import { TYPES } from '@src/types';
-import { ButtonInteraction, Message, PartialMessage, Role, User } from 'discord.js';
+import {
+    ButtonInteraction,
+    ChatInputCommandInteraction, InteractionContextType,
+    Message,
+    PartialMessage,
+    Role,
+    SlashCommandBuilder,
+    User,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
@@ -15,12 +23,11 @@ import { UsersRepository } from '@src/infrastructure/repositories/users.reposito
 export class SelfMuteUnmuteCommand implements ICommand {
     name: string = 'unmute';
     description: string = 'Unmutes yourself if you currently have a selfmute active.';
-    usageHint: string = '';
-    examples: string[] = [];
     permissionLevel = CommandPermissionLevel.User;
-    aliases = [];
-    isUsableInDms = true;
-    isUsableInServer = false;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .setContexts(InteractionContextType.BotDM);
 
     private logger: Logger<SelfMuteUnmuteCommand>;
     private memberService: MemberService;
@@ -42,15 +49,17 @@ export class SelfMuteUnmuteCommand implements ICommand {
         this.usersRepository = usersRepository;
     }
 
-    async run(message: Message | PartialMessage): Promise<CommandResult> {
-        return await this.tryToEndSelfmute(message.author!, `User used unmute command.`);
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        return await this.tryToEndSelfmute(interaction.user!, `User used unmute command.`);
     }
 
     public async runInteraction(interaction: ButtonInteraction) {
         if (!interaction.deferred) await interaction.deferUpdate();
         const result = await this.tryToEndSelfmute(interaction.user, `User used end selfmute button.`);
         if (result.replyToUser) {
-            await interaction.editReply(result.replyToUser);
+            await interaction.editReply({
+                content: result.replyToUser.content,
+            });
         } else {
             await interaction.editReply({});
         }
@@ -64,17 +73,17 @@ export class SelfMuteUnmuteCommand implements ICommand {
     private async tryToEndSelfmute(user: User, reason: string): Promise<CommandResult> {
         this.logger.info(`User ${TextHelper.userLog(user)} is trying to manually remove a selfmute via DMs.`);
         const indexedUser = await this.usersRepository.getUserByUserId(user.id);
-        if(indexedUser?.strictSelfmute) {
+        if (indexedUser?.strictSelfmute) {
             return {
                 isSuccessful: false,
-                replyToUser: `You have strict selfmute enabled. You cannot unmute yourself early. Please contact staff if you want to disable this mode.`,
+                replyToUser: { content: `You have strict selfmute enabled. You cannot unmute yourself early. Please contact staff if you want to disable this mode.` },
             };
         }
         const existingSelfMute = await this.mutesRepository.getMuteByUserId(user.id);
         if (!existingSelfMute || existingSelfMute.actorId !== user.id) {
             return {
                 isSuccessful: false,
-                replyToUser: `You do not currently have an active selfmute!`,
+                replyToUser: { content: `You do not currently have an active selfmute!` },
                 reason: `User ${TextHelper.userLog(user)} does not have an active selfmute.`,
             };
         }
@@ -83,7 +92,7 @@ export class SelfMuteUnmuteCommand implements ICommand {
         if (!member) {
             return {
                 isSuccessful: false,
-                replyToUser: `I cannot unmute you because you are not in the server.`,
+                replyToUser: { content: `I cannot unmute you because you are not in the server.` },
             };
         }
 
@@ -102,7 +111,7 @@ export class SelfMuteUnmuteCommand implements ICommand {
             {
                 content: `🔊 Your selfmute has ended and I've unmuted you. Welcome back!`,
             },
-            reason
+            reason,
         );
 
         return {
@@ -110,7 +119,7 @@ export class SelfMuteUnmuteCommand implements ICommand {
         };
     }
 
-    validateArgs(_: string[]): Promise<void> {
+    validateArgs(_: ChatInputCommandInteraction): Promise<void> {
         return Promise.resolve();
     }
 }
