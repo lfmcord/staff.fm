@@ -33,11 +33,11 @@ export class StaffMailCreateCommand implements ICommand {
         .setContexts(InteractionContextType.BotDM)
         .addStringOption((option) =>
             option.setName('category').setDescription('The category of your concern').setRequired(true).addChoices(
-                { name: "Crowns", value: StaffMailType.Crowns },
-                { name: "Report", value: StaffMailType.Report },
-                { name: "Server", value: StaffMailType.Server },
-                { name: "Lastfm", value: StaffMailType.Lastfm },
-                { name: "Other", value: StaffMailType.Other }
+                { name: Constants.StaffMailCategories[StaffMailType.Report], value: StaffMailType.Report },
+                { name: Constants.StaffMailCategories[StaffMailType.Crowns], value: StaffMailType.Crowns },
+                { name: Constants.StaffMailCategories[StaffMailType.Server], value: StaffMailType.Server },
+                { name: Constants.StaffMailCategories[StaffMailType.Lastfm], value: StaffMailType.Lastfm },
+                { name: Constants.StaffMailCategories[StaffMailType.Other], value: StaffMailType.Other }
             )
         )
         .addStringOption((option) =>
@@ -78,9 +78,9 @@ export class StaffMailCreateCommand implements ICommand {
             throw new ValidationError(`Neither content nor attachment provided.`, `You must provide either content or an attachment for the staff mail message.`);
         }
 
-        if(!interaction.user.dmChannel?.isSendable()) {
-            throw new ValidationError(`Cannot send DM to user.`, `I cannot send you a DM. Please check your privacy settings and try again.`);
-        }
+        // if(!interaction.user.dmChannel?.isSendable()) {
+        //     throw new ValidationError(`Cannot send DM to user.`, `I cannot send you a DM. Please check your privacy settings and try again.`);
+        // }
 
         return Promise.resolve();
     }

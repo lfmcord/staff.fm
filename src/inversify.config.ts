@@ -233,8 +233,8 @@ container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(C
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeAppealInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(UpdateButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailFollowUpInteraction);
 container.bind<IModalSubmitInteraction>('ModalSubmitInteraction').to(StaffMailSubmitInteraction);
-container.bind<IStringSelectMenuInteraction>('StringSelectMenuInteraction').to(StaffMailFollowUpInteraction);
 
 // REPOSITORIES
 container.bind<StaffMailRepository>(TYPES.StaffMailRepository).to(StaffMailRepository);

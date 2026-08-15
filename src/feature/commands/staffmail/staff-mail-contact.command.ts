@@ -99,7 +99,7 @@ export class StaffMailContactCommand implements ICommand {
         try {
             messageToUser = await member.send({
                 content: `📫 You've received a new message from staff!`,
-                embeds: [EmbedHelper.getStaffMailOpenEmbed(true), EmbedHelper.getStaffMailLinkToLatestMessage()],
+                embeds: [EmbedHelper.getStaffMailOpenEmbed(true), embed],
                 files: attachment ? [attachment] : [],
             });
         } catch (e) {

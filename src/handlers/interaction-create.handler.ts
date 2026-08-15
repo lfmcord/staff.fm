@@ -14,11 +14,15 @@ import {
     Interaction,
     MessageComponentInteraction,
     MessageContextMenuCommandInteraction,
-    ModalSubmitInteraction,
+    ModalSubmitInteraction, StringSelectMenuInteraction,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 import container from '../inversify.config';
+import { Interactions } from '@src/feature/interactions/models/interactions';
+import {
+    IStringSelectMenuInteraction
+} from '@src/feature/interactions/abstractions/string-select-menu-interaction.interface';
 
 @injectable()
 export class InteractionCreateHandler implements IHandler {
@@ -46,6 +50,8 @@ export class InteractionCreateHandler implements IHandler {
             await this.handleModalSubmitInteraction(interaction as ModalSubmitInteraction);
         } else if (interaction.isChatInputCommand()) {
             await this.handleChatInputCommand(interaction as ChatInputCommandInteraction);
+        } else if (interaction.isStringSelectMenu()) {
+            await this.handleStringSelectMenuInteraction(interaction as StringSelectMenuInteraction);
         } else {
             this.logger.warn(`No handler for interaction type ${interaction.type} with ID ${interaction.id}`);
         }
@@ -70,18 +76,8 @@ export class InteractionCreateHandler implements IHandler {
     }
 
     private async handleMessageComponentInteraction(interaction: MessageComponentInteraction) {
-        if (!interaction.customId || !interaction.customId.startsWith('defer')) {
-            if (
-                interaction.customId === 'cancel' &&
-                !interaction.deferred &&
-                !interaction.replied &&
-                interaction.isRepliable()
-            ) {
-                await interaction.update({ content: `Cancelled.`, embeds: [], components: [] });
-            }
-            this.logger.debug(
-                `Interaction with customId '${interaction.customId}' is not a deferred interaction and will be handled elsewhere.`
-            );
+        if (interaction.customId === Interactions.CancelButton) {
+            await interaction.update({ content: `Cancelled.`, embeds: [], components: [] });
             return;
         }
         const interactions = container.getAll<IMessageComponentInteraction>('MessageComponentInteraction');
@@ -160,6 +156,24 @@ export class InteractionCreateHandler implements IHandler {
 
         // Handle result
         await this.commandService.handleResult(interaction, result, command.name, end - start);
+    }
+
+    private async handleStringSelectMenuInteraction(interaction: StringSelectMenuInteraction) {
+        const interactions = container.getAll<IStringSelectMenuInteraction>('StringSelectMenuInteraction');
+        const foundInteraction = interactions.find(
+            (i: IStringSelectMenuInteraction) =>
+                i.customIds.includes(interaction.customId) ||
+                i.customIds.some((id) => interaction.customId.startsWith(id))
+        );
+        if (!foundInteraction) {
+            this.logger.error(
+                `Could not find string select menu interaction for ID ${interaction.customId} among ${interactions?.length} string select menu interactions.`
+            );
+            return;
+        }
+
+        this.logger.debug(`${foundInteraction.constructor.name} is handling the string select menu interaction...`);
+        await foundInteraction.manage(interaction);
     }
 
     private async resolveCommand(interaction: ChatInputCommandInteraction): Promise<ICommand | null> {

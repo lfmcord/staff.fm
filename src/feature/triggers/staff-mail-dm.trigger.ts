@@ -46,7 +46,7 @@ export class StaffMailDmTrigger {
         }
 
 
-        const staffMails = await this.staffMailRepository.getAllStaffMailsByUserId(message.channelId);
+        const staffMails = await this.staffMailRepository.getAllStaffMailsByUserId(message.author.id);
         if (staffMails.length == 0) {
             await message.reply({
                 content:
@@ -71,7 +71,7 @@ export class StaffMailDmTrigger {
                 return new StringSelectMenuOptionBuilder()
                     .setLabel(`${index + 1}. ${Constants.StaffMailCategories[sm.type]}`)
                     .setDescription(`from ${moment(sm.createdAt).format("dddd, MMMM Do YYYY, hh:mm:ss")}`)
-                    .setValue(sm.id)
+                    .setValue(sm.id.toString())
             })
             const staffMailSelection = new StringSelectMenuBuilder()
                 .setCustomId(`${Interactions.StaffMail.SendFollowUp}-${message.id}`)

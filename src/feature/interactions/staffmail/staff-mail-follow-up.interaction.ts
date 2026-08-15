@@ -9,11 +9,11 @@ import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 import { MessageService } from '@src/infrastructure/services/message.service';
 import {
-    IStringSelectMenuInteraction
-} from '@src/feature/interactions/abstractions/string-select-menu-interaction.interface';
+    IMessageComponentInteraction
+} from '@src/feature/interactions/abstractions/message-component-interaction.interface';
 
 @injectable()
-export class StaffMailFollowUpInteraction implements IStringSelectMenuInteraction {
+export class StaffMailFollowUpInteraction implements IMessageComponentInteraction {
     customIds = [
         Interactions.StaffMail.SendFollowUp,
     ];
