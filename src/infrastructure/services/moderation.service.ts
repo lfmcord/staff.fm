@@ -118,6 +118,7 @@ export class ModerationService {
                 r.id !== this.env.ROLES.MUTED_ROLE_ID &&
                 r.id !== this.env.ROLES.SELFMUTED_ROLE_ID &&
                 r.id !== "636189149535272980" && // Nitro booster
+                r.id !== "1538964745133232199" && // Crowns game
                 r.name !== '@everyone'
         );
         this.logger.debug(
