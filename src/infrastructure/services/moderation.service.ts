@@ -65,7 +65,7 @@ export class ModerationService {
         }
 
         const roles = (await this.memberService.getRolesFromGuildMember(subject))
-            .filter(r => r.id !== "636189149535272980"); // Nitro booster
+            .filter(r => r.id !== "636189149535272980" && r.id !== "1538964745133232199"); // Nitro booster & Crowns game
         roles.forEach((r) => r.comparePositionTo(botMember!.roles.highest));
         await subject.roles.remove(roles);
         await subject.roles.add(mutedRole);
