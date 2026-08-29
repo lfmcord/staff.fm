@@ -78,6 +78,7 @@ export class StrikeCommand implements ICommand {
     }
 
     async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        if(!interaction.deferred) await interaction.deferReply()
         const userId = interaction.options.getUser('user')!.id;
         const subject = await this.memberService.getGuildMemberFromUserId(userId);
         if (!subject) {
@@ -195,20 +196,18 @@ export class StrikeCommand implements ICommand {
             logMessage ? TextHelper.getDiscordMessageLink(logMessage) : undefined
         );
 
-        await interaction.editReply({
-            content:
-                reply +
-                `${!wasInformed ? `\n:warning: *Could not send strike message to user. Do they have their DMs turned off?*` : ''}` +
-                `${!logMessage ? '\n:warning: *Could not log the strike. It will not be searchable in the log channel.*' : ''}` +
-                `\n-# ${TextHelper.strikeCounter(activeStrikes.length + 1, allStrikes.length + 1)}`,
-            components: [],
-            embeds: [],
-        });
         this.logger.info(`${logReason} for ${TextHelper.userLog(subject.user)} has been processed.`);
 
         return {
             isSuccessful: true,
-            replyToUser: { content: `Strike for ${TextHelper.userDisplay(subject.user)} has been processed.` },
+            replyToUser: {  content:
+                    reply +
+                    `${!wasInformed ? `\n:warning: *Could not send strike message to user. Do they have their DMs turned off?*` : ''}` +
+                    `${!logMessage ? '\n:warning: *Could not log the strike. It will not be searchable in the log channel.*' : ''}` +
+                    `\n-# ${TextHelper.strikeCounter(activeStrikes.length + 1, allStrikes.length + 1)}`,
+                components: [],
+                embeds: [],
+            },
         }
     }
 

@@ -6,6 +6,7 @@ import { StaffMailType } from '@src/feature/models/staff-mail-type';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { TYPES } from '@src/types';
 import {
+    Attachment,
     ChatInputCommandInteraction,
     EmbedBuilder, InteractionContextType,
     ModalSubmitInteraction,
@@ -41,13 +42,13 @@ export class StaffMailCreateCommand implements ICommand {
             )
         )
         .addStringOption((option) =>
-            option.setName('content').setDescription('Add some content to your message')
+            option.setName('content').setDescription('Add some content to your message.')
         )
         .addAttachmentOption((option) =>
-            option.setName('attachment').setDescription('Add an attachment to the message')
+            option.setName('attachment').setDescription('Add an attachment to the message. Send another message for multiple attachments.')
         )
         .addBooleanOption((option) =>
-            option.setName('anonymous').setDescription('Send the message anonymously')
+            option.setName('anonymous').setDescription('Send the message anonymously.')
         )
 
     private logger: Logger<StaffMailCreateCommand>;
@@ -87,32 +88,34 @@ export class StaffMailCreateCommand implements ICommand {
 
     public async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
         this.logger.info(`New staff mail message received.`);
+        if(!interaction.deferred) await interaction.deferReply();
         const category = interaction.options.getString('category')!;
         const text = interaction.options.getString('content') ?? '';
+        const attachment = interaction.options.getAttachment('attachment');
         const isAnonymous = interaction.options.getBoolean('anonymous') ?? false;
-        return await this.createNewStaffMail(category, text, isAnonymous, interaction.user);
+        return await this.createNewStaffMail(category, text, isAnonymous, interaction.user, attachment ? [attachment] : []);
     }
 
     async runInteraction(interaction: ModalSubmitInteraction) {
         this.logger.info(`New staff mail create interaction received.`);
 
-        if(!interaction.user.dmChannel?.isSendable()) {
-            await interaction.editReply({ content: `I cannot send you a DM. Please check your privacy settings and try again.`});
-            return;
-        }
+        // if(!interaction.user.dmChannel?.isSendable()) {
+        //     await interaction.editReply({ content: `I cannot send you a DM. Please check your privacy settings and try again.`});
+        //     return;
+        // }
 
-        const category = interaction.fields.getTextInputValue(Interactions.StaffMail.CreateModal.Category) ?? StaffMailType.Report;
+        const category = interaction.fields.getStringSelectValues(Interactions.StaffMail.CreateModal.Category) ?? StaffMailType.Report;
         const content = interaction.fields.getTextInputValue(Interactions.StaffMail.CreateModal.Content);
-        const attachments = interaction.fields.getUploadedFiles(Interactions.StaffMail.CreateModal.Attachment);
+        const attachments: Attachment[] = interaction.fields.getUploadedFiles(Interactions.StaffMail.CreateModal.Attachment)?.map((file) => file) ?? [];
         const isAnonymous = interaction.customId.includes("anon");
         const mode = isAnonymous ? StaffMailModeEnum.ANONYMOUS : StaffMailModeEnum.NAMED;
-        await this.createNewStaffMail(category, content, isAnonymous, interaction.user);
+        await this.createNewStaffMail(category[0], content, isAnonymous, interaction.user, attachments);
         await interaction.editReply({
             content: `I've created a new staff mail message for you. You can view it in your DMs and send follow-up messages there.`,
         })
     }
 
-    private async createNewStaffMail(category: StaffMailType, text: string, isAnonymous: boolean, actor: User): Promise<CommandResult> {
+    private async createNewStaffMail(category: StaffMailType, text: string, isAnonymous: boolean, actor: User, attachments?: Attachment[]): Promise<CommandResult> {
         const mode = isAnonymous ? StaffMailModeEnum.ANONYMOUS : StaffMailModeEnum.NAMED;
         const humanReadableCategory = EmbedHelper.getHumanReadableStaffMailType(category);
 
@@ -148,6 +151,7 @@ export class StaffMailCreateCommand implements ICommand {
 
         await staffMailChannel!.send({
             embeds: [EmbedHelper.getStaffMailStaffViewIncomingEmbed(isAnonymous ? null : actor, text)],
+            files: attachments,
         });
 
         this.logger.debug(`StaffMail channel is set up. Sending response to user...`);
@@ -159,6 +163,7 @@ export class StaffMailCreateCommand implements ICommand {
                 text,
                 category
             ),],
+            files: attachments,
         });
         await this.staffMailRepository.createStaffMail(actor, category, mode, staffMailChannel);
 

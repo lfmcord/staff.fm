@@ -55,16 +55,16 @@ export class CommandService {
         this.logger.info(log);
 
         if (interaction.isRepliable()) {
-            if (interaction.deferred && interaction.replied)
+            if ((interaction.replied || interaction.deferred) && result.replyToUser)
                 interaction.editReply({
-                    content: result.replyToUser?.content ? result.replyToUser.content : `Done! 🫡`,
+                    content: result.replyToUser?.content ? result.replyToUser.content : result.replyToUser?.embeds ? undefined : `Done! 🫡`,
                     components: result.replyToUser?.components,
                     embeds: result.replyToUser?.embeds,
                 });
-            else if(!interaction.replied)
+            else if(!interaction.replied && !interaction.deferred)
                 interaction.reply({
                     ...result.replyToUser,
-                    content: result.replyToUser?.content ? result.replyToUser.content : `Done! 🫡`,
+                    content: result.replyToUser?.content ? result.replyToUser.content : result.replyToUser?.embeds ? undefined : `Done! 🫡`,
                     ephemeral: result.isEphemeral || !result.replyToUser,
                 });
         }

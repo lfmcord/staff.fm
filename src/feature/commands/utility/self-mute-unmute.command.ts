@@ -50,6 +50,7 @@ export class SelfMuteUnmuteCommand implements ICommand {
     }
 
     async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        if (!interaction.deferred) await interaction.deferReply();
         return await this.tryToEndSelfmute(interaction.user!, `User used unmute command.`);
     }
 

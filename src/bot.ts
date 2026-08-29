@@ -14,7 +14,7 @@ import {
     GuildBan,
     GuildMember,
     GuildTextBasedChannel,
-    Interaction,
+    Interaction, InteractionContextType,
     InteractionType,
     Message,
     PartialMessage,
@@ -176,26 +176,31 @@ export class Bot {
             'MessageContextMenuInteraction'
         );
         /* eslint-disable @typescript-eslint/no-explicit-any */
-        const jsonObjects: any[] = []; // discord.js does not expose this fuckass type
+        const guildCommands: any[] = [], globalCommands: any[] = []; // discord.js does not expose this fuckass type
         for (const messageContextMenuInteraction of messageContextMenuInteractions) {
-            jsonObjects.push(messageContextMenuInteraction.data.toJSON());
+            guildCommands.push(messageContextMenuInteraction.data.toJSON());
         }
 
         const commandInteractions = container.getAll<ICommand>('Command');
         for (const commandInteraction of commandInteractions) {
-            jsonObjects.push(commandInteraction.definition.toJSON());
+            const json = commandInteraction.definition.toJSON();
+            if (commandInteraction.definition.contexts?.find(c => InteractionContextType.BotDM)) globalCommands.push(json)
+            else guildCommands.push(commandInteraction.definition.toJSON());
         }
 
         const rest = new REST().setToken(this.env.SECRETS.TOKEN);
-        this.logger.info(`Registering ${jsonObjects.length} interaction commands...`);
+        this.logger.info(`Registering ${guildCommands.length} interaction commands...`);
         try {
             await rest.put(Routes.applicationGuildCommands(this.client.user!.id, this.env.CORE.GUILD_ID), {
-                body: jsonObjects,
+                body: guildCommands,
+            });
+            await rest.put(Routes.applicationCommands(this.client.user!.id), {
+                body: globalCommands,
             });
         } catch (e) {
             this.logger.error(`Failed to register interaction commands`, e);
             return;
         }
-        this.logger.info(`Registered ${jsonObjects.length} interaction commands.`);
+        this.logger.info(`Registered ${guildCommands.length} interaction commands.`);
     }
 }

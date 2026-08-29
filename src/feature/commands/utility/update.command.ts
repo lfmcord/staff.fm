@@ -75,6 +75,7 @@ export class UpdateCommand implements ICommand {
         const actor = (await this.memberService.getGuildMemberFromUserId(interaction.user.id))!;
         let result: CommandResult;
         const memberIdToUpdate = TextHelper.getDiscordUserId(interaction.customId.split('-')[3]);
+        this.logger.debug(`Interaction ID ${interaction.customId} is updating user ID ${memberIdToUpdate}.`);
         if (!memberIdToUpdate) {
             this.logger.warn(`Interaction ID ${interaction.customId} is missing a user ID.`);
             await interaction.message.reply('I cannot find a user ID in the custom ID.');
@@ -89,7 +90,7 @@ export class UpdateCommand implements ICommand {
         await interaction.message.reactions.removeAll();
 
         await interaction.message.reply(
-            `${interaction.user}, ${result.replyToUser}` ?? 'I did something but I do not know what.'
+            result.replyToUser?.content ?? 'I have updated the scrobble roles of the user.'
         );
     }
 

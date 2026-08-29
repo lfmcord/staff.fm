@@ -56,7 +56,8 @@ export class EmbedHelper {
         return new EmbedBuilder()
             .setTitle(`🟢 StaffMail Opened`)
             .setColor(EmbedHelper.blue)
-            .setDescription(description);
+            .setDescription(description)
+            .setFooter({ text: `To reply, simply send a message in this channel.`} );
     };
 
     static getStaffMailCloseEmbed(type: string, reason: string | null): EmbedBuilder {
@@ -130,9 +131,6 @@ export class EmbedHelper {
             })
             .setTitle(title)
             .setColor(32768)
-            .setFooter({
-                text: 'Please reply to this message to send a reply to staff.',
-            })
             .setTimestamp();
         if (content && content !== '') embed.setDescription(content);
         return embed;
@@ -270,7 +268,7 @@ export class EmbedHelper {
                     inline: true,
                 },
                 {
-                    name: 'Real name',
+                    name: 'Display name',
                     value: lastFmUser.realname !== '' ? inlineCode(lastFmUser.realname) : `N/A`,
                     inline: true,
                 },
@@ -457,24 +455,11 @@ export class EmbedHelper {
             TextHelper.strikeCounterVerbose(activeStrikes.length, expiredStrikes.length, appealedStrikes.length) +
             '\n\n';
 
-        if (activeStrikes.length > 0) {
-            description += '**Active Strikes:**\n';
-            activeStrikes.forEach((activeStrike, idx) => {
-                description += `${idx + 1}. <t:${moment(activeStrike.createdAt).unix()}:d> by <@!${activeStrike.createdById}>${activeStrike.strikeLogLink ? ' [show log](' + activeStrike.strikeLogLink + ')' : ''}\n`;
-            });
-        }
-        if (expiredStrikes.length > 0) {
-            description += '\n**Expired Strikes:**\n';
-            expiredStrikes.forEach((expiredStrike, idx) => {
-                description += `${idx + 1}. <t:${moment(expiredStrike.createdAt).unix()}:d> by <@!${expiredStrike.createdById}>${expiredStrike.strikeLogLink ? ' [show log](' + expiredStrike.strikeLogLink + ')' : ''}\n`;
-            });
-        }
-        if (appealedStrikes.length > 0) {
-            description += '\n**Appealed Strikes:**\n';
-            appealedStrikes.forEach((appealedStrike, idx) => {
-                description += `${idx + 1}. <t:${moment(appealedStrike.createdAt).unix()}:d> by <@!${appealedStrike.createdById}>${appealedStrike.strikeLogLink ? ' [show log](' + appealedStrike.strikeLogLink + ')' : ''}\n`;
-            });
-        }
+        // sort by date, newest first
+        strikes = strikes.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+        strikes.forEach((strike, idx) => {
+            description += `${idx + 1}. <t:${moment(strike.createdAt).unix()}:d> by <@!${strike.createdById}>${strike.strikeLogLink ? ' [show log](' + strike.strikeLogLink + ')' : ''} - ${strike.wasAppealed ? 'Appealed' : strike.expiresOn && strike.expiresOn < new Date() ? 'Expired' : 'Active'}\n`;
+        });
 
         const embed = new EmbedBuilder();
         embed.setColor(EmbedHelper.red);

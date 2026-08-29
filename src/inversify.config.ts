@@ -60,9 +60,8 @@ import { WhoknowsTrigger } from '@src/feature/triggers/whoknows.trigger';
 import { ImportsCommand } from '@src/feature/commands/administration/imports.command';
 import { VerifyRemoveCommand } from '@src/feature/commands/administration/verify-remove.command';
 import { DiscussionsRepository } from '@src/infrastructure/repositories/discussions.repository';
-import { DiscussionsTopicCommand } from '@src/feature/commands/administration/discussions/discussions-topic.command';
 import { DiscussionsTrigger } from '@src/feature/triggers/discussions.trigger';
-import { DiscussionsManageCommand } from '@src/feature/commands/administration/discussions/discussions-manage.command';
+import { DiscussionsCommand } from '@src/feature/commands/administration/discussions/discussions.command';
 import { IndexCommand } from '@src/feature/commands/administration/index.command';
 import { LastFmService } from '@src/infrastructure/services/lastfm.service';
 import { UpdateCommand } from '@src/feature/commands/utility/update.command';
@@ -75,18 +74,13 @@ import { ModerationService } from '@src/infrastructure/services/moderation.servi
 import { LastfmCommand } from '@src/feature/commands/administration/lastfm.command';
 import { StrikeCommand } from '@src/feature/commands/moderation/strike.command';
 import { StrikesCommand } from '@src/feature/commands/moderation/strikes.command';
-import { StrikeAppealCommand } from '@src/feature/commands/moderation/strike-appeal.command';
 import { ScatterCommand } from '@src/feature/commands/administration/scatter.command';
 import { InformCommand } from '@src/feature/commands/moderation/inform.command';
-import { StrikesManageCommand } from '@src/feature/commands/moderation/strikes-manage.command';
 import { AutomodTrigger } from '@src/feature/triggers/automod.trigger';
 import { BlockedWordsRepository } from '@src/infrastructure/repositories/blocked-words.repository';
 import { AutomodCommand } from '@src/feature/commands/moderation/automod.command';
 import { VerifyContextMenuInteraction } from '@src/feature/interactions/administration/verify-context-menu.interaction';
 import { VerifyRemoveInteraction } from './feature/interactions/administration/verify-remove.interaction';
-import {
-    VerifyDismissPlaycountWarningInteraction
-} from '@src/feature/interactions/administration/verify-dismiss-playcount-warning.interaction';
 import { DiscussionsTopicRemoveInteraction } from '@src/feature/interactions/administration/discussions-topic-remove.interaction';
 import { EndSelfmuteButtonInteraction } from './feature/interactions/utility/end-selfmute-button.interaction';
 import { CancelButtonInteraction } from '@src/feature/interactions/shared/cancel-button.interaction';
@@ -98,6 +92,7 @@ import {
     IStringSelectMenuInteraction
 } from '@src/feature/interactions/abstractions/string-select-menu-interaction.interface';
 import { StaffMailFollowUpInteraction } from '@src/feature/interactions/staffmail/staff-mail-follow-up.interaction';
+import { StrikeRemoveInteraction } from '@src/feature/interactions/moderation/strike-remove.interaction';
 
 const container = new Container();
 
@@ -201,18 +196,15 @@ container.bind<ICommand>('Command').to(WhoisCommand);
 container.bind<ICommand>('Command').to(ImportsCommand);
 container.bind<ICommand>('Command').to(CrownsCommand);
 container.bind<ICommand>('Command').to(VerifyRemoveCommand);
-container.bind<ICommand>('Command').to(DiscussionsTopicCommand);
-container.bind<ICommand>('Command').to(DiscussionsManageCommand);
+container.bind<ICommand>('Command').to(DiscussionsCommand);
 container.bind<ICommand>('Command').to(IndexCommand);
 container.bind<ICommand>('Command').to(UpdateCommand);
 container.bind<ICommand>('Command').to(ScrobbleCapCommand);
 container.bind<ICommand>('Command').to(LastfmCommand);
 container.bind<ICommand>('Command').to(StrikeCommand);
 container.bind<ICommand>('Command').to(StrikesCommand);
-container.bind<ICommand>('Command').to(StrikeAppealCommand);
 container.bind<ICommand>('Command').to(ScatterCommand);
 container.bind<ICommand>('Command').to(InformCommand);
-container.bind<ICommand>('Command').to(StrikesManageCommand);
 container.bind<ICommand>('Command').to(AutomodCommand);
 
 // TRIGGERS
@@ -226,11 +218,11 @@ container.bind<AutomodTrigger>(TYPES.AutomodTrigger).to(AutomodTrigger);
 // INTERACTIONS
 container.bind<IMessageContextMenuInteraction>('MessageContextMenuInteraction').to(VerifyContextMenuInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(VerifyRemoveInteraction);
-container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(VerifyDismissPlaycountWarningInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(DiscussionsTopicRemoveInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(EndSelfmuteButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(CancelButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeAppealInteraction);
+container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StrikeRemoveInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(UpdateButtonInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailCreateInteraction);
 container.bind<IMessageComponentInteraction>('MessageComponentInteraction').to(StaffMailFollowUpInteraction);

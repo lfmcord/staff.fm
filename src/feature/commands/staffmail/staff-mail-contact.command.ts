@@ -113,8 +113,6 @@ export class StaffMailContactCommand implements ICommand {
             };
         }
 
-        await messageToUser.pin();
-        const incomingMessage = await member.send({ embeds: [embed] });
         const newStaffMailChannel = await this.staffMailRepository.createStaffMailChannel(
             member.user,
             StaffMailModeEnum.NAMED

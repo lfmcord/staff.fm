@@ -53,83 +53,73 @@ export class ComponentHelper {
     public static staffMailCreateModal = (id: string) => {
         const modal = new ModalBuilder();
         let isAnon = id === Interactions.StaffMail.ContactStaffAnonButton || id === Interactions.StaffMail.SendAnonReportButton;
+        let isReport = id === Interactions.StaffMail.SendReportButton || id === Interactions.StaffMail.SendAnonReportButton;
 
+        // ID
         if(isAnon) modal.setCustomId(Interactions.StaffMail.CreateModal.SubmitAnonymous);
         else modal.setCustomId(Interactions.StaffMail.CreateModal.Submit);
 
-        if(id === Interactions.StaffMail.SendReportButton || id === Interactions.StaffMail.SendAnonReportButton) {
+        // Title
+        if(isReport) {
             if (isAnon) modal.setTitle('Sending an anonymous report');
             else modal.setTitle('Sending a report');
-
-            const messageInput = new TextInputBuilder()
-                .setCustomId(Interactions.StaffMail.CreateModal.Content)
-                .setStyle(TextInputStyle.Paragraph)
-                .setMaxLength(2048)
-            const messageComponent = new LabelBuilder()
-                .setLabel("What you'd like to report")
-                .setTextInputComponent(messageInput);
-
-            const attachmentUpload = new FileUploadBuilder().setCustomId(Interactions.StaffMail.CreateModal.Attachment);
-            const attachmentComponent = new LabelBuilder()
-                .setLabel('Attachments (optional)')
-                .setDescription('Optional images or files to attach to your report. You can upload multiple files.')
-                .setFileUploadComponent(attachmentUpload);
-
-            modal.addLabelComponents(messageComponent, attachmentComponent)
-        }
-
-        if(id === Interactions.StaffMail.ContactStaffButton || id === Interactions.StaffMail.ContactStaffAnonButton) {
+        } else  {
             if (isAnon) modal.setTitle('Contacting staff anonymously');
             else modal.setTitle('Contacting staff');
-
-            const categorySelect = new StringSelectMenuBuilder()
-                .setCustomId(Interactions.StaffMail.CreateModal.Category)
-                .setPlaceholder('Select a category')
-                .setRequired(true)
-
-            if(!isAnon) categorySelect.addOptions(new StringSelectMenuOptionBuilder()
-                .setLabel(Constants.StaffMailCategoriesSimple[StaffMailType.Crowns])
-                .setDescription('Anything relating to the crowns game, including bans, false crowns, and more.')
-                .setEmoji(Constants.Crown)
-                .setValue(StaffMailType.Crowns))
-
-            categorySelect.addOptions(
-                new StringSelectMenuOptionBuilder()
-                    .setLabel(Constants.StaffMailCategoriesSimple[StaffMailType.Report])
-                    .setDescription('Report a user or message breaking a rule.')
-                    .setEmoji(Constants.Warning)
-                    .setValue(StaffMailType.Report),
-                new StringSelectMenuOptionBuilder()
-                    .setLabel(Constants.StaffMailCategoriesSimple[StaffMailType.Lastfm])
-                    .setDescription('Questions about the last.fm website and scrobbling.')
-                    .setEmoji(Constants.Lastfm)
-                    .setValue(StaffMailType.Lastfm),
-                new StringSelectMenuOptionBuilder()
-                    .setLabel(Constants.StaffMailCategoriesSimple[StaffMailType.Other])
-                    .setDescription("Other matters that don't fall under any of the other categories.")
-                    .setEmoji(Constants.Wildcard)
-                    .setValue(StaffMailType.Other)
-            );
-            const categoryComponent = new LabelBuilder()
-                .setLabel("What can staff help you with?")
-                .setStringSelectMenuComponent(categorySelect);
-
-            const messageInput = new TextInputBuilder()
-                .setCustomId(Interactions.StaffMail.CreateModal.Content)
-                .setStyle(TextInputStyle.Paragraph)
-                .setMaxLength(2048)
-            const messageComponent = new LabelBuilder()
-                .setLabel("What you'd like to say to staff")
-                .setTextInputComponent(messageInput);
-
-            const attachmentUpload = new FileUploadBuilder().setCustomId(Interactions.StaffMail.CreateModal.Attachment);
-            const attachmentComponent = new LabelBuilder()
-                .setLabel('Attachments (optional)')
-                .setDescription('Optional images or files to attach to your concern. You can upload multiple files.')
-                .setFileUploadComponent(attachmentUpload);
-
-            modal.addLabelComponents(categoryComponent, messageComponent, attachmentComponent)
         }
+
+        // Category select
+        const categorySelect = new StringSelectMenuBuilder()
+            .setCustomId(Interactions.StaffMail.CreateModal.Category)
+            .setPlaceholder('Select a category')
+            .setRequired(true)
+
+        if(!isAnon) categorySelect.addOptions(new StringSelectMenuOptionBuilder()
+            .setLabel(Constants.StaffMailCategoriesSimple[StaffMailType.Crowns])
+            .setDescription('Anything relating to the crowns game, including bans, false crowns, and more.')
+            .setEmoji(Constants.Crown)
+            .setValue(StaffMailType.Crowns))
+
+        categorySelect.addOptions(
+            new StringSelectMenuOptionBuilder()
+                .setLabel(Constants.StaffMailCategoriesSimple[StaffMailType.Report])
+                .setDescription('Report a user or message breaking a rule.')
+                .setEmoji(Constants.Warning)
+                .setDefault(isReport)
+                .setValue(StaffMailType.Report),
+            new StringSelectMenuOptionBuilder()
+                .setLabel(Constants.StaffMailCategoriesSimple[StaffMailType.Lastfm])
+                .setDescription('Questions about the last.fm website and scrobbling.')
+                .setEmoji(Constants.Lastfm)
+                .setValue(StaffMailType.Lastfm),
+            new StringSelectMenuOptionBuilder()
+                .setLabel(Constants.StaffMailCategoriesSimple[StaffMailType.Other])
+                .setDescription("Other matters that don't fall under any of the other categories.")
+                .setEmoji(Constants.Wildcard)
+                .setValue(StaffMailType.Other)
+        );
+        const categoryComponent = new LabelBuilder()
+            .setLabel("What can staff help you with?")
+            .setStringSelectMenuComponent(categorySelect);
+
+        // Message input
+        const messageInput = new TextInputBuilder()
+            .setCustomId(Interactions.StaffMail.CreateModal.Content)
+            .setStyle(TextInputStyle.Paragraph)
+            .setMaxLength(2048)
+        const messageComponent = new LabelBuilder()
+            .setLabel(isReport ? "What you'd like to report" : "What you'd like to say to staff")
+            .setTextInputComponent(messageInput);
+
+        // Attachment input
+        const attachmentUpload = new FileUploadBuilder().setCustomId(Interactions.StaffMail.CreateModal.Attachment).setRequired(false);
+        const attachmentComponent = new LabelBuilder()
+            .setLabel('Attachments (optional)')
+            .setDescription('Optional images or files to attach to your concern. You can upload multiple files.')
+            .setFileUploadComponent(attachmentUpload);
+
+        // End
+        modal.addLabelComponents(categoryComponent, messageComponent, attachmentComponent)
 
         if (isAnon) {
             const anonComponent = new TextDisplayBuilder()
@@ -190,6 +180,22 @@ export class ComponentHelper {
         options = options.slice(0, 25);
         return new StringSelectMenuBuilder()
             .setCustomId('defer-strike-appeal')
+            .setPlaceholder('Select the strike to appeal')
+            .addOptions(options);
+    };
+
+    static strikeRemoveMenu = (strikes: Strike[]) => {
+        // sort by date, newest first
+        strikes = strikes.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+        let options = strikes.map((s, idx) =>
+            new StringSelectMenuOptionBuilder()
+                .setLabel(`Remove strike ${idx + 1}`)
+                .setDescription(`added on ${moment(s.createdAt).format('ddd, MMM Do YYYY, HH:mm')}`)
+                .setValue(`${s.subject.id}_${s._id.toString()}`)
+        );
+        options = options.slice(0, 25);
+        return new StringSelectMenuBuilder()
+            .setCustomId('defer-strike-remove')
             .setPlaceholder('Select the strike to appeal')
             .addOptions(options);
     };

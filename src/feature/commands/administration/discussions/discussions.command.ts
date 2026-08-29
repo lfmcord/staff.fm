@@ -9,21 +9,29 @@ import { DiscussionsRepository, IDiscussionsModel } from '@src/infrastructure/re
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { TYPES } from '@src/types';
-import { AttachmentBuilder, ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import {
+    ActionRowBuilder,
+    AttachmentBuilder,
+    ChatInputCommandInteraction,
+    SlashCommandBuilder,
+    StringSelectMenuBuilder,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
 import { Logger } from 'tslog';
+import { ComponentHelper } from '@src/helpers/component.helper';
+import { MemberService } from '@src/infrastructure/services/member.service';
 
 @injectable()
-export class DiscussionsManageCommand implements ICommand {
-    name: string = 'dmanage';
+export class DiscussionsCommand implements ICommand {
+    name: string = 'discussions';
     description: string = 'Manage discussions. Topics are chosen at random with preference for older topics.';
     permissionLevel = CommandPermissionLevel.Moderator;
     definition = new SlashCommandBuilder()
         .setName(this.name)
         .setDescription(this.description)
         .addSubcommand((subcommand) =>
-            subcommand.setName('info').setDescription('Shows you info about the current scheduling.')
+            subcommand.setName('info').setDescription('Shows you info about the current scheduling and topics.')
         )
         .addSubcommand((subcommand) =>
             subcommand.setName('open').setDescription('Opens a new discussion without scheduling anything.')
@@ -35,9 +43,24 @@ export class DiscussionsManageCommand implements ICommand {
         )
         .addSubcommand((subcommand) =>
             subcommand.setName('stop').setDescription('Stops automatic discussion topic posting.')
+        ).addSubcommand((subcommand) =>
+            subcommand
+                .setName('add')
+                .setDescription('Adds a discussion topic')
+                .addStringOption((option) =>
+                    option.setName('topic').setDescription('The topic to add').setRequired(true)
+                )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('remove')
+                .setDescription('Removes a discussion topic')
+                .addIntegerOption((option) =>
+                    option.setName('topic').setDescription('The number of the topic to remove')
+                )
         );
 
-    private logger: Logger<DiscussionsManageCommand>;
+    private logger: Logger<DiscussionsCommand>;
     private discussionsTrigger: DiscussionsTrigger;
     private channelService: ChannelService;
     discussionsRepository: DiscussionsRepository;
@@ -45,12 +68,13 @@ export class DiscussionsManageCommand implements ICommand {
     loggingService: LoggingService;
 
     constructor(
-        @inject(TYPES.BotLogger) logger: Logger<DiscussionsManageCommand>,
+        @inject(TYPES.BotLogger) logger: Logger<DiscussionsCommand>,
         @inject(TYPES.DiscussionsTrigger) discussionsTrigger: DiscussionsTrigger,
         @inject(TYPES.ChannelService) channelService: ChannelService,
         @inject(TYPES.ENVIRONMENT) environment: Environment,
         @inject(TYPES.DiscussionsRepository) discussionsRepository: DiscussionsRepository,
-        @inject(TYPES.LoggingService) loggingService: LoggingService
+        @inject(TYPES.LoggingService) loggingService: LoggingService,
+        @inject(TYPES.MemberService) private memberService: MemberService
     ) {
         this.discussionsRepository = discussionsRepository;
         this.discussionsTrigger = discussionsTrigger;
@@ -61,6 +85,10 @@ export class DiscussionsManageCommand implements ICommand {
     }
 
     validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
+        if (interaction.options.getSubcommand() == 'add' && interaction.options.getString('topic')!.length > 256) {
+            throw new ValidationError(`Topic too long.`, `A topic can't be longer than 256 characters.`);
+        }
+
         return Promise.resolve();
     }
 
@@ -77,7 +105,7 @@ export class DiscussionsManageCommand implements ICommand {
 
         let result: CommandResult;
         switch (interaction.options.getSubcommand()) {
-            case 'show':
+            case 'info':
                 result = await this.showDiscussionManagement(interaction);
                 break;
             case 'open':
@@ -88,6 +116,12 @@ export class DiscussionsManageCommand implements ICommand {
                 break;
             case 'stop':
                 result = await this.stopAutomaticDiscussions(interaction);
+                break;
+            case 'add':
+                result = await this.addDiscussionsTopic(interaction.options.getString('topic') as string, interaction);
+                break;
+            case 'remove':
+                result = await this.removeDiscussionsTopic(interaction.options.getInteger('topic'), interaction);
                 break;
             default:
                 throw new ValidationError(`Operation type ${interaction.commandName} not valid.`);
@@ -239,6 +273,81 @@ export class DiscussionsManageCommand implements ICommand {
                           }),
                       ]
                     : [],
+            },
+        };
+    }
+
+    private async addDiscussionsTopic(topic: string, interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        this.logger.info(`Adding new discussions topic '${topic}' by ${interaction.user.username}...`);
+
+        await this.discussionsRepository.addDiscussionTopic(topic, interaction.user);
+
+        const openTopics = await this.discussionsRepository.getAllUnusedDiscussions();
+
+        await this.loggingService.logDiscussionTopic(interaction.user, topic, openTopics.length);
+
+        return {
+            isSuccessful: true,
+            replyToUser: {
+                content: `I've added the following topic: "${topic}"\n-# There are now ${openTopics.length} open topics.`,
+            },
+        };
+    }
+
+    private async removeDiscussionsTopic(
+        numberToRemove: number | null,
+        interaction: ChatInputCommandInteraction
+    ): Promise<CommandResult> {
+        const topics = await this.discussionsRepository.getAllUnusedDiscussions();
+        if (numberToRemove) {
+            const discussionToRemove = topics[numberToRemove - 1];
+            if (!discussionToRemove)
+                return {
+                    isSuccessful: false,
+                    replyToUser: { content: `This number is too high, I don't have that many topics stored!` },
+                };
+            this.logger.info(`Removing '${discussionToRemove.topic}' by ${interaction.user.username}...`);
+            await this.discussionsRepository.removeDiscussionById(discussionToRemove._id);
+            const user = await this.memberService.fetchUser(discussionToRemove.addedById);
+
+            await this.loggingService.logDiscussionTopic(
+                interaction.user,
+                discussionToRemove.topic,
+                topics.length - 1,
+                true
+            );
+
+            return {
+                isSuccessful: true,
+                replyToUser: {
+                    content: `I've removed the following topic at position ${numberToRemove}:\n- \`${discussionToRemove.topic}\` (added by ${user?.username ?? 'unknown'} at <t:${moment(discussionToRemove.addedAt).unix()}:f>)`,
+                },
+            };
+        }
+        this.logger.info(`No number provided, showing remove menu...`);
+        const topicsFile = await this.discussionsRepository.getAllDiscussionTopicsAsFile(topics);
+
+        if (!topicsFile) {
+            return {
+                isSuccessful: true,
+                replyToUser: { content: `No discussion topics to remove.` },
+            };
+        }
+
+        return {
+            isSuccessful: true,
+            replyToUser: {
+                content: `Please select the topic to remove below.`,
+                files: [
+                    new AttachmentBuilder(topicsFile, {
+                        name: `${moment().format('YYYY_MM_DD')}_discussion_topics.txt`,
+                    }),
+                ],
+                components: [
+                    new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+                        ComponentHelper.discussionsMenu(topics)
+                    ),
+                ],
             },
         };
     }

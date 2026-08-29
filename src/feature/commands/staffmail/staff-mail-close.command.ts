@@ -61,6 +61,7 @@ export class StaffMailCloseCommand implements ICommand {
         this.logger.info(
             `New staffmail close request by user ${TextHelper.userLog(interaction.user)} for channel ID ${interaction.channelId}.`
         );
+        if(!interaction.deferred) await interaction.deferReply()
         const isSilentClose = interaction.options.getBoolean('silent') ?? false;
         const staffMail = await this.staffmailRepository.getStaffMailByChannelId(interaction.channelId);
         const isAnonymous = staffMail?.mode === StaffMailModeEnum.ANONYMOUS;
@@ -117,7 +118,9 @@ export class StaffMailCloseCommand implements ICommand {
             logNote,
         );
 
+        await interaction.editReply(`Done. StaffMail channel will be deleted.`);
         await this.staffmailRepository.deleteStaffMailChannel(interaction.channelId);
+
 
         await this.staffmailRepository.deleteStaffMail(interaction.channelId);
 

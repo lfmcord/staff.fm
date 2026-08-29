@@ -34,7 +34,7 @@ import { Logger } from 'tslog';
 @injectable()
 export class VerifyCommand implements ICommand {
     name: string = 'verify';
-    description: string = 'Verifies a new user. Either reply to the user or use the optional parameters.';
+    description: string = 'Verifies a new user. You can also use the context menu on a message.';
     permissionLevel = CommandPermissionLevel.Backstager;
     isUsableInDms = false;
     isUsableInServer = true;
@@ -82,6 +82,7 @@ export class VerifyCommand implements ICommand {
     }
 
     async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        if(!interaction.deferred) await interaction.deferReply({ flags: 'Ephemeral' });
         const user = interaction.options.getUser('user')!;
         return await this.verifyUser(
             interaction,
@@ -97,7 +98,8 @@ export class VerifyCommand implements ICommand {
             interaction,
             interaction.targetMessage.author,
             interaction.member!.user as User,
-            interaction.targetMessage
+            interaction.targetMessage,
+            interaction.targetMessage.content ? TextHelper.getLastfmUsername(interaction.targetMessage.content!) ?? undefined : undefined
         );
     }
 
@@ -159,7 +161,15 @@ export class VerifyCommand implements ICommand {
             if (!wasVerified) {
                 this.logger.debug(`Verifying without a last.fm account was aborted or timed out.`);
                 if (verificationMessage) await verificationMessage.reactions.removeAll();
-                return {};
+                return {
+                    isSuccessful: false,
+                    replyToUser: {
+                        content: `Verifying without a last.fm account was aborted or timed out.`,
+                        flags: 'Ephemeral',
+                        components: [],
+                        embeds: [],
+                    },
+                };
             }
         } else {
             try {
@@ -188,7 +198,19 @@ export class VerifyCommand implements ICommand {
             }
             this.logger.debug(`User has a playcount of ${lastfmUser.playcount}`);
             if (lastfmUser.playcount == 0) {
-                await this.loggingService.logZeroPlaycountVerification(userToVerify, lastfmUser.name);
+                // retry the last.fm api call, if it is still 0, we simply proceed
+                this.logger.debug(`User has a playcount of 0, retrying last.fm api call...`);
+                try {
+                    lastfmUser = await this.lastFmClient.user.getInfo({ username: lastfmUsername });
+                }
+                catch (e) {
+                    if ((e as LastfmError).code == '6') {
+                        this.logger.info(`Last.fm user with name '${lastfmUsername}' could not be found.`);
+                    } else {
+                        this.logger.error('Last.fm returned an error that is not code 6 (not found)', e);
+                        throw Error(`Last.fm API returned an error.`);
+                    }
+                }
             }
             if (memberToVerify) await this.memberService.assignScrobbleRoles(memberToVerify, lastfmUser.playcount);
         }
@@ -229,6 +251,7 @@ export class VerifyCommand implements ICommand {
             replyToUser: {
                 content: `I've verified the user <@!${userToVerify.id}>.`,
                 flags: trigger.channel?.id == this.env.CHANNELS.VERIFICATION_CHANNEL_ID ? 'Ephemeral' : undefined,
+                embeds: [],
             },
         };
     }
@@ -237,7 +260,6 @@ export class VerifyCommand implements ICommand {
         trigger: ChatInputCommandInteraction | MessageContextMenuCommandInteraction,
         memberToVerify: GuildMember
     ) {
-        const isInteraction = trigger instanceof MessageContextMenuCommandInteraction;
         const reply = {
             embeds: [
                 new EmbedBuilder()
@@ -256,9 +278,8 @@ export class VerifyCommand implements ICommand {
                 ]),
             ],
         };
-        let noLastFmVerificationMessage;
-        if (isInteraction) noLastFmVerificationMessage = await trigger.editReply(reply);
-        else noLastFmVerificationMessage = await trigger.reply(reply);
+
+        let noLastFmVerificationMessage = await trigger.editReply(reply);
         const collectorFilter = (interaction: Interaction) => interaction.user.id === trigger.member?.user.id;
         let verifyInteraction: ButtonInteraction;
         try {
@@ -268,25 +289,16 @@ export class VerifyCommand implements ICommand {
             })) as ButtonInteraction;
         } catch (e) {
             this.logger.info(`Verifying user without last.fm account has timed out.`);
-            if (!isInteraction) {
-                await noLastFmVerificationMessage?.delete();
-            }
             return false;
         }
 
         await verifyInteraction.update({});
         if (verifyInteraction.customId === 'cancel') {
             this.logger.info(`Verifying user without last.fm account was cancelled.`);
-            if (!isInteraction) {
-                await noLastFmVerificationMessage?.delete();
-            }
             return false;
         } else {
             this.logger.info(`Verifying user '${memberToVerify.user.username}' without last.fm.`);
             await memberToVerify.roles.add(this.env.ROLES.NO_LASTFM_ACCOUNT_ROLE_ID as RoleResolvable);
-            if (!isInteraction) {
-                await noLastFmVerificationMessage?.delete();
-            }
             return true;
         }
     }

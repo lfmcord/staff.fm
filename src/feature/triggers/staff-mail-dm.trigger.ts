@@ -62,7 +62,7 @@ export class StaffMailDmTrigger {
                 .setAccentColor(EmbedHelper.blue)
                 .addTextDisplayComponents((textDisplay) =>
                     textDisplay.setContent(
-                        'You currently have multiple open StaffMail threads open. Please select the thread you want to reply to from the dropdown below:' +
+                        'You currently have multiple open StaffMail threads open. Please select the thread you want to reply to from the dropdown below:\n\n' +
                         staffMails.map((sm, index) => `${index + 1}. ${Constants.StaffMailCategories[sm.type]} from <t:${moment(sm.createdAt).unix()}:f> (last message <t:${moment(sm.lastMessageAt).unix()}:R>) `).join('\n')
                     ),
                 )

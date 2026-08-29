@@ -1,8 +1,7 @@
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { ICommand } from '@src/feature/commands/models/command.interface';
-import { TextHelper } from '@src/helpers/text.helper';
-import { ChatInputCommandInteraction, Message, PartialMessage, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { injectable } from 'inversify';
 
 @injectable()

@@ -22,8 +22,6 @@ export class StaffMailManagementCommand implements ICommand {
     name: string = 'staffmailmanagement';
     description: string = 'Creates a staff mail management post with interactive buttons.';
     permissionLevel = CommandPermissionLevel.Administrator;
-    isUsableInDms = false;
-    isUsableInServer = true;
     definition = new SlashCommandBuilder()
         .setName(this.name).setDescription(this.description)
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
@@ -59,8 +57,8 @@ export class StaffMailManagementCommand implements ICommand {
             ],
             components: [
                 new ActionRowBuilder<ButtonBuilder>().addComponents(
-                    ComponentHelper.reportButton(Interactions.StaffMail.ContactStaffButton),
-                    ComponentHelper.reportAnonButton(Interactions.StaffMail.ContactStaffAnonButton)
+                    ComponentHelper.sendButton(Interactions.StaffMail.ContactStaffButton),
+                    ComponentHelper.sendAnonButton(Interactions.StaffMail.ContactStaffAnonButton)
                 ),
             ],
         });
@@ -71,7 +69,7 @@ export class StaffMailManagementCommand implements ICommand {
                     .setColor(EmbedHelper.red)
                     .setDescription(
                         `If you have a report of someone breaking rules or another situation that requires ${bold("Staff's immediate attention")}, use one of these ways:\n\n` +
-                            `- **Use the button below` +
+                            `- **Use the button belows**\n` +
                             `- ${bold('Right-click a message and select Apps -> Report Message')} to quickly report a message.\n` +
                             `- If it is an urgent matter, feel free to **use the <@&${this.env.ROLES.MODERATOR_ROLE_IDS[0]}> and <@&${this.env.ROLES.ADMIN_ROLE_IDS[0]}> ping!**\n\n` +
                             `-# 💡 Hint: Including message links, screenshots or user names/IDs helps staff to resolve the issue faster. You can close and reopen the report menu without losing progress.`

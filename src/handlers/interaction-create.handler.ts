@@ -119,16 +119,19 @@ export class InteractionCreateHandler implements IHandler {
         if (!command) return;
 
         // Check permissions
-        if (!interaction.member) {
-            await this.commandService.handleError(interaction, "I don't know who's trying to run this command");
-        }
-        const member = await this.memberService.getGuildMemberFromUserId(interaction.member!.user.id);
-        if (!(await this.commandService.isPermittedToRun(member!, command))) {
-            await this.commandService.handleError(
-                interaction,
-                `You do not have sufficient permissions to use this command.`
-            );
-            return;
+        if (!interaction.channel?.isDMBased()) {
+            if(!interaction.member) {
+                await this.commandService.handleError(interaction, "I don't know who's trying to run this command!");
+                return;
+            }
+            const member = await this.memberService.getGuildMemberFromUserId(interaction.member.user.id);
+            if (!(await this.commandService.isPermittedToRun(member!, command))) {
+                await this.commandService.handleError(
+                    interaction,
+                    `You do not have sufficient permissions to use this command.`
+                );
+                return;
+            }
         }
 
         // Run command

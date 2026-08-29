@@ -6,4 +6,6 @@ export interface Strike {
     createdAt: Date;
     actor: User;
     _id: string;
+    expiresOn: Date;
+    logMessageLink?: string;
 }

@@ -14,7 +14,7 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ChatInputCommandInteraction,
-    EmbedBuilder,
+    EmbedBuilder, InteractionReplyOptions,
     MessageCreateOptions,
     SlashCommandBuilder,
     User,
@@ -67,11 +67,24 @@ export class WhoisCommand implements ICommand {
             };
         }
         if (userId) {
-            interaction.channel.send(await this.getMessageForDiscordUser(userId, interaction.user!));
+            const reply = await this.getMessageForDiscordUser(userId, interaction.user!);
+            return {
+                isSuccessful: true,
+                replyToUser: {...reply
+                } as InteractionReplyOptions,
+            };
         } else {
             const messagesToSend = await this.getMessagesForLastFmUsername(
                 interaction.options.getString('lastfm')!
             );
+            if(messagesToSend.length == 1) {
+                return {
+                    isSuccessful: true,
+                    replyToUser: {
+                        ...messagesToSend[0]
+                    } as InteractionReplyOptions,
+                }
+            }
             for (const messageToSend of messagesToSend) {
                 interaction.channel.send(messageToSend);
             }

@@ -9,7 +9,12 @@ import { StaffMail } from '@src/infrastructure/repositories/models/staff-mail.mo
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { TYPES } from '@src/types';
-import { ChatInputCommandInteraction, InteractionContextType, SlashCommandBuilder } from 'discord.js';
+import {
+    ChatInputCommandInteraction,
+    InteractionContextType, PermissionFlagsBits,
+    PermissionsBitField,
+    SlashCommandBuilder,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 
@@ -17,16 +22,11 @@ import { Logger } from 'tslog';
 export class StaffMailReplyCommand implements ICommand {
     name: string = 'reply';
     description: string = 'Replies to the StaffMail. Must be used in StaffMail channel.';
-    usageHint: string = '<message to user>';
-    examples: string[] = ['Hi, thank you for reaching out!'];
     permissionLevel = CommandPermissionLevel.Moderator;
-    aliases = ['areply'];
-    isUsableInDms = false;
-    isUsableInServer = true;
     definition = new SlashCommandBuilder()
         .setName(this.name)
         .setDescription(this.description)
-        .setContexts(InteractionContextType.BotDM)
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .addStringOption((option) =>
             option.setName('content').setDescription('Add some content to your message')
         )
@@ -54,10 +54,6 @@ export class StaffMailReplyCommand implements ICommand {
     public validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
         if(!interaction.options.getString('content') && !interaction.options.getAttachment('attachment')) {
             throw new ValidationError(`Neither content nor attachment provided.`, `You must provide either content or an attachment for the staff mail message.`);
-        }
-
-        if(!interaction.user.dmChannel?.isSendable()) {
-            throw new ValidationError(`Cannot send DM to user.`, `I cannot send you a DM. Please check your privacy settings and try again.`);
         }
 
         return Promise.resolve();

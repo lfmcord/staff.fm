@@ -19,6 +19,7 @@ import { StaffMailCreateCommand } from '@src/feature/commands/staffmail/staff-ma
 export class StaffMailSubmitInteraction implements IModalSubmitInteraction {
     customIds = [
         Interactions.StaffMail.CreateModal.Submit,
+        Interactions.StaffMail.CreateModal.SubmitAnonymous,
     ];
     logger: Logger<StaffMailSubmitInteraction>;
     memberService: MemberService;

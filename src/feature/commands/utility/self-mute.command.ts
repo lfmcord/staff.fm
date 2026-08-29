@@ -13,7 +13,7 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ChatInputCommandInteraction,
-    inlineCode,
+    inlineCode, InteractionContextType,
     SlashCommandBuilder,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
@@ -25,15 +25,11 @@ import { Logger } from 'tslog';
 export class SelfMuteCommand implements ICommand {
     name: string = 'selfmute';
     description: string = 'Mutes yourself for a set duration.';
-    usageHint: string = '<duration><unit(m/d/h/w)>';
-    examples: string[] = ['10m', '12h', '1d', '2w'];
     permissionLevel = CommandPermissionLevel.User;
-    aliases = ['sm'];
-    isUsableInDms = true;
-    isUsableInServer = true;
     definition = new SlashCommandBuilder()
         .setName(this.name)
         .setDescription(this.description)
+        .setContexts(InteractionContextType.BotDM, InteractionContextType.Guild)
         .addNumberOption((option) => option.setName("minutes").setDescription("The number of minutes to mute yourself for."))
         .addNumberOption((option) => option.setName("hours").setDescription("The number of hours to mute yourself for."))
         .addNumberOption((option) => option.setName("days").setDescription("The number of days to mute yourself for."))
