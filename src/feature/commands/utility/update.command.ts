@@ -26,22 +26,16 @@ export class UpdateCommand implements ICommand {
 
 
     private usersRepository: UsersRepository;
-    private env: Environment;
-    private loggingService: LoggingService;
     private logger: Logger<UpdateCommand>;
     private memberService: MemberService;
     private lastFmService: LastFmService;
 
     constructor(
-        @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.BotLogger) logger: Logger<UpdateCommand>,
         @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
         @inject(TYPES.MemberService) memberService: MemberService,
-        @inject(TYPES.LoggingService) loggingService: LoggingService,
         @inject(TYPES.LastFmService) lastFmService: LastFmService
     ) {
-        this.env = env;
-        this.loggingService = loggingService;
         this.logger = logger;
         this.memberService = memberService;
         this.usersRepository = usersRepository;

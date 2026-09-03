@@ -13,13 +13,14 @@ export class MutesRepository {
         this.memberService = memberService;
     }
 
-    public async createMute(subject: User, actor: User, endsAt: Date, roles: Role[]) {
+    public async createMute(subject: User, actor: User, endsAt: Date, roles: Role[], isStrict: boolean) {
         const selfMuteInstance = new MutesModelInstance({
             subjectId: subject.id,
             actorId: actor.id,
             createdAt: moment().toDate(),
             endsAt: endsAt,
             roleIds: roles.map((r) => r.id),
+            isStrict: isStrict,
         });
         await selfMuteInstance.save();
     }
@@ -37,6 +38,7 @@ export class MutesRepository {
             endsAt: mute.endsAt,
             createdAt: mute.createdAt,
             roleIds: mute.roleIds,
+            isStrict: mute.isStrict,
         };
     }
 
@@ -57,6 +59,7 @@ export class MutesRepository {
                 endsAt: mute.endsAt,
                 createdAt: mute.createdAt,
                 roleIds: roles.map((r) => r.id),
+                isStrict: mute.isStrict,
             });
         }
         return restoredMutes;
@@ -69,6 +72,7 @@ export interface IMutesModel {
     createdAt: Date;
     endsAt: Date;
     roleIds: string[];
+    isStrict?: boolean;
 }
 
 const mutesSchema = new Schema<IMutesModel>(
@@ -78,6 +82,7 @@ const mutesSchema = new Schema<IMutesModel>(
         createdAt: { type: Date, required: true },
         endsAt: { type: Date, required: true },
         roleIds: { type: [String], required: true },
+        isStrict: { type: Boolean, required: false, default: false },
     },
     { collection: 'Mutes' }
 );

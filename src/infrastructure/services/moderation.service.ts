@@ -43,6 +43,7 @@ export class ModerationService {
         endDate: Date,
         muteMessage?: MessageCreateOptions,
         unmuteMessage?: MessageCreateOptions,
+        isStrict = false,
         shouldLog = true
     ): Promise<boolean> {
         this.logger.info(
@@ -77,7 +78,7 @@ export class ModerationService {
         });
 
         await this.mutesRepository.deleteMuteByUserId(subject.user.id);
-        await this.mutesRepository.createMute(subject.user, actor, endDate, roles);
+        await this.mutesRepository.createMute(subject.user, actor, endDate, roles, isStrict);
         this.logger.info(`Muted user ${TextHelper.userLog(subject.user)} until ${endDate.toISOString()}.`);
 
         if (shouldLog) await this.loggingService.logMute(actor, subject.user, endDate, muteMessage?.content);

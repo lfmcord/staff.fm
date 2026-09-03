@@ -350,21 +350,14 @@ export class EmbedHelper {
     static getCrownsEmbed(user?: IUserModel): EmbedBuilder {
         if (!user)
             return new EmbedBuilder()
-                .setTitle(`Crowns Game & Miscellaneous`)
+                .setTitle(`Miscellaneous`)
                 .setColor(EmbedHelper.orange)
                 .setDescription('No data available.');
 
         return new EmbedBuilder()
-            .setTitle(`Crowns Game & Miscellaneous`)
+            .setTitle(`Miscellaneous`)
             .setColor(EmbedHelper.blue)
             .setFields(
-                {
-                    name: 'Crowns Status',
-                    value: user.crownsBan
-                        ? `<:nocrown:816944519924809779> Banned on <t:${moment(user.crownsBan.bannedOn).unix()}:d>`
-                        : `👑 No Crowns Ban`,
-                    inline: true,
-                },
                 {
                     name: 'Imported?',
                     value: user.importsFlagDate ? `📈 <t:${moment(user.importsFlagDate).unix()}:f>` : `📉 No Imports`,

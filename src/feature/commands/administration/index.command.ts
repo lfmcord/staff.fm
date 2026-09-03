@@ -37,9 +37,7 @@ export class IndexCommand implements ICommand {
     private loggingService: LoggingService;
     private lastFmClient: LastFM;
     private logger: Logger<IndexCommand>;
-    private flagsRepository: FlagsRepository;
     private usersRepository: UsersRepository;
-    private env: Environment;
     private memberService: MemberService;
 
     constructor(
@@ -47,13 +45,9 @@ export class IndexCommand implements ICommand {
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.LastFmClient) lastFmClient: LastFM,
         @inject(TYPES.LoggingService) loggingService: LoggingService,
-        @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
-        @inject(TYPES.FlagsRepository) flagsRepository: FlagsRepository
     ) {
-        this.flagsRepository = flagsRepository;
         this.usersRepository = usersRepository;
-        this.env = env;
         this.loggingService = loggingService;
         this.lastFmClient = lastFmClient;
         this.logger = logger;

@@ -33,7 +33,8 @@ export class SelfMuteCommand implements ICommand {
         .addNumberOption((option) => option.setName("minutes").setDescription("The number of minutes to mute yourself for."))
         .addNumberOption((option) => option.setName("hours").setDescription("The number of hours to mute yourself for."))
         .addNumberOption((option) => option.setName("days").setDescription("The number of days to mute yourself for."))
-        .addNumberOption((option) => option.setName("weeks").setDescription("The number of weeks to mute yourself for."));
+        .addNumberOption((option) => option.setName("weeks").setDescription("The number of weeks to mute yourself for."))
+        .addBooleanOption((option) => option.setName("strict").setDescription("Settings this forces you to wait out the selfmute.").setRequired(false));
 
     private moderationService: ModerationService;
     private env: Environment;
@@ -90,6 +91,7 @@ export class SelfMuteCommand implements ICommand {
         const hours = interaction.options.getNumber("hours");
         const days = interaction.options.getNumber("days");
         const weeks = interaction.options.getNumber("weeks");
+        const isStrict = interaction.options.getBoolean("strict") || false;
 
         const totalDurationInMinutes = (minutes || 0) + (hours || 0) * 60 + (days || 0) * 1440 + (weeks || 0) * 10080;
 
@@ -101,7 +103,7 @@ export class SelfMuteCommand implements ICommand {
         const user = await this.usersRepository.getUserByUserId(member.id);
 
         let muteMessage = `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>).`;
-        if (!user?.strictSelfmute)
+        if (!isStrict)
             muteMessage += `You can prematurely end it by using the button below or using the ${inlineCode('/unmute')} command here.`;
 
         try {
@@ -111,11 +113,12 @@ export class SelfMuteCommand implements ICommand {
                 endDateUtc.toDate(),
                 {
                     content: muteMessage,
-                    components: user?.strictSelfmute
+                    components: isStrict
                         ? []
                         : [new ActionRowBuilder<ButtonBuilder>().addComponents(ComponentHelper.endSelfmuteButton())],
                 },
-                { content: `🔊 Your selfmute has ended and I've unmuted you. Welcome back!` }
+                { content: `🔊 Your selfmute has ended and I've unmuted you. Welcome back!` },
+                isStrict
             );
         } catch (e) {
             return {
