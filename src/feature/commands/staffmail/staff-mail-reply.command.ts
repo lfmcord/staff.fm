@@ -9,21 +9,33 @@ import { StaffMail } from '@src/infrastructure/repositories/models/staff-mail.mo
 import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
 import { ChannelService } from '@src/infrastructure/services/channel.service';
 import { TYPES } from '@src/types';
-import { Embed, Message } from 'discord.js';
+import {
+    ChatInputCommandInteraction,
+    InteractionContextType, PermissionFlagsBits,
+    PermissionsBitField,
+    SlashCommandBuilder,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 
 @injectable()
 export class StaffMailReplyCommand implements ICommand {
     name: string = 'reply';
-    description: string =
-        'Replies to the StaffMail. Must be used in StaffMail channel. Use areply to reply anonymously.';
-    usageHint: string = '<message to user>';
-    examples: string[] = ['Hi, thank you for reaching out!'];
+    description: string = 'Replies to the StaffMail. Must be used in StaffMail channel.';
     permissionLevel = CommandPermissionLevel.Moderator;
-    aliases = ['areply'];
-    isUsableInDms = false;
-    isUsableInServer = true;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
+        .addStringOption((option) =>
+            option.setName('content').setDescription('Add some content to your message')
+        )
+        .addAttachmentOption((option) =>
+            option.setName('attachment').setDescription('Add an attachment to the message')
+        )
+        .addBooleanOption((option) =>
+            option.setName('anonymous').setDescription('Send the message anonymously')
+        )
 
     private logger: Logger<StaffMailReplyCommand>;
     channelService: ChannelService;
@@ -39,17 +51,24 @@ export class StaffMailReplyCommand implements ICommand {
         this.staffMailRepository = staffMailRepository;
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
+    public validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
+        if(!interaction.options.getString('content') && !interaction.options.getAttachment('attachment')) {
+            throw new ValidationError(`Neither content nor attachment provided.`, `You must provide either content or an attachment for the staff mail message.`);
+        }
+
+        return Promise.resolve();
+    }
+
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
         this.logger.info(
-            `New staffmail reply by user ${TextHelper.userLog(message.author)} for channel ID ${message.channelId}.`
+            `New staffmail reply by user ${TextHelper.userLog(interaction.user)} for channel ID ${interaction.channelId}.`
         );
-        if (args.length === 0 && message.attachments.size === 0)
-            throw new ValidationError(`Empty reply args and no attachment.`, `You have to provide a reply!`);
-        const isAnonReply = message.content.match(this.aliases[0]) != null;
-        const staffMail: StaffMail | null = await this.staffMailRepository.getStaffMailByChannelId(message.channelId);
+
+        const isAnonReply = interaction.options.getBoolean('anonymous') ?? false;
+        const staffMail: StaffMail | null = await this.staffMailRepository.getStaffMailByChannelId(interaction.channelId);
         if (!staffMail) {
             throw new ValidationError(
-                `No StaffMail in DB for channel ID ${message.channelId}.`,
+                `No StaffMail in DB for channel ID ${interaction.channelId}.`,
                 'You can only use this command in an open StaffMail channel!'
             );
         }
@@ -58,7 +77,7 @@ export class StaffMailReplyCommand implements ICommand {
             return {
                 isSuccessful: false,
                 reason: `User with user ID ${staffMail.userId} has left the guild.`,
-                replyToUser: `This user seems to have left the server. You can close this StaffMail.`,
+                replyToUser: { content: `This user seems to have left the server. You can close this StaffMail.` },
             };
         }
 
@@ -66,74 +85,47 @@ export class StaffMailReplyCommand implements ICommand {
             `Preparing message to user ${staffMail.mode != StaffMailModeEnum.ANONYMOUS ? TextHelper.userLog(staffMail.user) : ''}.`
         );
 
+        const attachment = interaction.options.getAttachment('attachment');
+        const content = interaction.options.getString('content');
+
         let messageToUser;
         try {
             messageToUser = await staffMail.user?.send({
                 embeds: [
                     EmbedHelper.getStaffMailUserViewIncomingEmbed(
-                        isAnonReply ? null : message.author,
+                        isAnonReply ? null : interaction.user,
                         staffMail.mode === StaffMailModeEnum.ANONYMOUS,
-                        args.join(' '),
-                        staffMail.summary,
-                        staffMail.type
+                        staffMail.type,
+                        content ?? undefined,
                     ),
                 ],
-                files: message.attachments.map((a) => a.proxyURL),
+                files: attachment ? [attachment] : [],
             });
         } catch (e) {
             this.logger.warn(`Could not send message to user ${TextHelper.userLog(staffMail.user)}.`, e);
             return {
                 isSuccessful: false,
-                replyToUser: `I could not send a message to the user. They most likely have their DMs turned off.`,
+                replyToUser: {
+                    content: `I could not send a message to the user. They most likely have their DMs turned off.`,
+                },
             };
         }
 
-        try {
-            let mainMessage =
-                (await this.channelService.getMessageFromChannelByMessageId(
-                    staffMail.mainMessageId,
-                    staffMail.user.dmChannel!
-                )) ?? undefined;
-            mainMessage = await mainMessage?.edit({
-                embeds: [mainMessage?.embeds[0], EmbedHelper.getStaffMailLinkToLatestMessage(messageToUser)],
-            });
-            const oldStaffMailMessage =
-                staffMail.mainMessageId === staffMail.lastMessageId
-                    ? mainMessage
-                    : await this.channelService.getMessageFromChannelByMessageId(
-                          staffMail.lastMessageId,
-                          staffMail.user.dmChannel!
-                      );
-            const newEmbeds: Embed[] =
-                oldStaffMailMessage?.embeds.map((e: Embed) => {
-                    return { ...e.data, footer: undefined } as unknown as Embed;
-                }) ?? oldStaffMailMessage!.embeds;
-            await oldStaffMailMessage?.edit({ embeds: newEmbeds });
-        } catch (e) {
-            this.logger.warn(`Could not edit old staff mail embeds.`, e);
-        }
-
         this.logger.debug(`Updating staff mail in DB and staff mail channel...`);
-        await this.staffMailRepository.updateStaffMailLastMessageId(staffMail.id, messageToUser.id);
+        await this.staffMailRepository.updateStaffMailLastMessageId(staffMail.id);
 
-        // TODO: Catch 403 case
         await staffMail.channel!.send({
             embeds: [
                 EmbedHelper.getStaffMailStaffViewOutgoingEmbed(
-                    message.author,
+                    interaction.user,
                     isAnonReply,
                     staffMail.mode === StaffMailModeEnum.ANONYMOUS ? null : staffMail.user,
-                    args.join(' ')
+                    content ?? undefined
                 ),
             ],
-            files: Array.from(message.attachments.values()),
+            files: attachment ? [attachment] : [],
         });
-        await message.delete();
 
         return {};
-    }
-
-    validateArgs(args: string[]): Promise<void> {
-        return Promise.resolve();
     }
 }

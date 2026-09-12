@@ -86,7 +86,7 @@ export class StrikeAppealInteraction implements IMessageComponentInteraction {
             try {
                 await member.send(
                     `🗯️✅ **Staff has set your strike from <t:${moment(appealedStrike.createdAt).unix()}:d> to appealed.** It will no longer count towards your active strikes.\n` +
-                        `You are now at ${activeStrikes.length} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.size} allowed strikes.`
+                        `You are now at ${activeStrikes.length} out of ${this.env.MODERATION.STRIKE_MUTE_DURATIONS.length} allowed strikes.`
                 );
             } catch (e) {
                 this.logger.warn(`Failed to send DM to user ID ${userId}.`, e);

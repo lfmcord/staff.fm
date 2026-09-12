@@ -2,13 +2,16 @@ import { Environment } from '@models/environment';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { ICommand } from '@src/feature/commands/models/command.interface';
-import { ValidationError } from '@src/feature/commands/models/validation-error.model';
 import { ComponentHelper } from '@src/helpers/component.helper';
 import { EmbedHelper } from '@src/helpers/embed.helper';
-import { TextHelper } from '@src/helpers/text.helper';
 import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { TYPES } from '@src/types';
-import { ActionRowBuilder, Message, StringSelectMenuBuilder } from 'discord.js';
+import {
+    ActionRowBuilder,
+    ChatInputCommandInteraction,
+    SlashCommandBuilder,
+    StringSelectMenuBuilder,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
 
@@ -16,14 +19,18 @@ import { Logger } from 'tslog';
 export class VerifyRemoveCommand implements ICommand {
     name: string = 'verifyremove';
     description: string = 'Removes a verification from a user.';
-    usageHint: string = '<user mention/ID>';
-    examples: string[] = ['356178941913858049', '@haiyn'];
     permissionLevel = CommandPermissionLevel.Moderator;
-    aliases = ['removeverify'];
     isUsableInDms = false;
     isUsableInServer = true;
-    logger: Logger<VerifyRemoveCommand>;
-    env: Environment;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .addUserOption((option) =>
+            option.setName('user').setDescription('The discord user to remove a verification from').setRequired(true)
+        );
+
+    private logger: Logger<VerifyRemoveCommand>;
+    private env: Environment;
     private usersRepository: UsersRepository;
 
     constructor(
@@ -36,48 +43,42 @@ export class VerifyRemoveCommand implements ICommand {
         this.usersRepository = usersRepository;
     }
 
-    async run(message: Message<true>, args: string[]): Promise<CommandResult> {
-        const userId = TextHelper.getDiscordUserId(args[0])!;
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        const userId = interaction.options.getUser('user')!.id;
         const indexedUser = await this.usersRepository.getUserByUserId(userId);
         if (!indexedUser) {
             return {
                 isSuccessful: false,
-                replyToUser: `This user is not indexed yet. If you know their last.fm username, please verify them with \`${this.env.CORE.PREFIX}verify ${userId} [last.fm username]\`.`,
+                replyToUser: {
+                    embeds: [EmbedHelper.getUserNotIndexedEmbed()],
+                },
             };
         }
 
         if (indexedUser.verifications.length == 0) {
             return {
                 isSuccessful: false,
-                replyToUser: `This user has no verifications I can remove. If you know their last.fm username, please verify them with \`${this.env.CORE.PREFIX}verify ${userId} [last.fm username]\`.`,
+                replyToUser: {
+                    content: `This user has no verifications I can remove. If you know their last.fm username, please index them with \`/index\` first.`,
+                },
             };
         }
 
-        message.channel.send({
-            content: 'Which verification do you want to remove? Please select below.',
-            embeds: [EmbedHelper.getVerificationHistoryEmbed(indexedUser.verifications, true)],
-            components: [
-                new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-                    ComponentHelper.verificationMenu(indexedUser)
-                ),
-            ],
-        });
-
         return {
             isSuccessful: true,
+            replyToUser: {
+                content: 'Which verification do you want to remove? Please select below.',
+                embeds: [EmbedHelper.getVerificationHistoryEmbed(indexedUser.verifications, true)],
+                components: [
+                    new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+                        ComponentHelper.verificationMenu(indexedUser)
+                    ),
+                ],
+            },
         };
     }
 
-    validateArgs(args: string[]): Promise<void> {
-        if (args.length === 0) {
-            throw new ValidationError(`No args provided for verifyremove.`, `You must provide a Discord user!`);
-        }
-        if (!TextHelper.getDiscordUserId(args[0])) {
-            throw new ValidationError(
-                `${args[0]} is not a valid Discord user.`,
-                `${args[0]} is not a valid Discord user.`
-            );
-        }
+    validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
         return Promise.resolve();
     }
 }

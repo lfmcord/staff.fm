@@ -1,28 +1,44 @@
-import { inject, injectable } from 'inversify';
-import { ICommand } from '@src/feature/commands/models/command.interface';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { Logger } from 'tslog';
-import { IUserModel, UsersRepository } from '@src/infrastructure/repositories/users.repository';
-import { TYPES } from '@src/types';
-import { Message } from 'discord.js';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { ValidationError } from '@src/feature/commands/models/validation-error.model';
-import { TextHelper } from '@src/helpers/text.helper';
+import { ICommand } from '@src/feature/commands/models/command.interface';
+import { EmbedHelper } from '@src/helpers/embed.helper';
+import { IUserModel, UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { MemberService } from '@src/infrastructure/services/member.service';
+import { TYPES } from '@src/types';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import { Logger } from 'tslog';
 import moment = require('moment');
 
 @injectable()
 export class ImportsCommand implements ICommand {
     name: string = 'imports';
-    description: string =
-        "Managed importing flags on a user. Use set/unset if you want to add or remove the flag. Use with only a user to see if they're flagged";
-    usageHint: string = '[(optional) set/unset] [user mention/ID]';
-    examples: string[] = ['@haiyn', 'set @haiyn', 'unset @haiyn'];
+    description: string = "Manages importing flags on a user.";
     permissionLevel = CommandPermissionLevel.Helper;
-    aliases = ['import'];
     isUsableInDms = false;
     isUsableInServer = true;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('set')
+                .setDescription('Sets an import flag')
+                .addUserOption((option) => option.setName('user').setDescription('The user to set').setRequired(true))
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('unset')
+                .setDescription('Unsets an import flag')
+                .addUserOption((option) => option.setName('user').setDescription('The user to unset').setRequired(true))
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('check')
+                .setDescription('Checks if a user has an import flag')
+                .addUserOption((option) => option.setName('user').setDescription('The user to check').setRequired(true))
+        );
 
     private logger: Logger<ImportsCommand>;
     private usersRepository: UsersRepository;
@@ -41,57 +57,42 @@ export class ImportsCommand implements ICommand {
         this.memberService = memberService;
     }
 
-    validateArgs(args: string[]): Promise<void> {
-        if (args.length < 1) {
-            throw new ValidationError(
-                `No args provided for imports.`,
-                `You must provide an operation type (set/unset) and Discord user!`
-            );
-        }
+    validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
         return Promise.resolve();
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
-        let userId = TextHelper.getDiscordUserId(args[0]);
-        let operationType = null;
-        if (args[0] == 'set' || args[0] == 'unset') {
-            operationType = args[0];
-            userId = TextHelper.getDiscordUserId(args[1]);
-        }
-        if (!userId) {
-            return {
-                isSuccessful: false,
-                replyToUser: "I cannot recognize the argument you've provided as a Discord user.",
-            };
-        }
-        const foundUser = await this.usersRepository.getUserByUserId(userId);
-        if (!foundUser) {
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        let userId = interaction.options.getUser('user')!.id;
+        let operationType = interaction.options.getSubcommand();
+
+        const indexedUser = await this.usersRepository.getUserByUserId(userId);
+        if (!indexedUser) {
             this.logger.info(`imports command for user ID ${userId} cannot run because user is not in DB.`);
             return {
                 isSuccessful: false,
-                replyToUser: `I have no information on this user. Please index them first by running \`>>verify ${userId} [last.fm username]\`.`,
+                replyToUser: { embeds: [EmbedHelper.getUserNotIndexedEmbed()] },
             };
         }
 
         let replyToUser;
         switch (operationType) {
             case 'set':
-                replyToUser = await this.setImports(foundUser, message);
+                replyToUser = await this.set(indexedUser, interaction);
                 break;
             case 'unset':
-                replyToUser = await this.unsetImports(foundUser, message);
+                replyToUser = await this.unset(indexedUser, interaction);
                 break;
             default:
-                replyToUser = await this.showImports(foundUser);
+                replyToUser = await this.check(indexedUser);
         }
 
         return {
             isSuccessful: true,
-            replyToUser: replyToUser,
+            replyToUser: { content: replyToUser },
         };
     }
 
-    private async setImports(indexedUser: IUserModel, message: Message): Promise<string> {
+    private async set(indexedUser: IUserModel, interaction: ChatInputCommandInteraction): Promise<string> {
         let replyToUser = `📈 I've added the imports flag to <@${indexedUser.userId}>.`;
         if (indexedUser.importsFlagDate == null) {
             await this.usersRepository.addImportsFlagDateToUser(indexedUser.userId);
@@ -99,7 +100,7 @@ export class ImportsCommand implements ICommand {
             if (!user) {
                 replyToUser += ` It seems like this user has left the server.`;
             } else {
-                await this.loggingService.logImports(message.author, user, false);
+                await this.loggingService.logImports(interaction.user, user, false);
             }
         } else {
             replyToUser = `<@${indexedUser.userId}> already has an import flag from <t:${moment(indexedUser.importsFlagDate).unix()}:d>.`;
@@ -108,7 +109,7 @@ export class ImportsCommand implements ICommand {
         return replyToUser;
     }
 
-    private async unsetImports(indexedUser: IUserModel, message: Message): Promise<string> {
+    private async unset(indexedUser: IUserModel, interaction: ChatInputCommandInteraction): Promise<string> {
         let replyToUser = `📉 I've removed the imports flag from <@${indexedUser.userId}>.`;
         if (indexedUser.importsFlagDate) {
             await this.usersRepository.removeImportsFlagDateFromUser(indexedUser.userId);
@@ -116,7 +117,7 @@ export class ImportsCommand implements ICommand {
             if (!user) {
                 replyToUser += ` It seems like this user has left the server.`;
             } else {
-                await this.loggingService.logImports(message.author, user, true);
+                await this.loggingService.logImports(interaction.user, user, true);
             }
         } else {
             replyToUser = `<@${indexedUser.userId}> has no import flag.`;
@@ -125,7 +126,7 @@ export class ImportsCommand implements ICommand {
         return replyToUser;
     }
 
-    private async showImports(indexedUser: IUserModel): Promise<string> {
+    private async check(indexedUser: IUserModel): Promise<string> {
         return indexedUser.importsFlagDate != null
             ? `<@${indexedUser.userId}> has been flagged for imports on <t:${moment(indexedUser.importsFlagDate).unix()}:d>.`
             : `<@${indexedUser.userId}> has not been flagged for imports.`;

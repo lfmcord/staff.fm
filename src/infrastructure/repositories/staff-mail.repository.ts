@@ -9,6 +9,7 @@ import { Channel, GuildTextBasedChannel, Message, User } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Schema, model } from 'mongoose';
 import moment = require('moment');
+import { StaffMailType } from '@src/feature/models/staff-mail-type';
 
 @injectable()
 export class StaffMailRepository {
@@ -32,25 +33,32 @@ export class StaffMailRepository {
         return await this.mapModelToStaffMail(model);
     }
 
+    public async getStaffMailById(staffMailId: string): Promise<StaffMail | null> {
+        const model = await StaffMailInstanceModel.findOne({ _id: staffMailId }).exec();
+        if (!model) return null;
+        return await this.mapModelToStaffMail(model);
+    }
+
+    public async getAllStaffMailsByUserId(userId: string): Promise<StaffMail[]> {
+        const models = await StaffMailInstanceModel.find({ userId: userId }).exec();
+        const staffMails: StaffMail[] = [];
+        for (const model of models) {
+            const staffMail = await this.mapModelToStaffMail(model);
+            staffMails.push(staffMail);
+        }
+        return staffMails;
+    }
+
     public async getStaffMailByChannelId(channelId: string): Promise<StaffMail | null> {
         const model = await StaffMailInstanceModel.findOne({ channelId: channelId }).exec();
         if (!model) return null;
         return await this.mapModelToStaffMail(model);
     }
 
-    public async getStaffMailByLastMessageId(messageId: string): Promise<StaffMail | null> {
-        const model = await StaffMailInstanceModel.findOne({ lastMessageId: messageId }).exec();
-        if (!model) return null;
-        return await this.mapModelToStaffMail(model);
-    }
-
     public async createStaffMail(
         user: User,
-        type: string,
+        type: StaffMailType,
         mode: StaffMailModeEnum,
-        summary: string | null,
-        mainMessage: Message,
-        lastMessage: Message,
         channel: Channel
     ) {
         const now = moment.utc().toDate();
@@ -60,11 +68,8 @@ export class StaffMailRepository {
             userId: user.id, // TODO: encrypt when anonymous
             mode: mode.valueOf(),
             type: type.valueOf(),
-            summary: summary,
             createdAt: now,
             lastMessageAt: now,
-            lastMessageId: lastMessage.id,
-            mainMessageId: mainMessage.id,
         });
         await staffMailInstance.save();
     }
@@ -79,14 +84,14 @@ export class StaffMailRepository {
         await channelToDelete.delete(`StaffMail closed.`);
     }
 
-    public async updateStaffMailLastMessageId(staffMailId: string, newLastMessageId: string) {
+    public async updateStaffMailLastMessageId(staffMailId: string) {
         const result = await StaffMailInstanceModel.updateOne(
             { _id: staffMailId },
-            { lastMessageId: newLastMessageId, lastMessageAt: moment.utc().toDate() }
+            { lastMessageAt: moment.utc().toDate() }
         ).exec();
         if (result.modifiedCount !== 1)
             throw Error(
-                `Update count for updating staffMail with ID ${staffMailId} to new message ID ${newLastMessageId} went wrong.`
+                `Update count for updating staffMail with ID ${staffMailId} to new date went wrong.`
             );
     }
 
@@ -125,11 +130,8 @@ export class StaffMailRepository {
             channel: channel as GuildTextBasedChannel | null,
             mode: model.mode.valueOf(),
             type: model.type,
-            summary: model.summary,
             createdAt: model.createdAt,
             lastMessageAt: model.lastMessageAt,
-            lastMessageId: model.lastMessageId,
-            mainMessageId: model.mainMessageId,
         };
     }
 }
@@ -140,11 +142,8 @@ export interface IStaffMailModel {
     userId: string;
     mode: StaffMailModeEnum;
     type: string;
-    summary: string | null;
     createdAt: Date;
     lastMessageAt: Date;
-    lastMessageId: string;
-    mainMessageId: string;
 }
 
 const staffMailSchema = new Schema<IStaffMailModel>(
@@ -153,11 +152,8 @@ const staffMailSchema = new Schema<IStaffMailModel>(
         userId: { type: String, required: true },
         mode: { type: Number, required: true },
         type: { type: String, required: true },
-        summary: { type: String, required: false },
         createdAt: { type: Date, required: true },
         lastMessageAt: { type: Date, required: true },
-        lastMessageId: { type: String, required: true },
-        mainMessageId: { type: String, required: true },
     },
     { collection: 'StaffMails' }
 );

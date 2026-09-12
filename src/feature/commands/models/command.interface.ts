@@ -1,30 +1,30 @@
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { Message, PartialMessage } from 'discord.js';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import {
+    Interaction,
+    SlashCommandBuilder,
+    SlashCommandOptionsOnlyBuilder,
+    SlashCommandSubcommandsOnlyBuilder,
+} from 'discord.js';
 
 export interface ICommand {
     name: string;
     description: string;
-    usageHint: string;
-    examples: string[];
     permissionLevel: CommandPermissionLevel;
-    aliases: string[];
-    isUsableInDms: boolean;
-    isUsableInServer: boolean;
+    definition: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder | SlashCommandOptionsOnlyBuilder;
 
     /**
      * Runs the command.
-     * @param message The message that triggered the command.
-     * @param args The list of words (separated by spaces) that were given after the command.
+     * @param interaction The slash command that triggered the command.\
      * @returns CommandResultModel when the command finished running.
      * @throws Error when command could not be completed.
      */
-    run(message: Message | PartialMessage, args: string[]): Promise<CommandResult>;
+    run(interaction: Interaction): Promise<CommandResult>;
 
     /**
      * Validates the arguments given after a command. Throws an error if validation failed.
-     * @param args the arguments to validate.
+     * @param interaction the interaction to validate.
      * @throws Error Validation failed, error message contains message to user.
      */
-    validateArgs(args: string[]): Promise<void>;
+    validateArgs(interaction: Interaction): Promise<void>;
 }

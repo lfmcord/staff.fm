@@ -9,7 +9,13 @@ import { UsersRepository } from '@src/infrastructure/repositories/users.reposito
 import { MemberService } from '@src/infrastructure/services/member.service';
 import { ModerationService } from '@src/infrastructure/services/moderation.service';
 import { TYPES } from '@src/types';
-import { ActionRowBuilder, ButtonBuilder, inlineCode, Message, PartialMessage } from 'discord.js';
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ChatInputCommandInteraction,
+    inlineCode, InteractionContextType,
+    SlashCommandBuilder,
+} from 'discord.js';
 import { inject, injectable } from 'inversify';
 import * as moment from 'moment';
 import { unitOfTime } from 'moment';
@@ -19,12 +25,16 @@ import { Logger } from 'tslog';
 export class SelfMuteCommand implements ICommand {
     name: string = 'selfmute';
     description: string = 'Mutes yourself for a set duration.';
-    usageHint: string = '<duration><unit(m/d/h/w)>';
-    examples: string[] = ['10m', '12h', '1d', '2w'];
     permissionLevel = CommandPermissionLevel.User;
-    aliases = ['sm'];
-    isUsableInDms = true;
-    isUsableInServer = true;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .setContexts(InteractionContextType.BotDM, InteractionContextType.Guild)
+        .addNumberOption((option) => option.setName("minutes").setDescription("The number of minutes to mute yourself for."))
+        .addNumberOption((option) => option.setName("hours").setDescription("The number of hours to mute yourself for."))
+        .addNumberOption((option) => option.setName("days").setDescription("The number of days to mute yourself for."))
+        .addNumberOption((option) => option.setName("weeks").setDescription("The number of weeks to mute yourself for."))
+        .addBooleanOption((option) => option.setName("strict").setDescription("Settings this forces you to wait out the selfmute.").setRequired(false));
 
     private moderationService: ModerationService;
     private env: Environment;
@@ -37,7 +47,7 @@ export class SelfMuteCommand implements ICommand {
         @inject(TYPES.BotLogger) logger: Logger<SelfMuteCommand>,
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.ModerationService) moderationService: ModerationService,
-        @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
+        @inject(TYPES.UsersRepository) usersRepository: UsersRepository
     ) {
         this.moderationService = moderationService;
         this.env = env;
@@ -46,25 +56,55 @@ export class SelfMuteCommand implements ICommand {
         this.usersRepository = usersRepository;
     }
 
-    async run(message: Message | PartialMessage, args: string[]): Promise<CommandResult> {
-        const amount = args[0].match(/[1-9][0-9]{0,2}/)?.pop();
-        const unit = args[0].match(/([mhdw])/)?.pop();
-        if (!amount || !unit) {
-            throw Error(`Unable to parse duration '${args[0]}'`);
-        }
-        if (parseInt(amount) < 5 && unit == 'm') {
-            throw new ValidationError('Duration too short.', 'Your selfmute has to be at least 5 minutes long.');
+    async validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
+        const minutes = interaction.options.getNumber("minutes");
+        const hours = interaction.options.getNumber("hours");
+        const days = interaction.options.getNumber("days");
+        const weeks = interaction.options.getNumber("weeks");
+
+        if (!minutes && !hours && !days && !weeks) {
+            throw new ValidationError(
+                "No duration provided.",
+                "You must provide a duration for your selfmute. Use the options `minutes`, `hours`, `days`, or `weeks`."
+            );
         }
 
-        this.logger.info(`Creating new selfmute for user ${TextHelper.userLog(message.author!)}...`);
+        if(minutes && minutes < 5) {
+            throw new ValidationError(
+                "Duration too short.",
+                "Your selfmute has to be at least 5 minutes long."
+            );
+        }
+
+        // Make sure selfmute is not longer than 4 weeks
+        const totalDurationInMinutes = (minutes || 0) + (hours || 0) * 60 + (days || 0) * 1440 + (weeks || 0) * 10080;
+        if (totalDurationInMinutes > 40320) {
+            throw new ValidationError(
+                "Duration too long.",
+                "Your selfmute cannot be longer than 4 weeks."
+            );
+        }
+    }
+
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        const minutes = interaction.options.getNumber("minutes");
+        const hours = interaction.options.getNumber("hours");
+        const days = interaction.options.getNumber("days");
+        const weeks = interaction.options.getNumber("weeks");
+        const isStrict = interaction.options.getBoolean("strict") || false;
+
+        const totalDurationInMinutes = (minutes || 0) + (hours || 0) * 60 + (days || 0) * 1440 + (weeks || 0) * 10080;
+
+        this.logger.info(`Creating new selfmute for user ${TextHelper.userLog(interaction.user!)} for ${totalDurationInMinutes} minutes...`);
         const now = moment.utc();
-        const endDateUtc = now.add(amount, unit as unitOfTime.DurationConstructor);
-        const member = await this.memberService.getGuildMemberFromUserId(message.author!.id);
-        if (!member) throw Error(`Cannot find user with user ID ${message.author!.id}. Has the user left the guild?`);
+        const endDateUtc = now.add(totalDurationInMinutes, 'minutes');
+        const member = await this.memberService.getGuildMemberFromUserId(interaction.user!.id);
+        if (!member) throw Error(`Cannot find user with user ID ${interaction.user!.id}. Has the user left the guild?`);
         const user = await this.usersRepository.getUserByUserId(member.id);
 
         let muteMessage = `🔇 You've requested a self mute. It will automatically expire at <t:${endDateUtc.unix()}:f> (<t:${endDateUtc.unix()}:R>).`;
-        if(!user?.strictSelfmute) muteMessage += `You can prematurely end it by using the button below or sending me ${inlineCode(this.env.CORE.PREFIX + 'unmute')} here.`;
+        if (!isStrict)
+            muteMessage += `You can prematurely end it by using the button below or using the ${inlineCode('/unmute')} command here.`;
 
         try {
             await this.moderationService.muteGuildMember(
@@ -73,38 +113,25 @@ export class SelfMuteCommand implements ICommand {
                 endDateUtc.toDate(),
                 {
                     content: muteMessage,
-                    components: user?.strictSelfmute ? [] : [
-                        new ActionRowBuilder<ButtonBuilder>().addComponents(ComponentHelper.endSelfmuteButton()),
-                    ],
+                    components: isStrict
+                        ? []
+                        : [new ActionRowBuilder<ButtonBuilder>().addComponents(ComponentHelper.endSelfmuteButton())],
                 },
-                { content: `🔊 Your selfmute has ended and I've unmuted you. Welcome back!` }
+                { content: `🔊 Your selfmute has ended and I've unmuted you. Welcome back!` },
+                isStrict
             );
         } catch (e) {
             return {
                 isSuccessful: false,
                 reason: (e as Error).message,
-                replyToUser: `I cannot mute you because you have more privileges than I do or because my role is lower than the muted role!`,
+                replyToUser: {
+                    content: `I cannot mute you because you have more privileges than I do or because my role is lower than the muted role!`,
+                },
             };
         }
 
         return {
             isSuccessful: true,
         };
-    }
-
-    async validateArgs(args: string[]): Promise<void> {
-        if (args.length == 0) {
-            throw new ValidationError('0 args provided.', 'You have to give me a duration you want to be muted for!');
-        }
-        if (args.length > 1) {
-            throw new ValidationError('More than 1 args provided.', 'You have to give me only one duration.');
-        }
-        const match = args[0].match(/[1-9][0-9]{0,2}([mhdw])/);
-        if (match == null) {
-            throw new ValidationError(
-                `${args[0]} is not a recognizable time duration`,
-                'Please give me a valid duration (m, h, d, w)!'
-            );
-        }
     }
 }

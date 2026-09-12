@@ -2,195 +2,181 @@ import { Environment } from '@models/environment';
 import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
 import { CommandResult } from '@src/feature/commands/models/command-result.model';
 import { ICommand } from '@src/feature/commands/models/command.interface';
-import { StaffMailType } from '@src/feature/interactions/models/staff-mail-type';
+import { StaffMailType } from '@src/feature/models/staff-mail-type';
 import { EmbedHelper } from '@src/helpers/embed.helper';
 import { TYPES } from '@src/types';
 import {
-    ButtonInteraction,
-    Client,
-    inlineCode,
-    Interaction,
-    InteractionEditReplyOptions,
-    InteractionReplyOptions,
-    Message,
-    StringSelectMenuInteraction,
+    Attachment,
+    ChatInputCommandInteraction,
+    EmbedBuilder, InteractionContextType,
+    ModalSubmitInteraction,
+    SlashCommandBuilder, User,
 } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import { Logger } from 'tslog';
+import { ValidationError } from '@src/feature/commands/models/validation-error.model';
+import { Constants } from '@models/constants';
+import { StaffMailModeEnum } from '@src/feature/models/staff-mail-mode.enum';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { StaffMailRepository } from '@src/infrastructure/repositories/staff-mail.repository';
+import { Interactions } from '@src/feature/interactions/models/interactions';
 
 @injectable()
 export class StaffMailCreateCommand implements ICommand {
     name: string = 'staffmail';
     description: string = 'Creates a new staff mail message. Only usable in DMs.';
-    usageHint: string = '';
-    examples: string[] = ['', ''];
     permissionLevel = CommandPermissionLevel.User;
-    aliases = [];
-    isUsableInDms = true;
-    isUsableInServer = false;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .setContexts(InteractionContextType.BotDM)
+        .addStringOption((option) =>
+            option.setName('category').setDescription('The category of your concern').setRequired(true).addChoices(
+                { name: Constants.StaffMailCategories[StaffMailType.Report], value: StaffMailType.Report },
+                { name: Constants.StaffMailCategories[StaffMailType.Crowns], value: StaffMailType.Crowns },
+                { name: Constants.StaffMailCategories[StaffMailType.Server], value: StaffMailType.Server },
+                { name: Constants.StaffMailCategories[StaffMailType.Lastfm], value: StaffMailType.Lastfm },
+                { name: Constants.StaffMailCategories[StaffMailType.Other], value: StaffMailType.Other }
+            )
+        )
+        .addStringOption((option) =>
+            option.setName('content').setDescription('Add some content to your message.')
+        )
+        .addAttachmentOption((option) =>
+            option.setName('attachment').setDescription('Add an attachment to the message. Send another message for multiple attachments.')
+        )
+        .addBooleanOption((option) =>
+            option.setName('anonymous').setDescription('Send the message anonymously.')
+        )
 
     private logger: Logger<StaffMailCreateCommand>;
+    private memberService: MemberService;
+    private usersRepository: UsersRepository;
+    private loggingService: LoggingService;
+    private staffMailRepository: StaffMailRepository;
     private env: Environment;
-    private client: Client;
 
     constructor(
+        @inject(TYPES.StaffMailRepository) staffMailRepository: StaffMailRepository,
         @inject(TYPES.BotLogger) logger: Logger<StaffMailCreateCommand>,
-        @inject(TYPES.Client) client: Client,
+        @inject(TYPES.LoggingService) loggingService: LoggingService,
+        @inject(TYPES.MemberService) memberService: MemberService,
+        @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
         @inject(TYPES.ENVIRONMENT) env: Environment
     ) {
+        this.memberService = memberService;
+        this.usersRepository = usersRepository;
         this.env = env;
-        this.client = client;
+        this.loggingService = loggingService;
         this.logger = logger;
+        this.staffMailRepository = staffMailRepository;
     }
 
-    public async run(message: Message): Promise<CommandResult> {
-        this.logger.info(`New staff mail message received.`);
-        await this.createNewStaffMail(message);
-        return {};
-    }
+    public validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
+        if(!interaction.options.getString('content') && !interaction.options.getAttachment('attachment')) {
+            throw new ValidationError(`Neither content nor attachment provided.`, `You must provide either content or an attachment for the staff mail message.`);
+        }
 
-    async runInteraction(interaction: ButtonInteraction) {
-        this.logger.info(`New staff mail create interaction received.`);
-        await this.createNewStaffMailEphemeral(interaction);
-    }
+        // if(!interaction.user.dmChannel?.isSendable()) {
+        //     throw new ValidationError(`Cannot send DM to user.`, `I cannot send you a DM. Please check your privacy settings and try again.`);
+        // }
 
-    public validateArgs(_: string[]): Promise<void> {
         return Promise.resolve();
     }
 
-    private async createNewStaffMail(message: Message): Promise<void> {
-        if (!message.channel.isSendable()) {
-            this.logger.error(`Staff mail creation failed: Channel is not sendable.`);
-            return;
-        }
-        const createMessage: Message = await message.channel.send(EmbedHelper.getStaffMailCreateEmbed());
-
-        // Handling the category selection menu
-        let categorySelection: StringSelectMenuInteraction | ButtonInteraction;
-        const collectorFilter = (interaction: Interaction) => interaction.user.id === message.author.id;
-        try {
-            categorySelection = (await createMessage.awaitMessageComponent({
-                filter: collectorFilter,
-                time: 120_000,
-            })) as StringSelectMenuInteraction | ButtonInteraction;
-        } catch (e) {
-            await this.timeout(createMessage);
-            return;
-        }
-
-        // Setting the detail view for the chosen category
-        if (categorySelection instanceof ButtonInteraction) return;
-        await categorySelection.update({});
-        const category: string = (categorySelection as StringSelectMenuInteraction).values[0];
-        this.logger.debug(`User has selected a category (${category}). Proceeding to next menu.`);
-        await createMessage.edit(EmbedHelper.getStaffMailCategoryEmbed(category));
-
-        // Crowns has a submenu, get the response for it.
-        if (category === StaffMailType.Crowns) {
-            let crownsSubmenuSelection: StringSelectMenuInteraction | ButtonInteraction;
-            try {
-                crownsSubmenuSelection = (await createMessage.awaitMessageComponent({
-                    filter: collectorFilter,
-                    time: 120_000,
-                })) as StringSelectMenuInteraction | ButtonInteraction;
-            } catch (e) {
-                await this.timeout(createMessage);
-                return;
-            }
-
-            if (crownsSubmenuSelection instanceof ButtonInteraction) return;
-            await crownsSubmenuSelection.update({});
-            const crownsSubcategory: string = (crownsSubmenuSelection as StringSelectMenuInteraction).values[0];
-            this.logger.debug(`User has selected a crowns sub-category (${crownsSubcategory}). Showing send button.`);
-            await createMessage.edit(EmbedHelper.getStaffMailCrownsSubcategoryEmbed(crownsSubcategory));
-        }
-
-        // User gets a selection of send buttons (named and anon as optional)
-        let sendInteraction: ButtonInteraction;
-        try {
-            sendInteraction = (await createMessage.awaitMessageComponent({
-                filter: collectorFilter,
-                time: 120_000,
-            })) as ButtonInteraction;
-        } catch (e) {
-            await this.timeout(createMessage);
-            return;
-        }
+    public async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        this.logger.info(`New staff mail message received.`);
+        if(!interaction.deferred) await interaction.deferReply();
+        const category = interaction.options.getString('category')!;
+        const text = interaction.options.getString('content') ?? '';
+        const attachment = interaction.options.getAttachment('attachment');
+        const isAnonymous = interaction.options.getBoolean('anonymous') ?? false;
+        return await this.createNewStaffMail(category, text, isAnonymous, interaction.user, attachment ? [attachment] : []);
     }
 
-    private async createNewStaffMailEphemeral(interaction: ButtonInteraction) {
-        const replyOptions = EmbedHelper.getStaffMailCreateEmbed() as InteractionReplyOptions;
-        replyOptions.ephemeral = true;
-        replyOptions.fetchReply = true;
-        const createMessage = await interaction.reply(replyOptions);
+    async runInteraction(interaction: ModalSubmitInteraction) {
+        this.logger.info(`New staff mail create interaction received.`);
 
-        // Handling the category selection menu
-        let categorySelection: StringSelectMenuInteraction | ButtonInteraction;
-        const collectorFilter = (interaction: Interaction) => interaction.user.id === interaction.user.id;
+        // if(!interaction.user.dmChannel?.isSendable()) {
+        //     await interaction.editReply({ content: `I cannot send you a DM. Please check your privacy settings and try again.`});
+        //     return;
+        // }
 
-        try {
-            categorySelection = (await createMessage.awaitMessageComponent({
-                filter: collectorFilter,
-                time: 120_000,
-            })) as StringSelectMenuInteraction | ButtonInteraction;
-        } catch (e) {
-            await this.timeout(interaction);
-            return;
-        }
-
-        // Setting the detail view for the chosen category
-        if (categorySelection instanceof ButtonInteraction) return;
-        await categorySelection.update({});
-        const category: string = (categorySelection as StringSelectMenuInteraction).values[0];
-        this.logger.debug(`User has selected a category (${category}). Proceeding to next menu.`);
-        const response = EmbedHelper.getStaffMailCategoryEmbed(category) as InteractionEditReplyOptions;
-        await interaction.editReply(response);
-
-        // Crowns has a submenu, get the response for it.
-        if (category === StaffMailType.Crowns) {
-            let crownsSubmenuSelection: StringSelectMenuInteraction | ButtonInteraction;
-            try {
-                crownsSubmenuSelection = (await createMessage.awaitMessageComponent({
-                    filter: collectorFilter,
-                    time: 120_000,
-                })) as StringSelectMenuInteraction | ButtonInteraction;
-            } catch (e) {
-                await this.timeout(interaction);
-                return;
-            }
-
-            if (crownsSubmenuSelection instanceof ButtonInteraction) return;
-
-            await crownsSubmenuSelection.update({});
-            const crownsSubcategory: string = (crownsSubmenuSelection as StringSelectMenuInteraction).values[0];
-            this.logger.debug(`User has selected a crowns sub-category (${crownsSubcategory}). Showing send button.`);
-            const response = EmbedHelper.getStaffMailCrownsSubcategoryEmbed(
-                crownsSubcategory
-            ) as InteractionEditReplyOptions;
-            await interaction.editReply(response);
-        }
-
-        // User gets a selection of send buttons (named and anon as optional)
-        let sendInteraction: ButtonInteraction;
-        try {
-            sendInteraction = (await createMessage.awaitMessageComponent({
-                filter: collectorFilter,
-                time: 120_000,
-            })) as ButtonInteraction;
-        } catch (e) {
-            await this.timeout(interaction);
-            return;
-        }
+        const category = interaction.fields.getStringSelectValues(Interactions.StaffMail.CreateModal.Category) ?? StaffMailType.Report;
+        const content = interaction.fields.getTextInputValue(Interactions.StaffMail.CreateModal.Content);
+        const attachments: Attachment[] = interaction.fields.getUploadedFiles(Interactions.StaffMail.CreateModal.Attachment)?.map((file) => file) ?? [];
+        const isAnonymous = interaction.customId.includes("anon");
+        const mode = isAnonymous ? StaffMailModeEnum.ANONYMOUS : StaffMailModeEnum.NAMED;
+        await this.createNewStaffMail(category[0], content, isAnonymous, interaction.user, attachments);
+        await interaction.editReply({
+            content: `I've created a new staff mail message for you. You can view it in your DMs and send follow-up messages there.`,
+        })
     }
 
-    private async timeout(message: Message | ButtonInteraction) {
-        this.logger.info(`Staff mail creation has timed out.`);
-        const content = {
-            content: `Request timed out after 2 minutes. If you'd still like to message, simply type ${inlineCode(`${this.env.CORE.PREFIX}${this.name}`)} here.`,
+    private async createNewStaffMail(category: StaffMailType, text: string, isAnonymous: boolean, actor: User, attachments?: Attachment[]): Promise<CommandResult> {
+        const mode = isAnonymous ? StaffMailModeEnum.ANONYMOUS : StaffMailModeEnum.NAMED;
+        const humanReadableCategory = EmbedHelper.getHumanReadableStaffMailType(category);
+
+        this.logger.debug(`Interaction is of category ${category} and mode ${mode}. Creating StaffMail...`);
+        const staffMailChannel = await this.staffMailRepository.createStaffMailChannel(actor, mode);
+
+        let rolePings = '';
+        this.env.STAFFMAIL.PING_ROLE_IDS.forEach((id) => (rolePings += `<@&${id}> `));
+        const embeds: EmbedBuilder[] = [];
+        const member = await this.memberService.getGuildMemberFromUserId(actor.id);
+        const roles = await this.memberService.getRolesFromGuildMember(member!);
+        embeds.push(
+            EmbedHelper.getStaffMailStaffViewNewEmbed(
+                isAnonymous ? null : member,
+                isAnonymous ? null : actor,
+                category,
+                roles
+            )
+        );
+
+        if (!isAnonymous) {
+            // Attach information about user
+            const indexedUser = await this.usersRepository.getUserByUserId(actor.id);
+            embeds.push(EmbedHelper.getDiscordMemberEmbed(actor.id, member ?? undefined));
+            embeds.push(EmbedHelper.getVerificationHistoryEmbed(indexedUser?.verifications ?? []));
+            embeds.push(EmbedHelper.getCrownsEmbed(indexedUser ?? undefined));
+        }
+
+        await staffMailChannel!.send({
+            content: `${rolePings} New StaffMail: ${humanReadableCategory}`,
+            embeds: embeds,
+        });
+
+        await staffMailChannel!.send({
+            embeds: [EmbedHelper.getStaffMailStaffViewIncomingEmbed(isAnonymous ? null : actor, text)],
+            files: attachments,
+        });
+
+        this.logger.debug(`StaffMail channel is set up. Sending response to user...`);
+        const openedStaffMailMessage = await actor.send({
             components: [],
-            embeds: [],
+            embeds: [EmbedHelper.getStaffMailOpenEmbed(false), EmbedHelper.getStaffMailUserViewOutgoingEmbed(
+                actor,
+                mode === StaffMailModeEnum.ANONYMOUS,
+                text,
+                category
+            ),],
+            files: attachments,
+        });
+        await this.staffMailRepository.createStaffMail(actor, category, mode, staffMailChannel);
+
+        await this.loggingService.logStaffMailOpen(
+            category,
+            isAnonymous ? null : actor,
+            isAnonymous ? null : actor,
+        );
+        return {
+            isSuccessful: true,
+            replyToUser: {
+                content: `I've created a new staff mail message for you. You can view it in your DMs and send follow-up messages there: ${openedStaffMailMessage?.url}`,
+            }
         };
-        if (message instanceof Message) await message.edit(content);
-        else await message.editReply(content);
     }
 }

@@ -59,7 +59,7 @@ export class MessageService {
 
     public async getChannelMessageByMessageId(
         messageId: string,
-        channel: GuildTextBasedChannel
+        channel: TextBasedChannel
     ): Promise<Message | null> {
         return await channel.messages.fetch(messageId);
     }

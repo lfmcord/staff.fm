@@ -8,9 +8,6 @@ export interface StaffMail {
     userId: string;
     mode: StaffMailModeEnum;
     type: string;
-    summary: string | null;
     createdAt: Date;
     lastMessageAt: Date;
-    lastMessageId: string;
-    mainMessageId: string;
 }

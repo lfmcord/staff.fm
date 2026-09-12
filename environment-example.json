@@ -15,7 +15,6 @@
     "REDIS_PORT": 6380
   },
   "CORE": {
-    "PREFIX": "==",
     "BOT_OWNER_ID": "BOT_OWNER_ID",
     "GUILD_ID": "GUILD_ID",
     "WHOKNOWS_USER_ID": "WHOKNOWS_USER_ID"

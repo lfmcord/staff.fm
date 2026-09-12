@@ -1,40 +1,43 @@
-import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
-import { ICommand } from '@src/feature/commands/models/command.interface';
-import { CommandResult } from '@src/feature/commands/models/command-result.model';
-import { Message } from 'discord.js';
-import { inject, injectable } from 'inversify';
-import { MessageService } from '@src/infrastructure/services/message.service';
-import { TYPES } from '@src/types';
-import { MemberService } from '@src/infrastructure/services/member.service';
-import { Logger } from 'tslog';
-import { Verification } from '@src/feature/commands/administration/models/verification.model';
-import { TextHelper } from '@src/helpers/text.helper';
-import LastFM from 'lastfm-typed';
-import { LoggingService } from '@src/infrastructure/services/logging.service';
 import { Environment } from '@models/environment';
-import { ValidationError } from '@src/feature/commands/models/validation-error.model';
-import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
 import { LastfmError } from '@models/lastfm-error.model';
+import { Verification } from '@src/feature/commands/administration/models/verification.model';
+import { CommandPermissionLevel } from '@src/feature/commands/models/command-permission.level';
+import { CommandResult } from '@src/feature/commands/models/command-result.model';
+import { ICommand } from '@src/feature/commands/models/command.interface';
 import { FlagsRepository } from '@src/infrastructure/repositories/flags.repository';
+import { UsersRepository } from '@src/infrastructure/repositories/users.repository';
+import { LoggingService } from '@src/infrastructure/services/logging.service';
+import { MemberService } from '@src/infrastructure/services/member.service';
+import { TYPES } from '@src/types';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { inject, injectable } from 'inversify';
+import LastFM from 'lastfm-typed';
 import * as moment from 'moment';
+import { Logger } from 'tslog';
 
 @injectable()
 export class IndexCommand implements ICommand {
     name: string = 'index';
     description: string = 'Indexes a user with a last.fm account.';
-    usageHint: string = '<user mention/ID> <last.fm username> [reason]';
-    examples: string[] = ['@haiyn haiyn fmbot login', '@haiyn haiyn'];
     permissionLevel = CommandPermissionLevel.Helper;
-    aliases = ['link'];
     isUsableInDms = false;
     isUsableInServer = true;
+    definition = new SlashCommandBuilder()
+        .setName(this.name)
+        .setDescription(this.description)
+        .addUserOption((option) => option.setName('user').setDescription('The user to index').setRequired(true))
+        .addStringOption((option) =>
+            option
+                .setName('lastfm')
+                .setDescription('The last.fm username to index the user with')
+                .setRequired(true)
+        )
+        .addStringOption((option) => option.setName('reason').setDescription('The reason'));
 
     private loggingService: LoggingService;
     private lastFmClient: LastFM;
     private logger: Logger<IndexCommand>;
-    private flagsRepository: FlagsRepository;
     private usersRepository: UsersRepository;
-    private env: Environment;
     private memberService: MemberService;
 
     constructor(
@@ -42,46 +45,29 @@ export class IndexCommand implements ICommand {
         @inject(TYPES.MemberService) memberService: MemberService,
         @inject(TYPES.LastFmClient) lastFmClient: LastFM,
         @inject(TYPES.LoggingService) loggingService: LoggingService,
-        @inject(TYPES.ENVIRONMENT) env: Environment,
         @inject(TYPES.UsersRepository) usersRepository: UsersRepository,
-        @inject(TYPES.FlagsRepository) flagsRepository: FlagsRepository
     ) {
-        this.flagsRepository = flagsRepository;
         this.usersRepository = usersRepository;
-        this.env = env;
         this.loggingService = loggingService;
         this.lastFmClient = lastFmClient;
         this.logger = logger;
         this.memberService = memberService;
     }
 
-    validateArgs(args: string[]): Promise<void> {
-        if (args.length < 2)
-            throw new ValidationError(
-                `args length is ${args.length}, expected length 2+.`,
-                `You must give me a discord user, last.fm username and an optional reason for the indexing!`
-            );
-
-        const userId = TextHelper.getDiscordUserId(args[0]);
-        if (!userId)
-            throw new ValidationError(
-                `The supplied first argument is not a discord user: ${args[0]}`,
-                `The first argument in the command has to be a valid Discord user!`
-            );
-
+    validateArgs(interaction: ChatInputCommandInteraction): Promise<void> {
         return Promise.resolve();
     }
 
-    async run(message: Message, args: string[]): Promise<CommandResult> {
-        const userId = TextHelper.getDiscordUserId(args[0]);
-        const lastfmUsername = args[1];
-        const reason = args.slice(2).join(' ');
+    async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
+        const userId = interaction.options.getUser('user')!.id;
+        const lastfmUsername = interaction.options.getString('lastfm')!;
+        const reason = interaction.options.getString('reason');
         const userToVerify = await this.memberService.fetchUser(userId!);
 
         if (!userToVerify) {
             return {
                 isSuccessful: false,
-                replyToUser: `This doesn't seem to be a valid discord user!`,
+                replyToUser: { content: `This doesn't seem to be a valid discord user!` },
             };
         }
 
@@ -92,7 +78,9 @@ export class IndexCommand implements ICommand {
         if (existingVerification) {
             return {
                 isSuccessful: false,
-                replyToUser: `This user has already been indexed with the last.fm account name \`${existingVerification.username}\` at <t:${moment(existingVerification.verifiedOn).unix()}:f> by <@!${existingVerification.verifiedById}>.`,
+                replyToUser: {
+                    content: `This user has already been indexed with the last.fm account name \`${existingVerification.username}\` at <t:${moment(existingVerification.verifiedOn).unix()}:f> by <@!${existingVerification.verifiedById}>.`,
+                },
             };
         }
 
@@ -111,13 +99,15 @@ export class IndexCommand implements ICommand {
         if (!lastfmUser) {
             return {
                 isSuccessful: false,
-                replyToUser: `The username '${lastfmUsername}' doesn't seem to be an existing Last.fm user.`,
+                replyToUser: {
+                    content: `The username '${lastfmUsername}' doesn't seem to be an existing Last.fm user.`,
+                },
             };
         }
 
         const verification: Verification = {
             verificationMessage: null,
-            verifyingUser: message.author,
+            verifyingUser: interaction.user,
             verifiedUser: userToVerify,
             lastfmUser: lastfmUser ?? null,
             discordAccountCreated: userToVerify.createdTimestamp,
@@ -137,7 +127,9 @@ export class IndexCommand implements ICommand {
 
         return {
             isSuccessful: true,
-            replyToUser: `I've indexed the user <@!${userToVerify.id}> with the last.fm account name \`${lastfmUsername.toLowerCase()}\`.`,
+            replyToUser: {
+                content: `I've indexed the user <@!${userToVerify.id}> with the last.fm account name \`${lastfmUsername.toLowerCase()}\`.`,
+            },
         };
     }
 }

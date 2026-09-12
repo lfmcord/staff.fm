@@ -43,6 +43,7 @@ export class ModerationService {
         endDate: Date,
         muteMessage?: MessageCreateOptions,
         unmuteMessage?: MessageCreateOptions,
+        isStrict = false,
         shouldLog = true
     ): Promise<boolean> {
         this.logger.info(
@@ -77,7 +78,7 @@ export class ModerationService {
         });
 
         await this.mutesRepository.deleteMuteByUserId(subject.user.id);
-        await this.mutesRepository.createMute(subject.user, actor, endDate, roles);
+        await this.mutesRepository.createMute(subject.user, actor, endDate, roles, isStrict);
         this.logger.info(`Muted user ${TextHelper.userLog(subject.user)} until ${endDate.toISOString()}.`);
 
         if (shouldLog) await this.loggingService.logMute(actor, subject.user, endDate, muteMessage?.content);
@@ -154,15 +155,13 @@ export class ModerationService {
     async banGuildMember(
         subject: GuildMember,
         actor: User,
-        isAppealable: boolean,
         banMessage?: MessageCreateOptions,
         reason?: string,
         shouldLog = true
     ): Promise<boolean> {
         let wasInformed = false;
         if (banMessage) {
-            if (isAppealable)
-                banMessage.content += `\n-# Unless stated otherwise in the reason above, you are able to appeal your ban by joining the ban appeal server at <https://discord.gg/2WwNFyhq5n>`;
+            banMessage.content += `\n-# Unless stated otherwise in the reason above, you are able to appeal your ban by joining the ban appeal server at (code: 2WwNFyhq5n)`;
             try {
                 await subject.send(banMessage);
             } catch (e) {
