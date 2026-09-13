@@ -92,6 +92,7 @@ export class WhoisCommand implements ICommand {
 
         return {
             isSuccessful: true,
+            isEphemeral: false,
         };
     }
 
