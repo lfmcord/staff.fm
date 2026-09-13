@@ -59,7 +59,7 @@ export class WhoisCommand implements ICommand {
     }
 
     async run(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
-        const userId = interaction.options.getUser('user')!.id;
+        const userId = interaction.options.getUser('user')?.id;
         if (!interaction.channel!.isSendable()) {
             return {
                 isSuccessful: false,
