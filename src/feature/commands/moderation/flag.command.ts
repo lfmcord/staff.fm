@@ -113,7 +113,7 @@ export class FlagCommand implements ICommand {
 
     async remove(interaction: ChatInputCommandInteraction): Promise<CommandResult> {
         let wordsToRemove = interaction.options
-            .getString('words')!
+            .getString('term')!
             .split(',')
             .map((word) => word.toLowerCase().trim().replace(',', ''));
         const entriesToDelete = await this.flagsRepository.getFlagsByTerms(wordsToRemove);
