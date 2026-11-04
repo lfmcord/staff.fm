@@ -1,7 +1,7 @@
 version: '3.9'
 services:
   staff-fm-db:
-    image: mongo:8.2
+    image: mongo:8.2 # this version is pinned because volumes are not compatible with newer versions of MongoDB. To upgrade, you will need to dump the data, remove the volume and reinitialize the database.
     container_name: staff-fm-db
     command: --port 27018
     ports:
